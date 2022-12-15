@@ -32,7 +32,7 @@ jobs:
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build -S ${{github.workspace}} --preset linux-debug --config ${{env.BUILD_TYPE}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      run: cmake --build --preset=linux-debug --config ${{env.BUILD_TYPE}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
     - name: Test
       working-directory: ${{github.workspace}}/build
