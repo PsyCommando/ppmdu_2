@@ -1,0 +1,9 @@
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg.git
+[submodule "deps/whereami"]
+	path = deps/whereami
+	url = https://github.com/gpakosz/whereami.git
+[submodule "deps/jdksmidi"]
+	path = deps/jdksmidi
+	url = https://github.com/jdkoftinoff/jdksmidi.git
