@@ -25,14 +25,17 @@ jobs:
     - name: Prepare vcpkg
       run: ${{github.workspace}}/vcpkg/bootstrap-vcpkg.sh --disableMetrics
 
+    - name: Setup Ninja
+      uses: ashutoshvarma/setup-ninja@v1.1
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake  -G "Ninja" -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE:STRING="Debug"
+      run: cmake  -G "Ninja" -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE:STRING="Release" -DCMAKE_MAKE_PROGRAM="ninja.exe"
 
     - name: Build
       # Build your program with the given configuration
-      run: pwd; ls -al; cmake --list-presets; cmake --build --preset linux-debug
+      run: pwd; ls -al; cmake --list-presets; cmake --build --preset x64-linux-release
 
     - name: Test
       working-directory: ${{github.workspace}}/build
