@@ -32,7 +32,7 @@ jobs:
 
     - name: Build
       # Build your program with the given configuration
-      run: pwd; ls -al; cmake --list-presets; cmake --build --preset="linux-debug" --config ${{env.BUILD_TYPE}}
+      run: pwd; ls -al; cmake --list-presets; cmake --build --preset="Linux Debug" --config ${{env.BUILD_TYPE}}
 
     - name: Test
       working-directory: ${{github.workspace}}/build
