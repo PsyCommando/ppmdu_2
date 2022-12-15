@@ -2,7 +2,7 @@
   "name": "ppmdu_2",
   "dependencies": [
     "poco",
-    {"name": "pugixml", "version": "1.6"},
+    "pugixml",
     "libpng",
     "zlib"
   ]
