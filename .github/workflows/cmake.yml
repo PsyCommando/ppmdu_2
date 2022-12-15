@@ -25,8 +25,8 @@ jobs:
     - name: Prepare vcpkg
       run: ${{github.workspace}}/vcpkg/bootstrap-vcpkg.sh --disableMetrics
 
-    - name: Setup Ninja
-      uses: ashutoshvarma/setup-ninja@v1.1
+    - name: Setup Ninja + CMake
+      uses: symbitic/install-cmake@master
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
