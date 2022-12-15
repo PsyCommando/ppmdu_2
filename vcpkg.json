@@ -1,9 +1,10 @@
 {
   "name": "ppmdu_2",
+  "version": "1.0.0",
   "dependencies": [
     "poco",
-    "pugixml",
     "libpng",
-    "zlib"
+    "zlib",
+    "pugixml"
   ]
 }
