@@ -39,43 +39,98 @@ http://projectpokemon.org/wiki/Pokemon_Mystery_Dungeon_Explorers_of_Sky
   It exports/imports all that data(besides game strings) to XML files as an intermediate format. XML files are easily editable by anyone, and 3rd party tools supporting XML.
   The game strings are extracted to a single simple .txt file, where each line is a C-String, and special characters are represented as escape sequences. The encoding is properly determined by using a XML configuration file that users can use to add the encoding string for a specific game version/language.
 
-## Setting up the source code:
+## Grabbing the source code:
 
 Check out the repository and the submodules:
 ```
 git clone --recurse-submodules https://github.com/PsyCommando/ppmdu_2.git
 ```
 
-Make sure to bootstrap vcpkg, so it can grab the packages we need for building this automatically:
+## Building the Source Code With Visual Studio 2022
+
+You can open the project directory within VS2022 or some other IDE that supports CMake projects and the Ninja build system, and it should be properly setup for building out of the box! Everything is preconfigured in the vcpkg.json and the CMakePreset.json files.
+
+
+## Building the Source Code Via Console Commands
+
+This is a bit more involved. First we need to make sure you got all you need installed.
+
+### Bootstrap vcpkg
+Now move into the root of the repository you just cloned. 
+```cd ppmdu_2```
+
+Then, make sure to bootstrap vcpkg, so it can grab the packages we need for building this automatically. On windows:
 ```
-./vcpkg/bootstrap-vcpkg.bat
+vcpkg/bootstrap-vcpkg.bat
 ```
-or
+or on linux:
 ```
 ./vcpkg/bootstrap-vcpkg.sh
 ```
 
-### Building the Source Code:
+### Make Sure CMake is Installed
+Grab cmake with your package manager. On ubuntu/debian:
+```
+sudo apt-get install cmake
+```
 
-You can open the project directory within VS2022 or some other IDE that supports CMake projects, and it should be properly setup for building from.
+On windows, if you're not using Visual Studio 2022, that's a bit more complicated. You'll have to download the cmake binary, and refer to cmake.exe via the full path in the commands below, or if you added the directory with the cmake.exe to your PATH environment variable, you don't have to do that.
+Here's the link to the cmake downloads: https://cmake.org/download/
 
-### Alternative Way to Build the Source Code
+### Make Sure Ninja is Installed
+Then make sure you got the ninja build system installed. 
+On Windows, just grab it here: https://github.com/ninja-build/ninja/releases. Then put the full path to the exe in this arg when using cmake (The ... is just to represent the rest of the command line):
+```
+cmake ... -DCMAKE_MAKE_PROGRAM="[PATH TO NINJA.EXE HERE]"
+```
 
-Use cmake to build the project:
+Or on linux you can just use your package manager and grab the package: https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages
+For example, on ubuntu/debian:
 ```
-cmake --build --preset [REPLACE_ME_WITH_BUILD_PRESET_NAME] -S .
+sudo apt-get install ninja-build
 ```
-Where ``[REPLACE_ME_WITH_BUILD_PRESET_NAME]`` should be replaced with one of the presets in the ``CMakePresets.json`` file.
-For example, for linux:
+
+### Configuring and Building the Project
+The next part should be relatively straightforward.
+
+#### Windows
+
+You should format the configuration command this way:
 ```
-cmake --build --preset linux-debug -S .
+cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="cl.exe" -DCMAKE_CXX_COMPILER:STRING="cl.exe" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM=[PATH TO THE NINJA.EXE] -DCMAKE_BUILD_TYPE:STRING=[BUILD TYPE EITHER "Debug" or "Release"] -DCMAKE_INSTALL_PREFIX:PATH="out/install/["ARCH-BUILD_TYPE" FOR EXAMPLE: "x64-debug"]"
 ```
-Or for windows:
+Example:
 ```
-cmake --build --preset x64-release -S .
+cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="cl.exe" -DCMAKE_CXX_COMPILER:STRING="cl.exe" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM="ninja.exe" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX:PATH="out/install/x64-debug"
+```
+
+If all goes well, vcpkg will download all the missing dependencies and set them up automatically. It might take a bit, because it will compile POCO which is a pretty large library, but next times you'll build, it'll be much faster once its done once.
+
+To build the project, just do it like this:
+```
+cmake --build --preset [CONFIGURATION PRESET]
+```
+Where ``[CONFIGURATION PRESET]`` should be replaced with one of the presets in the CMakePresets.json file. Since we went with a 64 bits debug build earlier, lets use ``"x64-debug"`` for example here.
+
+
+#### Linux
+You should format the configuration command this way:
+```
+cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="gcc" -DCMAKE_CXX_COMPILER:STRING="g++" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM="ninja" -DCMAKE_BUILD_TYPE:STRING=[BUILD TYPE EITHER "Debug" or "Release"] -DCMAKE_INSTALL_PREFIX:PATH="out/install/["ARCH-BUILD_TYPE" FOR EXAMPLE: "x64-debug"]"
+```
+
+Where ``[CONFIGURATION PRESET]`` should be replaced with one of the presets in the ``CMakePresets.json`` file.
+For example:
+```
+cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="gcc" -DCMAKE_CXX_COMPILER:STRING="g++" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM="ninja" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX:PATH="out/install/x64-debug"
 ```
 
 If all goes well, vspkg will automatically grab the needed dependencies and install them to the vspkg directory in the repository's root.
+Next you can build the project using the command:
+
+cmake --build --preset [CONFIGURATION PRESET]
+```
+Where ``[CONFIGURATION PRESET]`` should be replaced with one of the presets in the ``CMakePresets.json`` file. Since we went with a 64 bits debug build earlier, lets use ``"x64-linux-debug"`` for example here.
 
 ## Portability:
   Should be compatible with Windows 7+ 32/64, Linux 64bits. I have no ways of testing Apple support.
