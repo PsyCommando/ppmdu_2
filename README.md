@@ -48,11 +48,11 @@ git clone --recurse-submodules https://github.com/PsyCommando/ppmdu_2.git
 
 Make sure to bootstrap vcpkg, so it can grab the packages we need for building this automatically:
 ```
-.\vcpkg\bootstrap-vcpkg.bat
+./vcpkg/bootstrap-vcpkg.bat
 ```
 or
 ```
-.\vcpkg\bootstrap-vcpkg.sh
+./vcpkg/bootstrap-vcpkg.sh
 ```
 
 ### Building the Source Code:
