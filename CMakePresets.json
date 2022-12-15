@@ -63,8 +63,8 @@
       }
     },
     {
-      "name": "linux-debug",
-      "displayName": "Linux Debug",
+      "name": "x64-linux-debug",
+      "displayName": "x64 Linux Debug",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
@@ -81,6 +81,14 @@
         "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
           "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}"
         }
+      }
+    },
+    {
+      "name": "x64-linux-release",
+      "displayName": "x64 Linux Release",
+      "inherits": "x64-linux-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
       }
     },
     {
@@ -103,6 +111,18 @@
           "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}"
         }
       }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-linux-debug",
+      "configurePreset": "x64-linux-debug"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-linux-release",
+      "configurePreset": "x64-linux-release"
     }
   ],
   "version": 3

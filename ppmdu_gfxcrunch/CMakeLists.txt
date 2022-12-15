@@ -168,7 +168,7 @@ include_directories(ppmdu_gfxcrunch
 
 find_package(ZLIB REQUIRED)
 find_package(PNG REQUIRED)
-find_package(pugixml REQUIRED)
+find_package(pugixml CONFIG REQUIRED)
 find_package(Poco REQUIRED Foundation)
 find_package(Poco REQUIRED Util)
 

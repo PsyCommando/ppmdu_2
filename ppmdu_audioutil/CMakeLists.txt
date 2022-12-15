@@ -140,7 +140,7 @@ include_directories(audioutil
     "../${ppmdu_2_DEPS_DIRNAME}/jdksmidi/include"
 )
 
-find_package(pugixml REQUIRED)
+find_package(pugixml CONFIG REQUIRED)
 find_package(Poco REQUIRED Foundation)
 find_package(Poco REQUIRED Util)
 
