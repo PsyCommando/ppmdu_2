@@ -129,9 +129,10 @@ cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="gcc" -DCMAKE_CXX_COMPILER:STRING="g+
 
 If all goes well, vspkg will automatically grab the needed dependencies and install them to the vspkg directory in the repository's root.
 Next you can build the project using the command:
-
+```
 cmake --build --preset [CONFIGURATION PRESET]
 ```
+
 Where ``[CONFIGURATION PRESET]`` should be replaced with one of the presets in the ``CMakePresets.json`` file. Since we went with a 64 bits debug build earlier, lets use ``"x64-linux-debug"`` for example here.
 
 ## Portability:
