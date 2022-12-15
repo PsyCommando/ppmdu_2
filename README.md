@@ -99,6 +99,8 @@ You should format the configuration command this way:
 ```
 cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="cl.exe" -DCMAKE_CXX_COMPILER:STRING="cl.exe" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM=[PATH TO THE NINJA.EXE] -DCMAKE_BUILD_TYPE:STRING=[BUILD TYPE EITHER "Debug" or "Release"] -DCMAKE_INSTALL_PREFIX:PATH="out/install/["ARCH-BUILD_TYPE" FOR EXAMPLE: "x64-debug"]"
 ```
+(Note that if you're using gcc or ming or another compiler on windows, you'll have to put in the proper compiler exe in the command-line.)
+
 Example:
 ```
 cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="cl.exe" -DCMAKE_CXX_COMPILER:STRING="cl.exe" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM="ninja.exe" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX:PATH="out/install/x64-debug"
