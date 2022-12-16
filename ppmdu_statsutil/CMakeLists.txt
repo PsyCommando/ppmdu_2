@@ -159,10 +159,6 @@ target_link_libraries(ppmdu_stats_util
     Poco::Util
 )
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ppmdu_stats_util PROPERTY CXX_STANDARD 17)
-endif()
-
 file(
     COPY 
         "../ppmdu_2/resources/pmd2data.xml"

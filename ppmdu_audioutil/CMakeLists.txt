@@ -154,9 +154,6 @@ target_link_libraries(audioutil
     Poco::Util
 )
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET audioutil PROPERTY CXX_STANDARD 17)
-endif()
 
 file(
     COPY 
