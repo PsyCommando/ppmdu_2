@@ -88,7 +88,7 @@
       "displayName": "x64 Linux Release",
       "inherits": "x64-linux-debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
@@ -117,9 +117,7 @@
     {
       "name": "x64-linux-debug",
       "configurePreset": "x64-linux-debug"
-    }
-  ],
-  "buildPresets": [
+    },
     {
       "name": "x64-linux-release",
       "configurePreset": "x64-linux-release"
