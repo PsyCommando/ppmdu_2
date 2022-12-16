@@ -50,45 +50,29 @@ git clone --recurse-submodules https://github.com/PsyCommando/ppmdu_2.git
 
 You can open the project directory within VS2022 or some other IDE that supports CMake projects and the Ninja build system, and it should be properly setup for building out of the box! Everything is preconfigured in the vcpkg.json and the CMakePreset.json files.
 
-
 ## Building the Source Code Via Console Commands
 
 This is a bit more involved. First we need to make sure you got all you need installed.
 
-### Bootstrap vcpkg
-Now move into the root of the repository you just cloned. 
-```cd ppmdu_2```
+### Dependencies Linux
+On linux you want to make sure you got all the tools you need first. For example on unbuntu 22.04:
+```
+sudo apt-get install build-essential cmake ninja-build zip pkg-config
+```
+This should install most of the things you'll need. If not you should get notified about it.
 
-Then, make sure to bootstrap vcpkg, so it can grab the packages we need for building this automatically. On windows:
+Just make sure your version of ``cmake`` is at least ``3.19`` and up. You can check by using this command:
 ```
-vcpkg/bootstrap-vcpkg.bat
-```
-or on linux:
-```
-./vcpkg/bootstrap-vcpkg.sh
-```
-
-### Make Sure CMake is Installed
-Grab cmake with your package manager. On ubuntu/debian:
-```
-sudo apt-get install cmake
+cmake -version
 ```
 
-On windows, if you're not using Visual Studio 2022, that's a bit more complicated. You'll have to download the cmake binary, and refer to cmake.exe via the full path in the commands below, or if you added the directory with the cmake.exe to your PATH environment variable, you don't have to do that.
+### Dependencies Windows
+On windows, you'll want to setup a few things detailed below!
+If you're not using Visual Studio 2022, you'll have to download the cmake binary, and refer to cmake.exe via the full path in the commands below, or if you added the directory with the cmake.exe to your PATH environment variable, you don't have to do that.
 Here's the link to the cmake downloads: https://cmake.org/download/
 
-### Make Sure Ninja is Installed
-Then make sure you got the ninja build system installed. 
-On Windows, just grab it here: https://github.com/ninja-build/ninja/releases. Then put the full path to the exe in this arg when using cmake (The ... is just to represent the rest of the command line):
-```
-cmake ... -DCMAKE_MAKE_PROGRAM="[PATH TO NINJA.EXE HERE]"
-```
-
-Or on linux you can just use your package manager and grab the package: https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages
-For example, on ubuntu/debian:
-```
-sudo apt-get install ninja-build
-```
+Then make sure you got the ninja build system installed. On Windows, just grab it here: https://github.com/ninja-build/ninja/releases .
+Next, you either want to make sure the path to ninja.exe is in your PATH environment variable, or you can set the full path to it in the ``CMakePresets.json`` file under the ``"CMAKE_MAKE_PROGRAM"`` variable entry for the ``"windows-base"`` configuration preset. 
 
 ### Configuring and Building the Project
 The next part should be relatively straightforward.
