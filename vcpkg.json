@@ -5,7 +5,6 @@
     "poco",
     "libpng",
     "zlib",
-    "pugixml",
-    "vcpkg-tool-ninja"
+    "pugixml"
   ]
 }
