@@ -17,6 +17,7 @@ Description: A set of utilities for dealing with and storing tiled images for
 #include <sstream>
 #include "color.hpp"
 #include <utils/utility.hpp>
+#include <utils/gfileio.hpp>
 //#include <ppmdu/pmd2/pmd2_image_formats.hpp>
 #include "index_iterator.hpp"
 #include "img_pixel.hpp"
@@ -814,8 +815,8 @@ namespace gimg
         //#1 - Write the palette if the image has one !
         if( _TILED_IMG_T::pixel_t::IsIndexedPixel() )
         {
-            const vector<typename _TILED_IMG_T::pal_color_t> & refpal   = img.getPalette();
-            auto                                               itinsert = std::back_inserter( outputbuffer );
+            const std::vector<typename _TILED_IMG_T::pal_color_t> & refpal   = img.getPalette();
+            auto                                                    itinsert = std::back_inserter( outputbuffer );
 
             for( auto & acolor : refpal )
                 acolor.WriteAsRawByte( itinsert );
@@ -835,7 +836,7 @@ namespace gimg
         WriteTiledImg( itbegimg, itendimg, img, invertpixelorder );
 
         //#3 - Write the buffer!
-        utils::WriteByteVectorToFile( filepath, outputbuffer );
+        utils::io::WriteByteVectorToFile( filepath, outputbuffer );
     }
 
 

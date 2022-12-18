@@ -15,7 +15,8 @@ A bunch of simple tools for doing common tasks when manipulating bytes.
 #include <limits>
 #include <type_traits>
 #include <cassert>
-#include <utils/utility.hpp>
+#include <stdexcept>
+#include <cmath>
 
 namespace utils 
 {
@@ -438,7 +439,7 @@ namespace utils
             result.push_back(*beg);
 
         if( beg == pastend )
-            throw runtime_error("String went past expected end!");
+            throw std::runtime_error("String went past expected end!");
 
         return std::move(result);
     }
@@ -452,6 +453,7 @@ namespace utils
     template<typename init_t>
         inline size_t safestrlen( init_t beg, init_t pastend )
     {
+        using namespace std;
         size_t cntchar = 0;
         for(; beg != pastend && (*beg) != 0; ++cntchar, ++beg );
 
@@ -468,6 +470,7 @@ namespace utils
     template<typename _init>
         std::string FetchString( uint32_t fileoffset, _init itfbeg, _init itfend )
     {
+        using namespace std;
         auto    itstr = itfbeg;
         std::advance( itstr,  fileoffset );
         size_t  strlength = safestrlen(itstr, itfend);

@@ -17,6 +17,7 @@ Description:    Utilities for managing access to various pieces of hard-coded da
 #include <cstdint>
 #include <string>
 #include <iterator>
+#include <iomanip>
 
 namespace pmd2
 {
@@ -523,6 +524,7 @@ struct ObjectFileListEntry
     template<typename _outstrm, typename _init >
         void Print( _outstrm & out, _init itfbeg, _init itfend, const uint32_t ptrDiff  )
     {
+        using namespace std;
         string fetchedstr = "NULL";
         if( ptrstring != 0 )
             fetchedstr = FetchString( ptrstring - ptrDiff, itfbeg, itfend );
@@ -538,6 +540,7 @@ struct ObjectFileListEntry
     template<typename _outstrm >
         void PrintXML( _outstrm & out, size_t cntentry  )
     {
+        using namespace std;
         //<Object _id="11"    unk1="11"   unk2="258"  unk3="0"  name="d01p11b1" />
         out <<"<Object _id=\"" <<setw(3) <<cntentry <<"\" unk1=\"" <<setw(2) <<unk1
             <<"\" unk2=\"" <<setw(3) <<unk2 <<"\" unk3=\"" <<unk3 <<"\" name=\""

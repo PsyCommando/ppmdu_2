@@ -1,4 +1,5 @@
 #include <ext_fmts/adpcm.hpp>
+#include <utils/audio_utilities.hpp>
 #include <utils/utility.hpp>
 #include <vector>
 #include <array>

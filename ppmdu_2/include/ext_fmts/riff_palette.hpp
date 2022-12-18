@@ -7,7 +7,7 @@ psycommando@gmail.com
 Description: Utilities for importing and exporting RIFF color palettes.
 */
 #include <cstdint>
-#include <ppmdu\containers\color.hpp>
+#include <ppmdu/containers/color.hpp>
 #include <vector>
 #include <string>
 

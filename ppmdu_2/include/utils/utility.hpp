@@ -13,7 +13,7 @@ Description: A header with a bunch of useful includes for the PPMD utilities.
 #include "poco_wrapper.hpp"
 #include <chrono>
 #include <string>
-#include <iosfwd>
+#include <iostream>
 #include <type_traits>
 #include <vector>
 #include <sstream>

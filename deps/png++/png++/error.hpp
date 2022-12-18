@@ -74,7 +74,7 @@ namespace png
          * \param  error    error number
          */
         explicit std_error(std::string const& message, int error = errno)
-            : std::runtime_error((message + ": ") + strerror(error))
+            : std::runtime_error((message + ": ") + std::strerror(error))
         {
         }
     };

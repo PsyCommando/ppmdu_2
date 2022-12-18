@@ -19,6 +19,7 @@ http://www.pjb.com.au/midi/sfspec21.html
 #include <memory>
 #include <array>
 #include <functional>
+#include <limits>
 
 
 /***************************************************************************************************************

@@ -13,6 +13,7 @@ Description: Conversion info data used while converting SMDL files into MIDIs.
 #include <vector>
 #include <map>
 #include <cstdint>
+#include <limits>
 
 namespace DSE
 {
