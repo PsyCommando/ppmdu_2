@@ -155,13 +155,13 @@ namespace utils{ namespace io
                     nbcolors = ReadIntFromBytes<uint16_t>( foundDataChunk, in_riffpalette.end() );
                 }
                 else
-                    throw exception("Invalid RIFF palette!");
+                    throw std::runtime_error("Invalid RIFF palette!");
             }
             else
-                throw exception("Invalid RIFF palette!");
+                throw std::runtime_error("Invalid RIFF palette!");
         }
         else
-            throw exception("Invalid RIFF palette!");
+            throw std::runtime_error("Invalid RIFF palette!");
 
         //#3 - Populate the palette
         //vector<uint8_t>::const_iterator itcolor = foundDataChunk + 2; //move the iterator to the first color

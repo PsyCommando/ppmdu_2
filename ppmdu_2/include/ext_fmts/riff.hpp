@@ -346,7 +346,7 @@ namespace riff
             if( riffhdr.chunk_id != eChunkIDs::RIFF && riffhdr.chunk_id != eChunkIDs::RIFFX )
                 throw std::runtime_error( "RIFFMap::analyze(): Unrecognized RIFF header!" );
             else if( riffhdr.chunk_id == eChunkIDs::RIFFX )
-                throw std::runtime_error( "RIFFMap::analyze(): RIFFX(Big endian RIFF) format not supported." );
+                throw std::runtime_error( "RIFFMap::analyze(): RIFX(Big endian RIFF) format not supported." );
 
             //Read the content type tag
             itread = utils::ReadIntFromBytes( m_fmt, itread, false );

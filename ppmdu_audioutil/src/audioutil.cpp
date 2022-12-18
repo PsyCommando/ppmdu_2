@@ -944,14 +944,14 @@ namespace audioutil
                 else
                 {
                     //Handle assembling things
-                    throw std::exception("Feature not implemented yet!");
+                    throw std::runtime_error("Feature not implemented yet!");
                 }
             }
             else
-                throw runtime_error("Cannot determine the desired operation!");
+                throw std::runtime_error("Cannot determine the desired operation!");
         }
         else
-            throw runtime_error("The input path does not exists!");
+            throw std::runtime_error("The input path does not exists!");
 
     }
 

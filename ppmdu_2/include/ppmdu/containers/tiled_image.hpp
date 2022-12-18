@@ -541,7 +541,7 @@ namespace gimg
         if( invertpixelorder && _TILED_IMG_T::pixel_t::GetBitsPerPixel() > 8 && ( ( 8u % _TILED_IMG_T::pixel_t::GetBitsPerPixel() ) != 0 ) )
         {
             //#TODO: Specialize the temtplate when needed!
-            throw std::exception( "ParseTiledImg(): Inverting pixel order on pixels that overflow over one or several bytes isn't supported right now !!" );
+            throw std::runtime_error( "ParseTiledImg(): Inverting pixel order on pixels that overflow over one or several bytes isn't supported right now !!" );
         }
 
 

@@ -1265,7 +1265,7 @@ namespace gfx_util
                 if( inputPath.getExtension() == BGP_FileExt )
                     m_execMode = eExecMode::EXPORT_BGP_Mode;
                 else
-                    throw exception("Raw AT4PX compressed files not supported at this time!");
+                    throw std::runtime_error("Raw AT4PX compressed files not supported at this time!");
                 //m_execMode = eExecMode::DECOMPRESS_AND_INDENTIFY_Mode;
             }
             else if( result._type == CnTy_PKDPX )
