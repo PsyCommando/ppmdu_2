@@ -26,9 +26,8 @@ jobs:
       run: ${{github.workspace}}/vcpkg/bootstrap-vcpkg.sh --disableMetrics
 
     - name: Setup Ninja + CMake
-      uses: symbitic/install-cmake@master
-      with:
-        cmake: '3.19'
+      uses: lukka/get-cmake@latest
+      #uses: symbitic/install-cmake@master
 
     - name: Check CMake Version
       run: cmake -version
