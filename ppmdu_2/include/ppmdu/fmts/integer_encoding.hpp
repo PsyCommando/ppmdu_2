@@ -164,7 +164,7 @@ namespace utils
         _init DecodeIntegers( _init itbeg, _init itend, _outit & itout )
     {
         typedef typename _outit::container_type::value_type val_ty;
-        static_assert( sizeof(val_ty) > sizeof(typename typename _init::value_type), 
+        static_assert( sizeof(val_ty) > sizeof(typename _init::value_type), 
                        "DecodeIntegers(): Output type is smaller than the input type!" );
         
         bool wasNullTerminated = false;
@@ -207,8 +207,9 @@ namespace utils
         inline std::vector<T> DecodeIntegers( _init itbeg, _init itend )
     {
         std::vector<T> result;
-        DecodeIntegers( itbeg, itend, std::back_inserter(result) );
-        return std::move(result);
+        auto _itins = std::back_inserter(result);
+        DecodeIntegers( itbeg, itend, _itins);
+        return result;
     }
 
 };

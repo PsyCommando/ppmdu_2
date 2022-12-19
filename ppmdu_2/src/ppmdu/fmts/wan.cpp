@@ -274,7 +274,7 @@ namespace filetypes
     {
         MetaFrame mf;
         itread = mf.ReadFromWANContainer( itread, m_rawdata.end(), out_isLastFrm );
-        return std::move(mf);
+        return mf;
     }
 
     /**************************************************************
@@ -284,8 +284,8 @@ namespace filetypes
                                          uint32_t                  grpbeg )
     {
         //Handle several frames
-        auto           itreadgrp   = grpbeg + m_rawdata.begin();
-        auto           itSanityEnd = m_rawdata.end(); //Sanity ends here
+        std::vector<uint8_t>::const_iterator itreadgrp   = m_rawdata.begin() + grpbeg;
+        std::vector<uint8_t>::const_iterator itSanityEnd = m_rawdata.end(); //Sanity ends here
         MetaFrameGroup curgrp;
         curgrp.metaframes.reserve(1); //We know we at least have one
 
@@ -357,12 +357,13 @@ namespace filetypes
     //#2 - Then, first pass, read all the meta-frame groups
         vector<uint32_t> MFptrTbl( nbPtrMFGtbl ); 
         auto             itreadtbl   = (m_rawdata.begin() + m_wanAnimInfo.ptr_metaFrmTable);
+        auto             itrawend    = m_rawdata.end();
         uint32_t         lastPtrRead = ReadOff<uint32_t>( m_wanAnimInfo.ptr_metaFrmTable );
         uint32_t         nbMetaF     = 0; 
 
         for( auto & entry : MFptrTbl )
         {
-            uint32_t curPtr = utils::ReadIntFromBytes<uint32_t>( itreadtbl, m_rawdata.end() ); //Iterator auto-incremented
+            uint32_t curPtr = utils::ReadIntFromBytes<uint32_t>( itreadtbl, itrawend); //Iterator auto-incremented
             entry = curPtr;
             nbMetaF += ( (curPtr - lastPtrRead) / WAN_LENGTH_ANIM_FRM );
             lastPtrRead = curPtr;
@@ -667,5 +668,5 @@ namespace filetypes
 //=============================================================================================
 //  WAN Identification Rules Registration
 //=============================================================================================
-    SIR0RuleRegistrator<wan_rule> SIR0RuleRegistrator<wan_rule>::s_instance;
+    template<> SIR0RuleRegistrator<wan_rule> SIR0RuleRegistrator<wan_rule>::s_instance;
 };

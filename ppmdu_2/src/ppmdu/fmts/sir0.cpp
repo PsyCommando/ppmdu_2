@@ -387,6 +387,6 @@ namespace filetypes
 //========================================================================================================
 //  sir0_rule_rule_registrator
 //========================================================================================================
-    RuleRegistrator<sir0_rule> RuleRegistrator<sir0_rule>::s_instance;
+    template<> RuleRegistrator<sir0_rule> RuleRegistrator<sir0_rule>::s_instance;
 
 };

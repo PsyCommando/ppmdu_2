@@ -168,7 +168,7 @@ include_directories(ppmdu_gfxcrunch
 
 find_package(ZLIB REQUIRED)
 find_package(PNG REQUIRED)
-find_package(pugixml REQUIRED)
+find_package(pugixml CONFIG REQUIRED)
 find_package(Poco REQUIRED Foundation)
 find_package(Poco REQUIRED Util)
 
@@ -181,10 +181,6 @@ target_link_libraries(ppmdu_gfxcrunch
     ZLIB::ZLIB 
     PNG::PNG
 )
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ppmdu_gfxcrunch PROPERTY CXX_STANDARD 17)
-endif()
 
 file(
     COPY 

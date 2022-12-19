@@ -747,8 +747,8 @@ namespace gimg
         typedef  PxlReadIter<_ContainerType>         mytype_t;
         typedef _ContainerType                       container_type;
         typedef _ContainerType                       container_t;
-        typedef typename  container_t *              container_ptr_t;
-        typedef ImgPixReader<typename container_t, typename container_t::iterator> mypixreader_t;
+        typedef container_t *                        container_ptr_t;
+        typedef ImgPixReader<container_t, typename container_t::iterator> mypixreader_t;
 
         //Default constructor
         explicit PxlReadIter( container_t & img )
@@ -834,13 +834,13 @@ namespace gimg
         typedef value_type* pointer;
         typedef value_type& reference;
 
-        typedef _PIXEL_T                                                            pixel_t;
-        typedef  PxlWriteIter<_PIXEL_T, _ByteContainerType>                         mytype_t;
-        typedef _ByteContainerType                                                  container_type;
-        typedef _ByteContainerType                                                  container_t;
-        typedef typename  container_t *                                             container_ptr_t;
+        typedef _PIXEL_T                                     pixel_t;
+        typedef  PxlWriteIter<_PIXEL_T, _ByteContainerType>  mytype_t;
+        typedef _ByteContainerType                           container_type;
+        typedef _ByteContainerType                           container_t;
+        typedef _ByteContainerType*                          container_ptr_t;
         typedef ImgPixWriter<_PIXEL_T, _ByteContainerType>   mypixwriter_t;
-        typedef typename _ByteContainerType::value_type                             valty_t;
+        typedef typename _ByteContainerType::value_type      valty_t;
 
         //Default constructor
         explicit PxlWriteIter( container_t & bycnt )

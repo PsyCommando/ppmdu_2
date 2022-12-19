@@ -489,6 +489,28 @@ namespace pmd2
         :m_parent( std::addressof(parent) ), m_path(filepath)
     {}
 
+    ScrSetLoader::ScrSetLoader(ScrSetLoader&& mv)
+        :m_parent(mv.m_parent), m_path(std::move(mv.m_path))
+    {}
+
+    ScrSetLoader::ScrSetLoader(const ScrSetLoader& cp)
+        :m_parent(cp.m_parent), m_path(cp.m_path)
+    {}
+
+    ScrSetLoader& ScrSetLoader::operator=(const ScrSetLoader& cp)
+    {
+        m_path = cp.m_path;
+        m_parent = cp.m_parent;
+        return *this;
+    }
+
+    ScrSetLoader& ScrSetLoader::operator=(ScrSetLoader&& mv)
+    {
+        m_path = std::move(mv.m_path);
+        m_parent = mv.m_parent;
+        return *this;
+    }
+
     LevelScript ScrSetLoader::operator()()const
     {
         return std::move( m_parent->m_pHandler->LoadDirectory(m_path) );

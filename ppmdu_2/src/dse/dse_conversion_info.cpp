@@ -205,7 +205,7 @@ namespace DSE
             xml_parse_result result = indoc.load_file( xmlpath.c_str() );
             HandleParsingError( result, xmlpath );
 
-            auto & cventries = indoc.child(ROOT_ConvData.c_str()).children();
+            auto cventries = indoc.child(ROOT_ConvData.c_str()).children();
 
             //Read every elements
             for( auto & curnode : cventries )
@@ -280,18 +280,18 @@ namespace DSE
                 }
             }
 
-            if( dseid != InvalidDSEPresetID )
+            if(dseid != InvalidDSEPresetID)
             {
-                if( pconv.midipres != InvalidPresetID && pconv.midipres > CHAR_MAX )
+                if((pconv.midipres != InvalidPresetID) && (pconv.midipres > std::numeric_limits<int8_t>::max()))
                 {
                     clog << "#CVInfoParser : Forced preset for preset " <<dseid << " for track " <<trkname << " was not one of the valid 127 MIDI presets! Ignoring!\n";
                     pconv.midipres = InvalidPresetID;
                 }
 
-                if( pconv.idealchan != UCHAR_MAX && pconv.idealchan >= NbMidiChannels )
+                if((pconv.idealchan != std::numeric_limits<uint8_t>::max()) && (pconv.idealchan >= NbMidiChannels))
                 {
                     clog << "#CVInfoParser : Forced channel for preset " <<dseid <<" for track " <<trkname << " was not one of the valid 16 MIDI channel! Ignoring!\n";
-                    pconv.idealchan = UCHAR_MAX;
+                    pconv.idealchan = std::numeric_limits<uint8_t>::max();
                 }
             }
 
@@ -321,7 +321,7 @@ namespace DSE
             midinote_t outkey    = InvalidMIDIKey;
             presetid_t midprg    = InvalidPresetID;
             bankid_t   midbnk    = InvalidBankID;
-            uint8_t    idealchan = UCHAR_MAX;
+            uint8_t    idealchan = std::numeric_limits<uint8_t>::max();
 
             for( auto & keyprop : curnode.children() )
             {
@@ -344,7 +344,7 @@ namespace DSE
 
                 if( midprg != InvalidPresetID )
                 {
-                    if( midprg >= 0 && midprg <= CHAR_MAX )
+                    if((midprg >= 0) && (midprg <= std::numeric_limits<int8_t>::max()))
                         rmap.destpreset = midprg;
                     else
                         clog << "#CVInfoParser : Forced preset for preset " <<preset <<" for key " <<inkey << " for track " <<trkname << " was not one of the valid 127 MIDI presets! Ignoring!\n";
@@ -355,7 +355,7 @@ namespace DSE
                     rmap.destbank = midbnk;
                 }
 
-                if( idealchan != UCHAR_MAX )
+                if( idealchan != std::numeric_limits<uint8_t>::max())
                 {
                     if( idealchan < NbMidiChannels )
                         rmap.idealchan = idealchan;

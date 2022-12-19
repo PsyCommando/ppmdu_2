@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <future>
 #include <atomic>
+#include <thread>
 #include <vector>
 #include <deque>
 #include <iostream>
@@ -666,7 +667,7 @@ namespace compression
                                                              bool              blogenabled )
         :m_pCompressedData(&out_compresseddata), m_itInBeg(itinbeg), m_itInCur(itinbeg), m_itInEnd(itinend),
         m_highNybbleLenghtsPossible(PX_NB_POSSIBLE_SEQ_LEN,0), m_inputSize(0), m_bLoggingEnabled(blogenabled),
-        m_nbCompressedByteWritten(0), m_itOutCur(vector<uint8_t>())
+        m_nbCompressedByteWritten(0), m_itOutCur(std::back_inserter(out_compresseddata))
     {
         m_inputSize = std::distance(itinbeg, itinend);
 
@@ -674,7 +675,7 @@ namespace compression
         //if( m_pCompressedData->size() < m_inputSize )
             m_pCompressedData->reserve( m_inputSize );
 
-        m_itOutCur = std::back_inserter(out_compresseddata);
+        //m_itOutCur = std::back_inserter(out_compresseddata);
 
         //Setup our iterators
         //m_itOutBeg = m_pCompressedData->begin();
@@ -1391,7 +1392,7 @@ namespace compression
             while( !shouldstop )
             {
                 PrintProgress( progressatomic, totalsize );
-                this_thread::sleep_for( std::chrono::milliseconds(100) );
+                std::this_thread::sleep_for( std::chrono::milliseconds(100) );
             }
 
             //Write the progress one last time

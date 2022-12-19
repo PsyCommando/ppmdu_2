@@ -107,10 +107,6 @@ target_link_libraries(ppmdu_dopx
     Poco::Util 
 )
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ppmdu_dopx PROPERTY CXX_STANDARD 17)
-endif()
-
 ###########################################################
 # UnPX
 ###########################################################
@@ -124,6 +120,3 @@ target_link_libraries(ppmdu_unpx
     Poco::Util 
 )
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ppmdu_unpx PROPERTY CXX_STANDARD 17)
-endif()

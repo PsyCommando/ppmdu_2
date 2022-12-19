@@ -102,7 +102,7 @@ namespace pugixmlutils
             Makes appending an attribute and setting its value easier, clearer with std::string.
     ***************************************************************************************/
     template<class T>
-        inline pugi::xml_attribute AppendAttribute( pugi::xml_node & parent, const pugi::string_t & name, T value ) 
+        inline pugi::xml_attribute AppendAttribute( pugi::xml_node parent, const pugi::string_t & name, T value ) 
     {
         using namespace pugi;
         xml_attribute att = parent.append_attribute(name.c_str());
@@ -117,7 +117,7 @@ namespace pugixmlutils
     }
 
     template<>
-        inline pugi::xml_attribute AppendAttribute<int16_t>( pugi::xml_node & parent, const pugi::string_t & name, int16_t value ) 
+        inline pugi::xml_attribute AppendAttribute<int16_t>( pugi::xml_node parent, const pugi::string_t & name, int16_t value ) 
     {
         using namespace pugi;
         xml_attribute att   = parent.append_attribute(name.c_str());
@@ -137,7 +137,7 @@ namespace pugixmlutils
     }
 
     template<>
-        inline pugi::xml_attribute AppendAttribute<const pugi::char_t*>( pugi::xml_node & parent, const pugi::string_t & name, const pugi::char_t* value )  
+        inline pugi::xml_attribute AppendAttribute<const pugi::char_t*>( pugi::xml_node parent, const pugi::string_t & name, const pugi::char_t* value )  
     {
         using namespace pugi;
         xml_attribute att = parent.append_attribute(name.c_str());
@@ -153,7 +153,7 @@ namespace pugixmlutils
     }
 
     template<>
-        inline pugi::xml_attribute AppendAttribute<pugi::char_t*>( pugi::xml_node & parent, const pugi::string_t & name, pugi::char_t* value )  
+        inline pugi::xml_attribute AppendAttribute<pugi::char_t*>( pugi::xml_node parent, const pugi::string_t & name, pugi::char_t* value )  
     {
         using namespace pugi;
         xml_attribute att = parent.append_attribute(name.c_str());
@@ -169,7 +169,7 @@ namespace pugixmlutils
     }
 
     template<>
-        inline pugi::xml_attribute AppendAttribute<pugi::string_t>( pugi::xml_node & parent, const pugi::string_t & name, pugi::string_t value )  
+        inline pugi::xml_attribute AppendAttribute<pugi::string_t>( pugi::xml_node parent, const pugi::string_t & name, pugi::string_t value )  
     {
         using namespace pugi;
         xml_attribute att = parent.append_attribute(name.c_str());

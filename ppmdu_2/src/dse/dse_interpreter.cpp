@@ -233,8 +233,8 @@ namespace DSE
         
             //This is for presets that overrides the channel they're played on
             bool                   chanoverriden   = false;     //Whether the current preset overrides the channel
-            uint8_t                ovrchan_        = UCHAR_MAX; //The channel we override to
-            uint8_t                chantoreinit    = UCHAR_MAX; //If we did override a note from this track, and played it on another channel, this indicates the channel we need to refresh the current preset + bank on!
+            uint8_t                ovrchan_        = std::numeric_limits<uint8_t>::max(); //The channel we override to
+            uint8_t                chantoreinit    = std::numeric_limits<uint8_t>::max(); //If we did override a note from this track, and played it on another channel, this indicates the channel we need to refresh the current preset + bank on!
         };
 
     public:
@@ -346,7 +346,7 @@ namespace DSE
                     state.curmaxpoly_    = itfound->second.maxpoly;
                     state.transpose      = itfound->second.transpose;
 
-                    if(itfound->second.idealchan != UCHAR_MAX)
+                    if(itfound->second.idealchan != std::numeric_limits<uint8_t>::max())
                     {
                         state.chanoverriden = true;
                         state.ovrchan_      = itfound->second.idealchan;
@@ -362,7 +362,7 @@ namespace DSE
                     state.curmaxpoly_    = -1;
                     state.transpose      =  0;
                     state.chanoverriden  = false;
-                    state.ovrchan_       = UCHAR_MAX;
+                    state.ovrchan_       = std::numeric_limits<uint8_t>::max();
 
                     clog << "Couldn't find a matching bank for preset #" 
                          << static_cast<short>(ev.params.front()) <<" ! Setting to bank " <<state.curbank_ <<" !\n";
@@ -379,7 +379,7 @@ namespace DSE
                 state.curmaxpoly_    = -1;
                 state.transpose      =  0;
                 state.chanoverriden  = false;
-                state.ovrchan_       = UCHAR_MAX;
+                state.ovrchan_       = std::numeric_limits<uint8_t>::max();
             }
 
             //Change only if the preset/bank isn't overriden!
@@ -643,19 +643,19 @@ namespace DSE
                     case eTrkEventCodes::RepeatFrom:
                     {
                         //#TODO: Will require some special implementation
-                        assert(false);
+                        //assert(false);
                         break;
                     }
                     case eTrkEventCodes::RepeatSegment:
                     {
                         //#TODO: Will require some special implementation
-                        assert(false);
+                        //assert(false);
                         break;
                     }
                     case eTrkEventCodes::AfterRepeat:
                     {
                         //#TODO: Will require some special implementation
-                        assert(false);
+                        //assert(false);
                         break;
                     }
 
@@ -857,7 +857,7 @@ namespace DSE
             if( m_midimode == eMIDIMode::GM )
             {
                 //Handle per note remap
-                if( remapdata.idealchan != UCHAR_MAX )
+                if(remapdata.idealchan != std::numeric_limits<uint8_t>::max())
                 {
                     //Handle per note remap
                     if( trkchan != MIDIDrumChannel ) //We don't care about the drum channel, since it ignores program changes!
@@ -1228,7 +1228,7 @@ namespace DSE
                 for( const auto & notermap : remapentry.second.remapnotes )
                 {
                     //If we have a channel remap for a specific key, and we haven't added this preset to the list yet, add it!
-                    if( notermap.second.idealchan != UCHAR_MAX &&
+                    if((notermap.second.idealchan != std::numeric_limits<uint8_t>::max()) &&
                         std::find( presetswithchanremaps.begin(), presetswithchanremaps.end(), remapentry.first ) != presetswithchanremaps.end() )
                     {
                         presetswithchanremaps.push_back( remapentry.first );

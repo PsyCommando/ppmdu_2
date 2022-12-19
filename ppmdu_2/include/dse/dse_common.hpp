@@ -28,10 +28,10 @@ namespace DSE
     typedef uint8_t  presetid_t;
     typedef uint8_t  midinote_t;
 
-    const bankid_t      InvalidBankID      = USHRT_MAX;
-    const presetid_t    InvalidPresetID    = UCHAR_MAX;
-    const dsepresetid_t InvalidDSEPresetID = USHRT_MAX;
-    const uint8_t       InvalidMIDIKey     = UCHAR_MAX; //The default value for the MIDI key
+    const bankid_t      InvalidBankID      = std::numeric_limits<bankid_t>::max();
+    const presetid_t    InvalidPresetID    = std::numeric_limits<presetid_t>::max();
+    const dsepresetid_t InvalidDSEPresetID = std::numeric_limits<dsepresetid_t>::max();
+    const uint8_t       InvalidMIDIKey     = std::numeric_limits<uint8_t>::max(); //The default value for the MIDI key
 
 //====================================================================================================
 //  Constants
@@ -62,16 +62,15 @@ namespace DSE
         sedl = 0x7365646C,  //"sedl"
         sadl = 0x7361646C,  //"sadl"
     };
-    std::ostream & operator<<( std::ostream &  strm, const DSE::eDSEContainers cnty );
 
-    const int                 NbMidiChannels        = 16;
-    const unsigned int        NB_DSEChannels        = 17;
-    const unsigned int        NB_DSETracks          = 17;
-    static const unsigned int NB_DSEChunks          = 11;
-    static const unsigned int NB_DSEContainers      = 4;
-    static const uint32_t     SpecialChunkLen       = 0xFFFFFFB0;   //Value some special chunks have as their length
-    static const int16_t      DSERootKey            = 60;           //By default the root key for dse sequences is assumed to be 60 the MIDI standard's middle C, AKA C4
-    const int8_t              DSEDefaultCoarseTune  = -7;           //The default coarse tune value for splits and samples.
+    const int          NbMidiChannels        = 16;
+    const unsigned int NB_DSEChannels        = 17;
+    const unsigned int NB_DSETracks          = 17;
+    const unsigned int NB_DSEChunks          = 11;
+    const unsigned int NB_DSEContainers      = 4;
+    const uint32_t     SpecialChunkLen       = 0xFFFFFFB0;   //Value some special chunks have as their length
+    const int16_t      DSERootKey            = 60;           //By default the root key for dse sequences is assumed to be 60 the MIDI standard's middle C, AKA C4
+    const int8_t       DSEDefaultCoarseTune  = -7;           //The default coarse tune value for splits and samples.
 
     extern const std::array<eDSEChunks,     NB_DSEChunks>      DSEChunksList;    //Array containing all chunks labels
     extern const std::array<eDSEContainers, NB_DSEContainers>  DSEContainerList; //Array containing all the DSE container's magic number.
@@ -81,7 +80,7 @@ namespace DSE
     //
     enum struct eDSESmplFmt : uint16_t 
     {
-        invalid   = SHRT_MAX,
+        invalid   = std::numeric_limits<int16_t>::max(),
         pcm8      = 0x000,
         pcm16     = 0x100,
         ima_adpcm = 0x200,
@@ -215,9 +214,17 @@ namespace DSE
         inline void SetTimeToNow()
         {
             std::time_t t  = std::time(nullptr);
-            std::tm     ti;// = *std::localtime(&t);
-            if( ! localtime_s(&ti, &t) )
-                std::clog << "<!>- DSE::DateTime::SetTimeToNow(): localtime_s returned an error while getting the current date!\n";
+            std::tm     ti;
+#if __cplusplus > 202002L //C++23 gets rid of warnings and other annoyance you get for using localtime() on MSVC
+            if(localtime_r(&t, &ti) == nullptr)
+#else
+            //Handling on GNU likes
+            std::tm * tmptr = localtime(&t);
+            if (tmptr != nullptr)
+                ti = *tmptr; //Make a copy, since the pointer locatime() returns is static and not thread safe
+            else
+#endif
+                std::clog << "<!>- DSE::DateTime::SetTimeToNow(): localtime_r returned an error while getting the current date!\n";
             //http://en.cppreference.com/w/cpp/chrono/c/tm
             year    = ti.tm_year + 1900; //tm_year counts the nb of years since 1900
             month   = ti.tm_mon;
@@ -226,8 +233,6 @@ namespace DSE
             minute  = ti.tm_min;
             second  = (ti.tm_sec == 60)? 59 : ti.tm_sec; //We're not dealing with leap seconds...
         }
-
-        friend std::ostream & operator<<(std::ostream &os, const DateTime &obj );
     };
 
     /****************************************************************************************
@@ -352,8 +357,6 @@ namespace DSE
     *****************************************************************************************/
     struct KeyGroup
     {
-        friend std::ostream & operator<<( std::ostream &  strm, const DSE::KeyGroup & other );
-
         static const uint32_t SIZE     = 8; //bytes
         static const uint8_t  DefPoly  = 0xFF;
         static const uint8_t  DefPrio  = 0x08;
@@ -505,11 +508,8 @@ namespace DSE
             Contains data for a single instrument.
             This is a generic version independent version of the program info structure.
     *****************************************************************************************/
-    class ProgramInfo
+    struct ProgramInfo
     {
-    public:
-        friend std::ostream & operator<<( std::ostream &  strm, const DSE::ProgramInfo & other );
-
         /*---------------------------------------------------------------------
             Program info header stuff
         ---------------------------------------------------------------------*/
@@ -749,14 +749,16 @@ namespace DSE
         while( beg != end ) 
         {
             //check if we possibly are at the beginning of a chunk, looking for its highest byte.
-            vector<eDSEChunks> possibleid = std::move( DSE_ChunkIDLookup::Find( *beg ) ); 
+            std::vector<eDSEChunks> possibleid = std::move( DSE_ChunkIDLookup::Find( *beg ) ); 
             size_t             skipsize = 4; //Default byte skip size on each loop (The NDS makes 4 bytes aligned reads)
 
             //Check all found results
             for( auto & potential : possibleid )
             {
                 //Check if its really the chunk's header start, or just a coincidence
-                uint32_t actualid = utils::ReadIntFromBytes<uint32_t>( _init(beg), end, false ); //Make a copy of beg, to avoid it being incremented
+                uint32_t actualid = 0;
+                utils::ReadIntFromBytes(actualid, beg, end, false); //Make sure we're not incrementing beg!!!
+                
 
                 if( actualid == static_cast<uint32_t>(chnkid) ) //Check if we match the chunk we're looking for
                     return beg;
@@ -839,5 +841,12 @@ namespace DSE
 
 };
 
+//
+//Stream operators
+//
+std::ostream& operator<<(std::ostream& strm, const DSE::eDSEContainers cnty);
+std::ostream& operator<<(std::ostream& os,   const DSE::DateTime&      obj);
+std::ostream& operator<<(std::ostream& strm, const DSE::KeyGroup&      other);
+std::ostream& operator<<(std::ostream& strm, const DSE::ProgramInfo&   other);
 
 #endif

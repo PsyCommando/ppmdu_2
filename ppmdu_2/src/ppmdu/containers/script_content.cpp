@@ -56,6 +56,39 @@ namespace pmd2
         return eScrDataTy::Invalid;
     }
 
+    //
+    //
+    //
+    //ScriptInstruction::ScriptInstruction(ScriptInstruction&& mv)
+    //{
+    //    this->operator=(std::forward<ScriptInstruction>(mv));
+    //}
+
+    //ScriptInstruction::ScriptInstruction(const ScriptInstruction& cp)
+    //{
+    //    this->operator=(cp);
+    //}
+
+    //ScriptInstruction& ScriptInstruction::operator=(const ScriptInstruction& cp)
+    //{
+    //    subinst = cp.subinst;
+    //    type = cp.type;
+    //    parameters = cp.parameters;
+    //    value = cp.value;
+    //    dbg_origoffset = cp.dbg_origoffset;
+    //    return *this;
+    //}
+
+    //ScriptInstruction& ScriptInstruction::operator=(ScriptInstruction&& mv)
+    //{
+    //    subinst = std::move(mv.subinst);
+    //    type = mv.type;
+    //    parameters = std::move(mv.parameters);
+    //    value = mv.value;
+    //    dbg_origoffset = mv.dbg_origoffset;
+    //    return *this;
+    //}
+
 //==============================================================================
 //  Script
 //==============================================================================

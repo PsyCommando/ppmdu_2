@@ -17,6 +17,7 @@ Description: A set of utilities for dealing with and storing tiled images for
 #include <sstream>
 #include "color.hpp"
 #include <utils/utility.hpp>
+#include <utils/gfileio.hpp>
 //#include <ppmdu/pmd2/pmd2_image_formats.hpp>
 #include "index_iterator.hpp"
 #include "img_pixel.hpp"
@@ -263,7 +264,7 @@ namespace gimg
         }
 
         //Access the image data like a 2D bitmap
-        inline const pixel_t & getPixel( unsigned int x, unsigned int y )const
+        const pixel_t & getPixel( unsigned int x, unsigned int y )const
         {
             return const_cast<tiled_image<_PIXEL_T, _TILE_Height, _TILE_Width> *>(this)->getPixel(x,y);
         }
@@ -404,11 +405,11 @@ namespace gimg
 
         // ------ Constructors ------
         tiled_indexed_image()
-            :_parentty(), m_palette(pixel_t::mypixeltrait_t::MAX_VALUE_PER_COMPONEMENT)
+            :_parentty(), m_palette(_parentty::pixel_t::mypixeltrait_t::MAX_VALUE_PER_COMPONEMENT)
         {}
 
         tiled_indexed_image( unsigned int pixelsWidth, unsigned int pixelsHeigth )
-            :_parentty(pixelsWidth,pixelsHeigth), m_palette(pixel_t::mypixeltrait_t::MAX_VALUE_PER_COMPONEMENT)
+            :_parentty(pixelsWidth,pixelsHeigth), m_palette(_parentty::pixel_t::mypixeltrait_t::MAX_VALUE_PER_COMPONEMENT)
         {}
 
         tiled_indexed_image( unsigned int pixelsWidth, unsigned int pixelsHeigth, unsigned int nbcolors )
@@ -471,7 +472,7 @@ namespace gimg
         //Get the color of a pixel at (X, Y) directly
         inline pal_color_t & getPixelColorFromPalette( unsigned int x, unsigned int y )
         {
-            return getColor( getPixel(x,y) );
+            return getColor(this->getPixel(x,y) );
         }
 
         inline const pal_color_t & getPixelColorFromPalette( unsigned int x, unsigned int y )const
@@ -541,7 +542,7 @@ namespace gimg
         if( invertpixelorder && _TILED_IMG_T::pixel_t::GetBitsPerPixel() > 8 && ( ( 8u % _TILED_IMG_T::pixel_t::GetBitsPerPixel() ) != 0 ) )
         {
             //#TODO: Specialize the temtplate when needed!
-            throw std::exception( "ParseTiledImg(): Inverting pixel order on pixels that overflow over one or several bytes isn't supported right now !!" );
+            throw std::runtime_error( "ParseTiledImg(): Inverting pixel order on pixels that overflow over one or several bytes isn't supported right now !!" );
         }
 
 
@@ -814,8 +815,8 @@ namespace gimg
         //#1 - Write the palette if the image has one !
         if( _TILED_IMG_T::pixel_t::IsIndexedPixel() )
         {
-            const vector<typename _TILED_IMG_T::pal_color_t> & refpal   = img.getPalette();
-            auto                                               itinsert = std::back_inserter( outputbuffer );
+            const std::vector<typename _TILED_IMG_T::pal_color_t> & refpal   = img.getPalette();
+            auto                                                    itinsert = std::back_inserter( outputbuffer );
 
             for( auto & acolor : refpal )
                 acolor.WriteAsRawByte( itinsert );
@@ -835,7 +836,7 @@ namespace gimg
         WriteTiledImg( itbegimg, itendimg, img, invertpixelorder );
 
         //#3 - Write the buffer!
-        utils::WriteByteVectorToFile( filepath, outputbuffer );
+        utils::io::WriteByteVectorToFile( filepath, outputbuffer );
     }
 
 

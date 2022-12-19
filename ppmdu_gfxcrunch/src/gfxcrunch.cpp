@@ -1265,7 +1265,7 @@ namespace gfx_util
                 if( inputPath.getExtension() == BGP_FileExt )
                     m_execMode = eExecMode::EXPORT_BGP_Mode;
                 else
-                    throw exception("Raw AT4PX compressed files not supported at this time!");
+                    throw std::runtime_error("Raw AT4PX compressed files not supported at this time!");
                 //m_execMode = eExecMode::DECOMPRESS_AND_INDENTIFY_Mode;
             }
             else if( result._type == CnTy_PKDPX )
@@ -1960,9 +1960,11 @@ namespace gfx_util
                     //Output the packed file's content as is
                     auto & cursubf = inpack.getSubFile(i);
                     stringstream sstr;
+                    auto _itfdatbeg = cursubf.begin();
+                    auto _itfdatend = cursubf.end();
                     sstr << inputPath.getBaseName()
                          <<"_" <<setw(4) <<setfill('0') <<i <<"." 
-                         << GetAppropriateFileExtension( cursubf.begin(), cursubf.end() );                   
+                         << GetAppropriateFileExtension(_itfdatbeg, _itfdatend);
 
                     taskmanager.AddTask( 
                         multitask::pktask_t( 

@@ -80,6 +80,6 @@ namespace filetypes
         wte_rule_registrator
             A small singleton that has for only task to register the wte_rule!
     */
-    SIR0RuleRegistrator<wte_rule> SIR0RuleRegistrator<wte_rule>::s_instance;
+    template<> SIR0RuleRegistrator<wte_rule> SIR0RuleRegistrator<wte_rule>::s_instance;
 };
 

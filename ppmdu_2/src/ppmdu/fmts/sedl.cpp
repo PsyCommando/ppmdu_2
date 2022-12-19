@@ -79,6 +79,6 @@ namespace DSE
             sedl_rule_registrator
                 A small singleton that has for only task to register the sedl_rule!
         */
-        RuleRegistrator<sedl_rule> RuleRegistrator<sedl_rule>::s_instance;
+        template<> RuleRegistrator<sedl_rule> RuleRegistrator<sedl_rule>::s_instance;
     };
 #endif

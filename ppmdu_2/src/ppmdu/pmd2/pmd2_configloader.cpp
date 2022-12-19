@@ -379,10 +379,13 @@ namespace pmd2
             using namespace pugi;
             xml_node gamevernode = pmd2n.child(NODE_StrIndex.c_str());
 
-            for( auto gamev : gamevernode.children(NODE_Game.c_str()) )
+            for (auto gamev : gamevernode.children(NODE_Game.c_str()))
             {
-				if(MatchesCurrentVersionID(gamev.attributes_begin(), gamev.attributes_end()))
-					ParseLanguageList(gamev,ParseStringBlocks(gamev),m_lang);
+                if (MatchesCurrentVersionID(gamev.attributes_begin(), gamev.attributes_end()))
+                {
+                    pmd2::StringsCatalog::blkcnt_t curstrblk = ParseStringBlocks(gamev);
+                    ParseLanguageList(gamev, curstrblk, m_lang);
+                }
             }
         }
 

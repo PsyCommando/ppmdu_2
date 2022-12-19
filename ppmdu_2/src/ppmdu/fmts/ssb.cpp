@@ -111,7 +111,7 @@ namespace filetypes
     typedef lblinfo                             lbl_t;          //Represents a label
     typedef unordered_map<dataoffset_t, lbl_t>  lbltbl_t;       //Contains the location of all labels
     typedef vector<routine_entry>               rawroutines_t;  //Raw group entries
-    typedef deque<ScriptInstruction>            rawinst_t;      //Raw instruction entries
+    typedef deque<pmd2::ScriptInstruction>      rawinst_t;      //Raw instruction entries
 
 //=======================================================================================
 //  Functions for handling parameter values
@@ -1052,26 +1052,13 @@ namespace filetypes
             m_out.rawroutines.push_back(std::move(curgrp));
         }
 
-        template<typename _InstrType>
-            void HandleSubInstructions(const _InstrType & instr, size_t & curoffset );
-
-        template<>
-            void HandleSubInstructions<ScriptBaseInstruction>(const ScriptBaseInstruction &, size_t & )
+        void HandleSubInstructions(const ScriptInstruction& instr, size_t& curoffset)
         {
-                //do nothing
-        }
-
-        template<>
-            void HandleSubInstructions<ScriptInstruction>(const ScriptInstruction & instr, size_t & curoffset )
-        {
-            for( const auto & subinst : instr.subinst )
-            {
+            for (const auto& subinst : instr.subinst)
                 HandleInstruction(subinst, curoffset);
-            }
         }
 
-        template<typename _InstrType>
-            void HandleInstruction( const _InstrType & instr, size_t & curoffset )
+        void HandleInstruction( const ScriptInstruction& instr, size_t & curoffset )
         {
             switch(instr.type)
             {
@@ -1351,7 +1338,7 @@ namespace filetypes
                 WriteInstruction(ostreambuf_iterator<char>(m_outf), inst);
         }
 
-        void WriteInstruction( outit_t & itw, const ScriptInstruction & inst )
+        outit_t WriteInstruction( outit_t itw, const ScriptInstruction & inst )
         {
             if( inst.type == eInstructionType::Command  )
             {
@@ -1378,6 +1365,7 @@ namespace filetypes
                 assert(false); //!#TODO: Error handling!!
                 throw std::logic_error("SSBWriter::WriteInstruction(): Got an instruction that's not a command!! This is a programming logic error, and should be reported!");
             }
+            return itw;
         }
 
 

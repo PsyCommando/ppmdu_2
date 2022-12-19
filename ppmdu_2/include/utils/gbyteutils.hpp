@@ -15,21 +15,13 @@ A bunch of simple tools for doing common tasks when manipulating bytes.
 #include <limits>
 #include <type_traits>
 #include <cassert>
-#include <utils/utility.hpp>
+#include <stdexcept>
+#include <cmath>
 
 namespace utils 
 {
 
     typedef uint8_t byte;
-
-	//Consts
-    //static const unsigned int SZ_INT32          = 0x4;
-    //static const unsigned int SZ_INT16          = 0x2;
-	//static const unsigned int MASK_UINT32_BYTE0 = 0X000000FF,  //0000 0000 - 0000 0000 - 0000 0000 - 1111 1111
-	//						  MASK_UINT32_BYTE1 = 0x0000FF00,  //0000 0000 - 0000 0000 - 1111 1111 - 0000 0000
-	//						  MASK_UINT32_BYTE2 = 0x00FF0000,  //0000 0000 - 1111 1111 - 0000 0000 - 0000 0000
-	//						  MASK_UINT32_BYTE3 = 0xFF000000;  //1111 1111 - 0000 0000 - 0000 0000 - 0000 0000
-
 
     /*********************************************************************************************
         conditional_value
@@ -57,50 +49,6 @@ namespace utils
     {
         static const unsigned long long value = 1;
     };
-
-	/*********************************************************************************************
-		Name: LittleEndianToBigEndianUInt32
-		In:
-			- unsigned int val : bytes to convert from little to big endian.
-		Out:
-			- unsigned int	   : bytes converted to big endian.
-
-		Description: 
-		This simply swap the order of bytes from a little endian order to a big endian order.
-		It works on a per byte level.
-
-	*********************************************************************************************/
-	//unsigned int LittleEndianToBigEndianUInt32( unsigned int val );
-
-
-	/*********************************************************************************************
-		Name: ByteBuffToUnsignedInt
-		In:
-			- const char buff[] : bytes to assemble into an unsigned 32bits integer.
-		Out:
-			- unsigned int	    : an unsigned integer assembled from the bytes passed in the buffer.
-
-		Description: 
-		Assembles the bytes into an unsigned int, and applies masks to clean up any weirdness caused by bitshifts!
-
-	*********************************************************************************************/
-	//unsigned int ByteBuffToUnsignedInt( const byte buff[] );
- //   void         UnsignedIntToByteBuff( unsigned int value, byte buff[] );
-
-
-    /*********************************************************************************************
-        Name: ByteBuffToInt16
-        In:
-            - const char buff[] : bytes to assemble into an int16
-        Out:
-            - unsigned short    : the assembled int16 from the byte buffer.
-
-        Description:
-        Assembles the bytes in the buffer into an int16, applying masks to clean it up..
-    *********************************************************************************************/
-    //unsigned short ByteBuffToInt16( const byte buff[] );
-    //void           Int16ToByteBuff( unsigned short value, byte outbuff[] );
-
 
     /*********************************************************************************************
         WriteIntToBytes
@@ -198,6 +146,12 @@ namespace utils
     //    return itin;
     //}
 
+    template<class T, class _init> inline T ReadIntFromBytes(_init && itin, _init && itend, bool basLittleEndian = true)
+    {
+        _init _it(itin);
+        _init _ite(itend);
+        return ReadIntFromBytes<T, _init>(_it, _ite, basLittleEndian);
+    }
 
     /*********************************************************************************************
         ReadIntFromBytes
@@ -247,21 +201,6 @@ namespace utils
         return out_val;
     }
 
-    /////#### BIG ENDIAN #####
-    //template<class T, class _init, bool _AsLittleEndian> 
-    //    inline typename std::enable_if<!_AsLittleEndian, typename T>::type ReadIntFromBytes( _init & itin, _init itend )
-    //{
-    //    static_assert( std::numeric_limits<T>::is_integer, "ReadIntFromBytes() : Type T is not an integer!" );
-    //    T out_val = 0;
-
-    //    for( int i = (sizeof(T)-1); (itin != itend) && (i >= 0); --i, ++itin )
-    //    {
-    //        T tmp = (*itin);
-    //        out_val |= ( tmp << (i * 8) ) & ( 0xFF << (i*8) );
-    //    }
-    //    return out_val;
-    //}
-
     /*********************************************************************************************
         ReadIntFromBytes
             Tool to read integer values from a byte container!
@@ -271,7 +210,7 @@ namespace utils
     template<class T, class _init> 
         inline _init ReadIntFromBytes( T & dest, _init itin, _init itend, bool basLittleEndian = true ) 
     {
-        dest = ReadIntFromBytes<typename T, typename _init>( itin, itend, basLittleEndian );
+        dest = ReadIntFromBytes<T,_init>( itin, itend, basLittleEndian );
         return itin;
     }
 
@@ -314,7 +253,7 @@ namespace utils
     template< class T >
         inline T GetBit( T containinginteger, uint32_t offsetrighttoleft  )
     {
-        static_assert( std::is_pod<T>::value, "GetBit(): Tried to get a bit on a non-POD type!!" );
+        static_assert( std::is_scalar<T>::value, "GetBit(): Tried to get a bit on a non-scalar type!!" );
         if( offsetrighttoleft >= (sizeof(T) * 8) )
             throw std::overflow_error("GetBit(): Offset too big for integer type specified!");
 
@@ -336,7 +275,7 @@ namespace utils
     template<class T>
         inline T IsolateBits( T src, unsigned int nbBits, unsigned int bitoffset )
     {
-        static_assert( std::is_pod<T>::value, "IsolateBits(): Tried to isolate bits of a non-POD type!!" );
+        static_assert( std::is_scalar<T>::value, "IsolateBits(): Tried to isolate bits of a non-scalar type!!" );
         T mask = static_cast<T>( ( pow( 2, nbBits ) - 1u ) ); //Subtact one to get the correct mask
         return ( ( src & (mask << bitoffset) ) >> bitoffset );
     }
@@ -438,9 +377,9 @@ namespace utils
             result.push_back(*beg);
 
         if( beg == pastend )
-            throw runtime_error("String went past expected end!");
+            throw std::runtime_error("String went past expected end!");
 
-        return std::move(result);
+        return result;
     }
 
 
@@ -452,6 +391,7 @@ namespace utils
     template<typename init_t>
         inline size_t safestrlen( init_t beg, init_t pastend )
     {
+        using namespace std;
         size_t cntchar = 0;
         for(; beg != pastend && (*beg) != 0; ++cntchar, ++beg );
 
@@ -468,6 +408,7 @@ namespace utils
     template<typename _init>
         std::string FetchString( uint32_t fileoffset, _init itfbeg, _init itfend )
     {
+        using namespace std;
         auto    itstr = itfbeg;
         std::advance( itstr,  fileoffset );
         size_t  strlength = safestrlen(itstr, itfend);
@@ -477,7 +418,7 @@ namespace utils
         for( size_t cntchar = 0; cntchar < strlength; ++cntchar, ++itstr )
             dest[cntchar] = (*itstr);
 
-        return std::move(dest);
+        return dest;
     }
 
 
@@ -534,18 +475,6 @@ namespace utils
             itinsertat = PadByte;
         return lenpadding;
     }
-
-//===============================================================================
-//								Utility
-//===============================================================================
-    //inline unsigned int GetNextInt32DivisibleBy16( unsigned int baseoffset )
-    //{
-    //    if( (baseoffset % 16) != 0 )
-    //    {
-    //        return ( ( baseoffset / 16 ) + 1 ) * 16;
-    //    }
-    //    return baseoffset;
-    //}
 
 };
 

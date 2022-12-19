@@ -63,7 +63,7 @@ namespace pmd2
 
             stringstream outfpath;
             outfpath <<TryAppendSlash(m_romroot) <<DirName_DefData <<"/" <<found->second.path ;
-            return std::move(outfpath.str());
+            return outfpath.str();
         }
 
         PMD2_ASM::modinfo CheckBlockModdedTag(const binarylocatioinfo & locinfo)
@@ -141,15 +141,18 @@ namespace pmd2
             void LoadDataFromLooseBin( _DataTy & out_data, std::ifstream & binstrm )
         {
             filetypes::sir0_header hdr;
-            hdr.ReadFromContainer( istreambuf_iterator<char>(binstrm), istreambuf_iterator<char>() );
+            istreambuf_iterator<char> itb(binstrm); //istream iterators don't need to be modified since pos is held in the stream
+            istreambuf_iterator<char> ite;
+
+            hdr.ReadFromContainer(itb, ite);
 
             if(hdr.magic != filetypes::MagicNumber_SIR0)
                 throw std::runtime_error( "PMD2_ASM_Impl::LoadDataFromLooseBin(): File is not a SIR0 container!" );
             
             //Move to the beginning of the list
             binstrm.seekg(hdr.subheaderptr);
-            uint32_t ptrtbl    = utils::ReadIntFromBytes<uint32_t>( istreambuf_iterator<char>(binstrm), istreambuf_iterator<char>() );
-            uint32_t nbentries = utils::ReadIntFromBytes<uint32_t>( istreambuf_iterator<char>(binstrm), istreambuf_iterator<char>() );
+            uint32_t ptrtbl    = utils::ReadIntFromBytes<uint32_t>(itb, ite);
+            uint32_t nbentries = utils::ReadIntFromBytes<uint32_t>(itb, ite);
             binstrm.seekg(ptrtbl);
 
             //Read each entries
@@ -189,8 +192,8 @@ namespace pmd2
         {
             using std::vector;
             using std::back_inserter;
-            static_assert( std::is_same<_EntryType&, typename decltype(*itbeg)>::value ||
-                           std::is_same<const _EntryType&, typename decltype(*itbeg)>::value, 
+            static_assert( std::is_same<_EntryType&, decltype(*itbeg)>::value ||
+                           std::is_same<const _EntryType&, decltype(*itbeg)>::value, 
                            "PMD2_ASM_Impl::DumpStringAndList(): Iterators weren't iterators on expected type!!" );
 
             static const size_t entrysz = _TransType::Size; //Size of an entry 
@@ -256,7 +259,7 @@ namespace pmd2
         {
             GameScriptData::lvlinf_t data;
             LoadData<GameScriptData::lvlinf_t, LevelEntry>(eBinaryLocations::Events, data);
-            return std::move(data);
+            return data;
         }
 
         /*
@@ -266,7 +269,7 @@ namespace pmd2
         {
             GameScriptData::livesent_t data;
             LoadData<GameScriptData::livesent_t, EntitySymbolListEntry>(eBinaryLocations::Entities, data);
-            return std::move(data);
+            return data;
         }
 
         /*

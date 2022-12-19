@@ -73,6 +73,6 @@ static const uint32_t MIDI_MagicNum = 0x4D546864;
             midi_rule_registrator
                 A small singleton that has for only task to register the midi_rule!
         */
-        RuleRegistrator<midi_rule> RuleRegistrator<midi_rule>::s_instance;
+        template<> RuleRegistrator<midi_rule> RuleRegistrator<midi_rule>::s_instance;
     };
 #endif

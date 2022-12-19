@@ -290,7 +290,7 @@ namespace filetypes
     {
         static const size_t LEN        = 20;
         static const size_t LENPadding = 4;
-        static const int8_t PadByte    = 0xFF;
+        constexpr int8_t PadByte()const { return 0xFFi8; }
 
         int16_t type;
         int16_t facing;   
@@ -330,7 +330,7 @@ namespace filetypes
             itw = utils::WriteIntToBytes(yoff,      itw);
             itw = utils::WriteIntToBytes(unk6,      itw);
             itw = utils::WriteIntToBytes(unk7,      itw);
-            itw = std::fill_n(itw, LENPadding, PadByte);
+            itw = std::fill_n(itw, LENPadding, PadByte());
             //itw = utils::WriteIntToBytes(PadWord,   itw);
             //itw = utils::WriteIntToBytes(PadWord,   itw);
             return itw;
@@ -352,7 +352,7 @@ namespace filetypes
             for( size_t i = 0; i < LENPadding; ++i, ++itr )
             {
                 const int8_t by = *itr;
-                if(by != PadByte)
+                if(by != PadByte())
                 {
                     assert(false);
                     throw std::runtime_error("performerentry::Read(): Unexpected value for one of the padding bytes at the end of a performer's entry! " + std::to_string(static_cast<unsigned short>(by)));
@@ -1037,7 +1037,8 @@ namespace filetypes
             WriteLayerList(itw);
             
             //#5 -Write the completed header!
-            WriteHeader(PrepareForWritingHeader());
+            auto ithdr = PrepareForWritingHeader(); //have it start at the right position
+            WriteHeader(ithdr);
         }
 
        inline void WriteActionsTable(outit_t & itw)

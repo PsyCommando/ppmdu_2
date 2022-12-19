@@ -62,7 +62,7 @@ namespace bpc_compression
             for( ; m_itcur != m_itend && m_bytesoutput < m_decomplen;  )
                 Process();
 
-            clog<<"Compressed img length : 0x" <<hex <<uppercase <<m_bytesread <<nouppercase <<dec <<"\n";
+            std::clog << "Compressed img length : 0x" <<std::hex <<std::uppercase <<m_bytesread <<std::nouppercase <<std::dec <<"\n";
 
             if(m_itcur == m_itend )
                 throw std::runtime_error("BPCImgDecompressor::operator()(): Reached the end of input data unexpectedly!");
@@ -300,6 +300,8 @@ namespace bpc_compression
 
         std::vector<uint8_t> MakeCommandByte( const Operation & curop )
         {
+            assert(false);
+            return std::vector<uint8_t>();
             //If a sequence to copy ends with a word made of 2 different bytes, we want the sequence(minus the word made of 2 different bytes) to be written as a odd number of bytes in the command byte, 
         }
 

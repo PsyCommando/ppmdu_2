@@ -92,7 +92,3 @@ target_link_libraries(ppmdu_packfile_util
     Poco::Foundation 
     Poco::Util 
 )
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ppmdu_packfile_util PROPERTY CXX_STANDARD 17)
-endif()

@@ -426,15 +426,42 @@ namespace pmd2{ namespace graphics
         virtual std::vector<ImageInfo>                 & getImgsInfo    ()=0;
 
         //Get the data format of the sprite
-        virtual const eSpriteImgType                   & getSpriteType  ()const=0;
+        virtual constexpr eSpriteImgType                 getSpriteType  ()const=0;
         virtual std::size_t                              getNbFrames    ()const=0;
 
         //Access to sprite image data via pointer. If you use the wrong version, will return nullptr!
         // use getSpriteType() to get the correct type.
-        virtual std::vector<gimg::tiled_image_i8bpp> * getFramesAs8bpp() { return nullptr; }
-        virtual std::vector<gimg::tiled_image_i4bpp> * getFramesAs4bpp() { return nullptr; }
+        std::vector<gimg::tiled_image_i8bpp> * getFramesAs8bpp() { return nullptr; }
+        std::vector<gimg::tiled_image_i4bpp> * getFramesAs4bpp() { return nullptr; }
     };
 
+    //template<class TIMG_Type> class SpriteData;
+
+    ////Some template bullshit
+    //template<class TIMG_Type> struct GetSpriteDataFramesPtr
+    //{
+    //    using img_t = TIMG_Type;
+    //    using frame_data_t = std::vector<img_t>;
+
+    //    template<class SPR_T> frame_data_t* operator()(SPR_T& spr) { return nullptr; }
+    //    template<class SPR_T> const frame_data_t* operator()(const SPR_T& spr)const { return nullptr; }
+    //};
+
+    //template<> struct GetSpriteDataFramesPtr<gimg::tiled_image_i8bpp>
+    //{
+    //    using img_t = gimg::tiled_image_i8bpp;
+    //    using frame_data_t = std::vector<img_t>;
+    //    template<class SPR_T> frame_data_t* operator()(SPR_T& spr) { return &(spr.m_frames); }
+    //    template<class SPR_T> const frame_data_t* operator()(const SPR_T& spr)const { return &(spr.m_frames); }
+    //};
+
+    //template<> struct GetSpriteDataFramesPtr<gimg::tiled_image_i8bpp>
+    //{
+    //    using img_t = gimg::tiled_image_i8bpp;
+    //    using frame_data_t = std::vector<img_t>;
+    //    template<class SPR_T> frame_data_t* operator()(SPR_T& spr) { return &(spr.m_frames); }
+    //    template<class SPR_T> const frame_data_t* operator()(const SPR_T& spr)const { return &(spr.m_frames); }
+    //};
 
     /***************************************************************************************
         SpriteData
@@ -448,22 +475,24 @@ namespace pmd2{ namespace graphics
         static const uint32_t MY_NB_BITS_PER_PIXEL = TIMG_Type::pixel_t::mypixeltrait_t::BITS_PER_PIXEL;
 
         //A couple of constants and typedef to make the conditional statement below(MY_SPRITE_TYPE) more readable!
-        typedef std::integral_constant<eSpriteImgType,eSpriteImgType::spr4bpp>    SPRTy_4BPP;
-        typedef std::integral_constant<eSpriteImgType,eSpriteImgType::spr8bpp>    SPRTy_8BPP;
-        typedef std::integral_constant<eSpriteImgType,eSpriteImgType::sprInvalid> SPRTy_INVALID; 
-        static const bool IsSprite4bpp = MY_NB_BITS_PER_PIXEL == 4;
-        static const bool IsSprite8bpp = MY_NB_BITS_PER_PIXEL == 8;
+        //typedef std::integral_constant<eSpriteImgType,eSpriteImgType::spr4bpp>    SPRTy_4BPP;
+        //typedef std::integral_constant<eSpriteImgType,eSpriteImgType::spr8bpp>    SPRTy_8BPP;
+        //typedef std::integral_constant<eSpriteImgType,eSpriteImgType::sprInvalid> SPRTy_INVALID; 
+        //static const bool IsSprite4bpp = MY_NB_BITS_PER_PIXEL == 4;
+        //static const bool IsSprite8bpp = MY_NB_BITS_PER_PIXEL == 8;
 
         //This contains the correct enum values depending on the type of images the sprite contains!
         // Supports only 4, and 8 bpp for now! (Hopefully MSVSC will implement constexpr before then...)
-        static const eSpriteImgType MY_SPRITE_TYPE = 
-            typename std::conditional< IsSprite4bpp, 
-                                       SPRTy_4BPP,
-                                       std::conditional< IsSprite8bpp, SPRTy_8BPP, SPRTy_INVALID >::type 
-                                     >::type::value;
+
+        //static const eSpriteImgType MY_SPRITE_TYPE = 
+        //    typename std::conditional< IsSprite4bpp, 
+        //                               SPRTy_4BPP,
+        //                               typename std::conditional< IsSprite8bpp, SPRTy_8BPP, SPRTy_INVALID >::type 
+        //                             >::type::value;
 
     public:
         typedef TIMG_Type img_t; 
+        typedef std::vector<img_t> frame_data_t;
         inline const std::vector<img_t>                & getFrames      ()const { return m_frames;        }
 
         virtual const std::vector<sprOffParticle>      & getPartOffsets ()const { return m_partOffsets;   } 
@@ -486,43 +515,36 @@ namespace pmd2{ namespace graphics
         virtual std::vector<ImageInfo>                 & getImgsInfo    ()      { return m_imgsinfo;      }
 
         //Get the data format of the sprite
-        virtual const eSpriteImgType & getSpriteType()const { return MY_SPRITE_TYPE; }
+        virtual constexpr eSpriteImgType getSpriteType()const
+        { 
+            if (MY_NB_BITS_PER_PIXEL == 4)
+                return eSpriteImgType::spr4bpp;
+            else if (MY_NB_BITS_PER_PIXEL == 8)
+                return eSpriteImgType::spr8bpp;
+            return eSpriteImgType::sprInvalid;
+        }
         virtual std::size_t            getNbFrames  ()const { return m_frames.size(); }
-
-
-        virtual std::vector<gimg::tiled_image_i8bpp> * getFramesAs8bpp() 
-        { 
-            return GetMyFramePtr<SpriteData<img_t>, std::vector<gimg::tiled_image_i8bpp>>(const_cast<SpriteData<img_t>*>(this)); 
-        }
-
-        virtual std::vector<gimg::tiled_image_i4bpp> * getFramesAs4bpp() 
-        { 
-            return GetMyFramePtr<SpriteData<img_t>, std::vector<gimg::tiled_image_i4bpp>>(const_cast<SpriteData<img_t>*>(this)); 
-        }
-
-
-        /*
-            Get the correct frame pointer for polymorphic methods
-        */
-        template<class _MyTy, class _frmTy>
-            static _frmTy * GetMyFramePtr( _MyTy * ptrme )
+        
+        template<class VT = std::vector<TIMG_Type>> constexpr VT* grabPointer()
         {
-            return nullptr; //If the two types do not match the specialization below, it will return a null pointer
+            if constexpr (std::is_same_v<VT, std::vector<gimg::tiled_image_i8bpp>> || std::is_same_v<VT, std::vector<gimg::tiled_image_i4bpp>>)
+                return &m_frames;
+            else
+                return nullptr;
         }
 
-            //Compiled only when 4bpp
-            template<>
-                static std::vector<gimg::tiled_image_i4bpp> * GetMyFramePtr( SpriteData<gimg::tiled_image_i4bpp> * ptrme )
-            {
-                return &(ptrme->m_frames);
-            }
+        std::vector<gimg::tiled_image_i8bpp>* getFramesAs8bpp() { return grabPointer<>(); }
+        std::vector<gimg::tiled_image_i4bpp>* getFramesAs4bpp() { return grabPointer<>(); }
 
-            //Compiled only when 8bpp
-            template<>
-                static std::vector<gimg::tiled_image_i8bpp> * GetMyFramePtr( SpriteData<gimg::tiled_image_i8bpp> * ptrme )
-            {
-                return &(ptrme->m_frames);
-            }
+        //virtual std::vector<gimg::tiled_image_i8bpp> * getFramesAs8bpp() 
+        //{ 
+        //    return GetSpriteDataFramesPtr<gimg::tiled_image_i8bpp>()(const_cast<SpriteData<img_t>*>(this));
+        //}
+
+        //virtual std::vector<gimg::tiled_image_i4bpp> * getFramesAs4bpp() 
+        //{ 
+        //    return GetSpriteDataFramesPtr<gimg::tiled_image_i4bpp>()(const_cast<SpriteData<img_t>*>(this));
+        //}
 
 
         /*
@@ -684,6 +706,8 @@ namespace pmd2{ namespace graphics
         //SpriteData( const SpriteData<TIMG_Type> & other );
         //SpriteData<TIMG_Type> & operator=( const SpriteData<TIMG_Type> & other );
     };
+
+
 
 };};
 

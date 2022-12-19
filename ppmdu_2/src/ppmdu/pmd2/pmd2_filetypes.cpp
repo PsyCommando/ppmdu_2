@@ -63,6 +63,13 @@ namespace pmd2 { namespace filetypes
         return std::move( matches );
     }
 
+    std::string GetAppropriateFileExtension(std::vector<uint8_t>::const_iterator && itdatabeg, std::vector<uint8_t>::const_iterator && itdataend)
+    {
+        std::vector<uint8_t>::const_iterator _itbeg = itdatabeg;
+        std::vector<uint8_t>::const_iterator _itend = itdataend;
+        return GetAppropriateFileExtension(_itbeg, _itend);
+    }
+
     std::string GetAppropriateFileExtension( std::vector<uint8_t>::const_iterator & itdatabeg,
                                              std::vector<uint8_t>::const_iterator & itdataend )
     {

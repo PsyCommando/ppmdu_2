@@ -92,7 +92,8 @@ namespace filetypes
     pmd2::TilesetPalette ParseBPL(const std::string & fpath)
     {
         auto data = utils::io::ReadFileToByteVector(fpath);
-        return BPLParser<decltype(data.begin())>(data.begin(), data.end())();
+        auto itb = data.begin();
+        return BPLParser<decltype(data.begin())>(itb, data.end())();
     }
 
     void WriteBPL( const std::string & destfpath, const pmd2::TilesetPalette & srcpal )
@@ -156,5 +157,5 @@ namespace filetypes
         bpl_rule_registrator
             A small singleton that has for only task to register the bpl_rule!
     */
-    RuleRegistrator<bpl_rule> RuleRegistrator<bpl_rule>::s_instance;
+    template<> RuleRegistrator<bpl_rule> RuleRegistrator<bpl_rule>::s_instance;
 };

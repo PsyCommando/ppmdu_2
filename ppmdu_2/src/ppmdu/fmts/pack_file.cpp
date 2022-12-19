@@ -515,6 +515,6 @@ namespace filetypes
         at4px_rule_registrator
             A small singleton that has for only task to register the at4px_rule!
     */
-    RuleRegistrator<packfile_rule> RuleRegistrator<packfile_rule>::s_instance;
+    template<> RuleRegistrator<packfile_rule> RuleRegistrator<packfile_rule>::s_instance;
 
 };

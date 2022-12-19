@@ -140,7 +140,7 @@ include_directories(audioutil
     "../${ppmdu_2_DEPS_DIRNAME}/jdksmidi/include"
 )
 
-find_package(pugixml REQUIRED)
+find_package(pugixml CONFIG REQUIRED)
 find_package(Poco REQUIRED Foundation)
 find_package(Poco REQUIRED Util)
 
@@ -154,9 +154,6 @@ target_link_libraries(audioutil
     Poco::Util
 )
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET audioutil PROPERTY CXX_STANDARD 17)
-endif()
 
 file(
     COPY 

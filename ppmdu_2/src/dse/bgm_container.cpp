@@ -49,27 +49,31 @@ namespace DSE
     bool IsBgmContainer( const std::string & filepath )
     {
         ifstream infile( filepath, ios::in | ios::binary );
+        istreambuf_iterator<char> itread(infile); //The iterator doesn't need to be updated on istreams
+        istreambuf_iterator<char> itend; //End of file is default iterator
         
         if( infile.is_open() && infile.good() )
         {
             sir0_header hdr;
 
-            hdr.ReadFromContainer( istreambuf_iterator<char>(infile), istreambuf_iterator<char>() );
+            hdr.ReadFromContainer(itread, itend);
             if( hdr.magic == sir0_header::MAGIC_NUMBER )
             {
                 infile.seekg(0);
-                auto offsets = ReadOffsetsSubHeader( istreambuf_iterator<char>(infile), istreambuf_iterator<char>(), hdr.subheaderptr );
+                auto offsets = ReadOffsetsSubHeader(itread, itend, hdr.subheaderptr );
 
                 //SWDL_HeaderData swdhdr;
                 //SMDL_Header smdhdr;
                 infile.seekg(offsets[0]);
-                uint32_t swdlrmagic = utils::ReadIntFromBytes<uint32_t>( istreambuf_iterator<char>(infile), istreambuf_iterator<char>(), false );
+                uint32_t swdlrmagic = {};
+                itread = utils::ReadIntFromBytes(swdlrmagic, itread, itend, false);
                 
 
                 //swdhdr.ReadFromContainer( istreambuf_iterator<char>(infile) );
 
                 infile.seekg(offsets[1]);
-                uint32_t smdlrmagic = utils::ReadIntFromBytes<uint32_t>( istreambuf_iterator<char>(infile), istreambuf_iterator<char>(), false );
+                uint32_t smdlrmagic = {};
+                itread = utils::ReadIntFromBytes(smdlrmagic, itread, itend, false);
                 //smdhdr.ReadFromContainer( istreambuf_iterator<char>(infile) );
 
                 //if( swdhdr.magicn == SWDL_MagicNumber && smdhdr.magicn == SMDL_MagicNumber )
@@ -106,8 +110,10 @@ namespace DSE
         //SMDL_Header smdhdr;
         //swdhdr.ReadFromContainer( fdata.begin() + offsets[0] );
         //smdhdr.ReadFromContainer( fdata.begin() + offsets[1] );
-        uint32_t magicn1 = utils::ReadIntFromBytes<uint32_t>( fdata.begin() + offsets[0], fdata.end(), false );
-        uint32_t magicn2 = utils::ReadIntFromBytes<uint32_t>( fdata.begin() + offsets[1], fdata.end(), false );
+        uint32_t magicn1 = 0;
+        uint32_t magicn2 = 0;
+        utils::ReadIntFromBytes(magicn1, fdata.begin() + offsets[0], fdata.end(), false);
+        utils::ReadIntFromBytes(magicn2, fdata.begin() + offsets[1], fdata.end(), false);
 
         size_t smdloffset = 0;
         size_t swdloffset = 0;

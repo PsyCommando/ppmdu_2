@@ -14,6 +14,13 @@
 #include <cassert>
 using namespace std;
 
+namespace DSE
+{
+    class SongChunk_v402;
+    class SongChunk_v415;
+};
+std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v415& sd);
+std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v402& sd);
 
 
 namespace DSE
@@ -628,114 +635,115 @@ namespace DSE
 
         SMDL_Writer<std::ofstream>(outf, seq)();
     }
-
-    /***********************************************************************
-        operator<< SMDL_Header
-    ***********************************************************************/
-    std::ostream & operator<<( std::ostream &os, const SMDL_Header & hdr )
-    {
-        os  << "\t-- SMDL Header --\n" 
-            <<showbase
-            <<hex <<uppercase
-            << "\tmagicn       : " << hdr.magicn    <<"\n"
-            << "\tUnk7         : " << hdr.unk7     <<"\n"
-            <<dec <<nouppercase
-            << "\tFile lenght  : " << hdr.flen     <<" bytes\n"
-            <<hex <<uppercase
-            << "\tVersion      : " << hdr.version <<"\n"
-            << "\tUnk1         : " << static_cast<short>(hdr.unk1)   <<"\n"
-            << "\tUnk2         : " << static_cast<short>(hdr.unk2)      <<"\n"
-            << "\tUnk3         : " << hdr.unk3     <<"\n"
-            << "\tUnk4         : " << hdr.unk4     <<"\n"
-            <<dec <<nouppercase
-            << "\tYear         : " << hdr.year     <<"\n"
-            << "\tMonth        : " << static_cast<short>(hdr.month)     <<"\n"
-            << "\tDay          : " << static_cast<short>(hdr.day)     <<"\n"
-            << "\tHour         : " << static_cast<short>(hdr.hour)     <<"\n"
-            << "\tMinute       : " << static_cast<short>(hdr.minute)     <<"\n"
-            << "\tSecond       : " << static_cast<short>(hdr.second)     <<"\n"
-            << "\tCentisec     : " << static_cast<short>(hdr.centisec)     <<"\n"
-            << "\tFile Name    : " << string( begin(hdr.fname), end(hdr.fname) ) <<"\n"
-            <<hex <<uppercase
-            << "\tUnk5         : " << hdr.unk5     <<"\n"
-            << "\tUnk6         : " << hdr.unk6     <<"\n"
-            << "\tUnk8         : " << hdr.unk8     <<"\n"
-            << "\tUnk9         : " << hdr.unk9     <<"\n"
-            <<dec <<nouppercase
-            <<noshowbase
-            <<"\n"
-            ;
-        return os;
-    }
-
-    /***********************************************************************
-        operator<< SongChunk_v415
-    ***********************************************************************/
-    std::ostream & operator<<( std::ostream & os, const SongChunk_v415 & sd )
-    {
-        os  << "\t-- Song Chunk v0x415 --\n" 
-            <<showbase
-            <<hex <<uppercase
-            << "\tLabel        : " << sd.label    <<"\n"
-            << "\tUnk1         : " << sd.unk1     <<"\n"
-            << "\tUnk2         : " << sd.unk2     <<"\n"
-            << "\tUnk3         : " << sd.unk3     <<"\n"
-            << "\tUnk4         : " << sd.unk4     <<"\n"
-            <<dec <<nouppercase
-            << "\tTPQN         : " << sd.tpqn     <<"\n"
-            <<hex <<uppercase
-            << "\tUnk5         : " << sd.unk5     <<"\n"
-            <<dec <<nouppercase
-            << "\tNbTracks     : " << static_cast<short>(sd.nbtrks)   <<"\n"
-            << "\tNbChans      : " << static_cast<short>(sd.nbchans)  <<"\n"
-            <<hex <<uppercase
-            << "\tUnk6         : " << sd.unk6     <<"\n"
-            << "\tUnk7         : " << sd.unk7     <<"\n"
-            << "\tUnk8         : " << sd.unk8     <<"\n"
-            << "\tUnk9         : " << sd.unk9     <<"\n"
-            << "\tUnk10        : " << sd.unk10    <<"\n"
-            << "\tUnk11        : " << sd.unk11    <<"\n"
-            << "\tUnk12        : " << sd.unk12    <<"\n"
-            <<dec <<nouppercase
-            <<noshowbase
-            <<"\n"
-            ;
-        return os;
-    }
-
-    /***********************************************************************
-        operator<< SongChunk_v402
-    ***********************************************************************/
-    std::ostream & operator<<( std::ostream & os, const SongChunk_v402 & sd )
-    {
-        os  << "\t-- Song Chunk v0x402 --\n" 
-            <<showbase
-            <<hex <<uppercase
-            << "\tLabel        : " << sd.label    <<"\n"
-            << "\tUnk1         : " << sd.unk1     <<"\n"
-            << "\tUnk2         : " << sd.unk2     <<"\n"
-            << "\tUnk3         : " << sd.unk3     <<"\n"
-            << "\tUnk4         : " << sd.unk4     <<"\n"
-            <<dec <<nouppercase
-            << "\tTPQN         : " << sd.tpqn     <<"\n"
-            << "\tNbTracks     : " << static_cast<short>(sd.nbtrks)   <<"\n"
-            << "\tNbChans      : " << static_cast<short>(sd.nbchans)  <<"\n"
-            <<hex <<uppercase
-            << "\tUnk5         : " << static_cast<short>(sd.unk5)     <<"\n"
-            << "\tUnk6         : " << static_cast<short>(sd.unk6)     <<"\n"
-            << "\tUnk7         : " << sd.unk7     <<"\n"
-            << "\tMainVol      : " << static_cast<short>(sd.mainvol)   <<"\n"
-            << "\tMainPan      : " << static_cast<short>(sd.mainpan)  <<"\n"
-            << "\tUnk8         : " << sd.unk8     <<"\n"
-            <<dec <<nouppercase
-            <<noshowbase
-            <<"\n"
-            ;
-        return os;
-    }
 };
 
+//
+// Stream Operator Def
+//
+/***********************************************************************
+    operator<< SongChunk_v415
+***********************************************************************/
+std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v415& sd)
+{
+    os << "\t-- Song Chunk v0x415 --\n"
+        << showbase
+        << hex << uppercase
+        << "\tLabel        : " << sd.label << "\n"
+        << "\tUnk1         : " << sd.unk1 << "\n"
+        << "\tUnk2         : " << sd.unk2 << "\n"
+        << "\tUnk3         : " << sd.unk3 << "\n"
+        << "\tUnk4         : " << sd.unk4 << "\n"
+        << dec << nouppercase
+        << "\tTPQN         : " << sd.tpqn << "\n"
+        << hex << uppercase
+        << "\tUnk5         : " << sd.unk5 << "\n"
+        << dec << nouppercase
+        << "\tNbTracks     : " << static_cast<short>(sd.nbtrks) << "\n"
+        << "\tNbChans      : " << static_cast<short>(sd.nbchans) << "\n"
+        << hex << uppercase
+        << "\tUnk6         : " << sd.unk6 << "\n"
+        << "\tUnk7         : " << sd.unk7 << "\n"
+        << "\tUnk8         : " << sd.unk8 << "\n"
+        << "\tUnk9         : " << sd.unk9 << "\n"
+        << "\tUnk10        : " << sd.unk10 << "\n"
+        << "\tUnk11        : " << sd.unk11 << "\n"
+        << "\tUnk12        : " << sd.unk12 << "\n"
+        << dec << nouppercase
+        << noshowbase
+        << "\n"
+        ;
+    return os;
+}
 
+/***********************************************************************
+    operator<< SongChunk_v402
+***********************************************************************/
+std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v402& sd)
+{
+    os << "\t-- Song Chunk v0x402 --\n"
+        << showbase
+        << hex << uppercase
+        << "\tLabel        : " << sd.label << "\n"
+        << "\tUnk1         : " << sd.unk1 << "\n"
+        << "\tUnk2         : " << sd.unk2 << "\n"
+        << "\tUnk3         : " << sd.unk3 << "\n"
+        << "\tUnk4         : " << sd.unk4 << "\n"
+        << dec << nouppercase
+        << "\tTPQN         : " << sd.tpqn << "\n"
+        << "\tNbTracks     : " << static_cast<short>(sd.nbtrks) << "\n"
+        << "\tNbChans      : " << static_cast<short>(sd.nbchans) << "\n"
+        << hex << uppercase
+        << "\tUnk5         : " << static_cast<short>(sd.unk5) << "\n"
+        << "\tUnk6         : " << static_cast<short>(sd.unk6) << "\n"
+        << "\tUnk7         : " << sd.unk7 << "\n"
+        << "\tMainVol      : " << static_cast<short>(sd.mainvol) << "\n"
+        << "\tMainPan      : " << static_cast<short>(sd.mainpan) << "\n"
+        << "\tUnk8         : " << sd.unk8 << "\n"
+        << dec << nouppercase
+        << noshowbase
+        << "\n"
+        ;
+    return os;
+}
+
+/***********************************************************************
+    operator<< SMDL_Header
+***********************************************************************/
+std::ostream& operator<<(std::ostream& os, const DSE::SMDL_Header& hdr)
+{
+    os << "\t-- SMDL Header --\n"
+        << showbase
+        << hex << uppercase
+        << "\tmagicn       : " << hdr.magicn << "\n"
+        << "\tUnk7         : " << hdr.unk7 << "\n"
+        << dec << nouppercase
+        << "\tFile lenght  : " << hdr.flen << " bytes\n"
+        << hex << uppercase
+        << "\tVersion      : " << hdr.version << "\n"
+        << "\tUnk1         : " << static_cast<short>(hdr.unk1) << "\n"
+        << "\tUnk2         : " << static_cast<short>(hdr.unk2) << "\n"
+        << "\tUnk3         : " << hdr.unk3 << "\n"
+        << "\tUnk4         : " << hdr.unk4 << "\n"
+        << dec << nouppercase
+        << "\tYear         : " << hdr.year << "\n"
+        << "\tMonth        : " << static_cast<short>(hdr.month) << "\n"
+        << "\tDay          : " << static_cast<short>(hdr.day) << "\n"
+        << "\tHour         : " << static_cast<short>(hdr.hour) << "\n"
+        << "\tMinute       : " << static_cast<short>(hdr.minute) << "\n"
+        << "\tSecond       : " << static_cast<short>(hdr.second) << "\n"
+        << "\tCentisec     : " << static_cast<short>(hdr.centisec) << "\n"
+        << "\tFile Name    : " << string(begin(hdr.fname), end(hdr.fname)) << "\n"
+        << hex << uppercase
+        << "\tUnk5         : " << hdr.unk5 << "\n"
+        << "\tUnk6         : " << hdr.unk6 << "\n"
+        << "\tUnk8         : " << hdr.unk8 << "\n"
+        << "\tUnk9         : " << hdr.unk9 << "\n"
+        << dec << nouppercase
+        << noshowbase
+        << "\n"
+        ;
+    return os;
+}
 
 
 //ppmdu's type analysis system
@@ -813,7 +821,7 @@ namespace DSE
             smdl_rule_registrator
                 A small singleton that has for only task to register the smdl_rule!
         */
-        RuleRegistrator<smdl_rule> RuleRegistrator<smdl_rule>::s_instance;
+        template<> RuleRegistrator<smdl_rule> RuleRegistrator<smdl_rule>::s_instance;
 
     };
 #endif

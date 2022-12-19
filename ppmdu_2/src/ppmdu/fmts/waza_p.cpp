@@ -197,7 +197,7 @@ namespace pmd2 { namespace filetypes
                     decodedvals = utils::DecodeIntegers<uint16_t>( itRead, itEnd );
 
                 if( (decodedvals.size() % 2) != 0 )
-                    throw exception("Missing level + moveID pair(s)!");
+                    throw std::runtime_error("Missing level + moveID pair(s)!");
 
                 for( unsigned int i = 0; i < decodedvals.size(); i+=2 )
                 {

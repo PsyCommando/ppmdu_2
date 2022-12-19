@@ -281,7 +281,7 @@ namespace gimg
         //Get the color of a pixel at (X, Y) directly
         inline pal_color_t & getPixelColorFromPalette( unsigned int x, unsigned int y )
         {
-            return getColor( getPixel(x,y) );
+            return getColor( this->getPixel(x,y) );
         }
 
         inline const pal_color_t & getPixelColorFromPalette( unsigned int x, unsigned int y )const
@@ -291,7 +291,7 @@ namespace gimg
 
         inline virtual colorRGB24 getPixelRGBColor( unsigned int x, unsigned int y )const
         {
-            return getPixel(x,y).ConvertToRGBColor();
+            return this->getPixel(x,y).ConvertToRGBColor();
         }
 
         //Implementation for Non-indexed images

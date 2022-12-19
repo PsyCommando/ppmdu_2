@@ -88,6 +88,13 @@ namespace pmd2
         return utils::LibWide().Logger().Log();
     }
 
+    struct ret_t 
+    { 
+        unsigned long long lnnb; 
+        unsigned long long lastlinebeg; 
+        std::string line; 
+    };
+
     /*
         GetLineNbAndLineAtOffset
             Utility function for getting the line number and the full line of an error in pugixml!
@@ -95,7 +102,7 @@ namespace pmd2
             It returns a struct containing the line number, the offset of the beginning of the line the offset specified is on, 
             and the text for the line containing the error.
     */
-    struct ret_t{unsigned long long lnnb; unsigned long long lastlinebeg; std::string line;} GetLineNbAndLineAtOffset( unsigned long long offset, const std::string & fname)
+    ret_t GetLineNbAndLineAtOffset( unsigned long long offset, const std::string & fname)
     {
         std::ifstream input;
         input.exceptions(std::ios::badbit);
@@ -1652,7 +1659,7 @@ namespace pmd2
             }
         }
 
-        void ParseActors(xml_node & actorn, ScriptLayer & outlay)
+        void ParseActors(xml_node actorn, ScriptLayer & outlay)
         {
             using namespace scriptXML;
             const string & AttrID = *OpParamTypesToStr(eOpParamTypes::Unk_LivesRef);
@@ -1699,7 +1706,7 @@ namespace pmd2
             }
         }
 
-        void ParseObjects(xml_node & objn, ScriptLayer & outlay)
+        void ParseObjects(xml_node objn, ScriptLayer & outlay)
         {
             using namespace scriptXML;
             stringstream   sstr;
@@ -1752,7 +1759,7 @@ namespace pmd2
             }
         }
 
-        void ParsePerformers(xml_node & perfn, ScriptLayer & outlay)
+        void ParsePerformers(xml_node perfn, ScriptLayer & outlay)
         {
             using namespace scriptXML;
 
@@ -1786,7 +1793,7 @@ namespace pmd2
             }
         }
 
-        void ParseEvents(xml_node & evn, ScriptLayer & outlay)
+        void ParseEvents(xml_node evn, ScriptLayer & outlay)
         {
             using namespace scriptXML;
 
@@ -2212,7 +2219,7 @@ namespace pmd2
                 {
                     LevelScript::lsdtbl_t::value_type val;
                     std::fill(val.begin(), val.end(), 0);
-                    std::copy_n(xnameref.value(), strnlen_s(xnameref.value(), val.size()) , val.begin());
+                    std::copy_n(xnameref.value(), strnlen(xnameref.value(), val.size()) , val.begin());
                     table.push_back(val);
                 }
             }
@@ -2563,7 +2570,10 @@ namespace pmd2
                     WriteInstructionParam(xparent, curinf, intr, cntparam);
 
                 //Write the sub-nodes
-                WriteSubInstructions<_UseInstNameAsNodeName>(xparent, intr);
+                if (_UseInstNameAsNodeName)
+                    WriteSubInstructions_InstNameAsNodeName(xparent, intr);
+                else
+                    WriteSubInstructions(xparent, intr);
             }
             else
             {
@@ -2573,11 +2583,7 @@ namespace pmd2
             }
         }
 
-        template<bool _UseInstNameAsNodeName>
-            void WriteSubInstructions(xml_node & parentinstn, const pmd2::ScriptInstruction & intr);
-
-        template<>
-            void WriteSubInstructions<true>(xml_node & parentinstn, const pmd2::ScriptInstruction & instr)
+        void WriteSubInstructions_InstNameAsNodeName(xml_node & parentinstn, const pmd2::ScriptInstruction & instr)
         {
             using namespace scriptXML;
             for(const auto & subinst : instr.subinst)
@@ -2591,14 +2597,11 @@ namespace pmd2
             }
         }
 
-        template<>
-            void WriteSubInstructions<false>(xml_node & parentinstn, const pmd2::ScriptInstruction & instr)
+        void WriteSubInstructions(xml_node & parentinstn, const pmd2::ScriptInstruction & instr)
         {
             using namespace scriptXML;
             for(const auto & subinst : instr.subinst)
-            {
                 WriteInstruction(parentinstn,subinst);
-            }
         }
 
         inline void WriteMetaLabel(xml_node & groupn, const pmd2::ScriptInstruction & instr)
@@ -3371,7 +3374,7 @@ namespace pmd2
 
         /*
         */
-        void WriteLSDTable( xml_node & parentn )
+        void WriteLSDTable( xml_node parentn )
         {
             using namespace scriptXML;
             xml_node xlsd = AppendChildNode( parentn, NODE_LSDTbl );
@@ -3387,7 +3390,7 @@ namespace pmd2
 
         /*
         */
-        inline void WriteSSBContent( xml_node & parentn, const Script & seq )
+        inline void WriteSSBContent( xml_node parentn, const Script & seq )
         {
             using namespace scriptXML;
             WriteCommentNode(parentn, "++++++++++++++++++++++" );
@@ -3400,7 +3403,7 @@ namespace pmd2
 
         /*
         */
-        inline void WriteSSDataContent( xml_node & parentn, const ScriptData & dat )
+        inline void WriteSSDataContent( xml_node parentn, const ScriptData & dat )
         {
             using namespace scriptXML;
             WriteCommentNode(parentn, "======================" );

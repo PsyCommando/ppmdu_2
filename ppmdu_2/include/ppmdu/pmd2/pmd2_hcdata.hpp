@@ -17,6 +17,7 @@ Description:    Utilities for managing access to various pieces of hard-coded da
 #include <cstdint>
 #include <string>
 #include <iterator>
+#include <iomanip>
 
 namespace pmd2
 {
@@ -143,9 +144,9 @@ namespace pmd2
             if( ptrstring != 0 )
                 fetchedstr = FetchString( ptrstring - ptrDiff, itfbeg, itfend );
 
-            out <<"<Level _id=\"" <<setw(3) <<cntentry <<"\" name=\"" <<setfill(' ') <<setw(12) <<left  <<(fetchedstr +"\"")
-                <<"mapty=\"" <<right <<setw(2) <<mapty <<"\"  unk2=\"" <<setw(3) <<unk2 <<"\" mapid=\""
-                <<setw(3) <<mapid <<"\" unk4=\"" <<setw(2) <<unk4 <<"\" />\n"
+            out <<"<Level _id=\"" << setw(3) <<cntentry <<"\" name=\"" <<setfill(' ') << setw(12) <<left  <<(fetchedstr +"\"")
+                <<"mapty=\"" <<right << setw(2) <<mapty <<"\"  unk2=\"" << setw(3) <<unk2 <<"\" mapid=\""
+                << setw(3) <<mapid <<"\" unk4=\"" << setw(2) <<unk4 <<"\" />\n"
                 ;
         }
 
@@ -251,7 +252,7 @@ namespace pmd2
                 fetchedstr = FetchString( ptrstring - ptrDiff, itfbeg, itfend );
 
             out << "-> " <<setfill(' ') <<setw(5) <<type
-                << ", "  <<setfill(' ') <<setw(9) <<entityid
+                << ", "  <<setfill(' ') <<setw(9) <<entid
                 <<hex <<uppercase
                 << ", "  <<setfill(' ') <<setw(6) <<NumberToHexString(unk3)
                 << ", "  <<setfill(' ') <<setw(6) <<NumberToHexString(unk4)
@@ -393,10 +394,10 @@ namespace pmd2
             if( ptrstring != 0 )
                 fetchedstr = FetchString( ptrstring - ptrDiff, itfbeg, itfend );
 
-            out << "-> " <<setfill(' ') <<setw(5) <<variabletype
+            out << "-> " <<setfill(' ') <<setw(5) <<type
                 <<hex <<uppercase
                 << ", "  <<setfill(' ') <<setw(6) <<NumberToHexString(unk1)
-                << ", "  <<setfill(' ') <<setw(6) <<NumberToHexString(offset)
+                << ", "  <<setfill(' ') <<setw(6) <<NumberToHexString(memoffset)
                 << ", "  <<setfill(' ') <<setw(6) <<NumberToHexString(bitshift)
                 << ", "  <<setfill(' ') <<setw(6) <<NumberToHexString(unk3)
                 << ", "  <<setfill(' ') <<setw(6) <<NumberToHexString(unk4)
@@ -410,20 +411,23 @@ namespace pmd2
         {
             using namespace std;
             using namespace utils;
-            //<Entity name="PLAYER"                 type="1" entid="   0" unk3="  0x0"  unk4="0x102" />
             string fetchedstr = "NULL";
+            //<GameVar type="8" unk1="2" memoffset="  0x0" bitshift="0x0" unk3="  0x1" unk4="0x1" name="VERSION" />
             if( ptrstring != 0 )
                 fetchedstr = FetchString( ptrstring - ptrDiff, itfbeg, itfend );
 
-            out <<"<GameVar _id=\"" <<setw(3) <<cntentry <<"\" =\"" <<setfill(' ') <<setw(24) <<left <<(fetchedstr +"\"") <<"type=\"" <<right
-                <<type <<"\" entid=\"" <<setfill(' ') <<setw(4) <<entityid
-                <<"\" unk3=\"" <<setw(5) 
-                <<hex <<uppercase 
-                <<NumberToHexString(unk3)
-                <<"\"  unk4=\"" <<setw(5) 
-                <<NumberToHexString(unk4)
-                <<dec <<nouppercase
-                <<"\" />\n"
+            out <<"<GameVar"
+                << " _id=\""    << setw(3) <<cntentry << "\""
+                << " unk1=\""   << hex << uppercase << setw(5) << NumberToHexString(unk1) << "\""
+                << " type=\""   << right <<type << "\""
+                << hex << uppercase
+                << " offset=\""   << setw(5) << NumberToHexString(memoffset) << "\""
+                << " bitshift=\"" << setw(5) << NumberToHexString(bitshift)  << "\""
+                << " unk3=\""     << setw(5) << NumberToHexString(unk3)      << "\""
+                << " unk4=\""     << setw(5) << NumberToHexString(unk4)      << "\""
+                <<dec <<nouppercase 
+                << " symbol=\"" << setfill(' ') << setw(24) << left << fetchedstr << "\""
+                << " />\n"
                 ;
         }
 
@@ -523,13 +527,14 @@ struct ObjectFileListEntry
     template<typename _outstrm, typename _init >
         void Print( _outstrm & out, _init itfbeg, _init itfend, const uint32_t ptrDiff  )
     {
+        using namespace std;
         string fetchedstr = "NULL";
         if( ptrstring != 0 )
             fetchedstr = FetchString( ptrstring - ptrDiff, itfbeg, itfend );
 
-        out << "-> " <<setfill(' ') <<setw(5) <<unk1
-            << ", "  <<setfill(' ') <<setw(5) <<unk2
-            << ", "  <<setfill(' ') <<setw(8) <<unk3         
+        out << "-> " << setfill(' ') << setw(5) <<unk1
+            << ", "  << setfill(' ') << setw(5) <<unk2
+            << ", "  << setfill(' ') << setw(8) <<unk3         
             << ", \""  <<fetchedstr <<"\""
             <<"\n";
     }
@@ -538,9 +543,10 @@ struct ObjectFileListEntry
     template<typename _outstrm >
         void PrintXML( _outstrm & out, size_t cntentry  )
     {
+        using namespace std;
         //<Object _id="11"    unk1="11"   unk2="258"  unk3="0"  name="d01p11b1" />
-        out <<"<Object _id=\"" <<setw(3) <<cntentry <<"\" unk1=\"" <<setw(2) <<unk1
-            <<"\" unk2=\"" <<setw(3) <<unk2 <<"\" unk3=\"" <<unk3 <<"\" name=\""
+        out <<"<Object _id=\"" << setw(3) <<cntentry <<"\" unk1=\"" << setw(2) <<unk1
+            <<"\" unk2=\"" << setw(3) <<unk2 <<"\" unk3=\"" <<unk3 <<"\" name=\""
             <<name <<"\" />\n"
             ;
     }
@@ -562,7 +568,7 @@ struct ObjectFileListEntry
         inf.unk2        = unk2;
         inf.unk3        = unk3;
         inf.name        = name;
-        return std::move(inf);
+        return inf;
     }
 
     ObjectFileListEntry & operator=( const object_info & inf )

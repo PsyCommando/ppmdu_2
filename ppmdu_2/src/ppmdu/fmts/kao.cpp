@@ -266,7 +266,10 @@ namespace filetypes
             if(m_bVerbose)
                 cout << "Importing " <<Poco::Path(ithandledir->path()).getBaseName() <<"/..\n";
             //Need to wrap it so we keep the header clean.. It will probably get optimized out by the compiler anyways
-            ImportDirectory( kao_file_wrapper{ (*ithandledir) } );
+            {
+                kao_file_wrapper wrappy{*ithandledir};
+                ImportDirectory(wrappy);
+            }
 
             ++cptdirs;
             if(!m_bVerbose)
@@ -315,8 +318,11 @@ namespace filetypes
         }
 
         //#3 - Import the images
-        for( auto & animage : validImages )
-            ImportImage( kao_file_wrapper{animage}, ToCindex, foldername );
+        for (auto& animage : validImages)
+        {
+            kao_file_wrapper wrappy{ animage };
+            ImportImage(wrappy, ToCindex, foldername);
+        }
     }
 
     void KaoParser::ImportImage( kao_file_wrapper & imagefile, unsigned int tocindex, const std::string & foldername )

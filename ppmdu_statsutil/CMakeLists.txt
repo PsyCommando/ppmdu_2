@@ -149,7 +149,7 @@ include_directories(ppmdu_stats_util
     "../${ppmdu_2_DEPS_DIRNAME}/whereami/src"
 )
 
-find_package(pugixml REQUIRED)
+find_package(pugixml CONFIG REQUIRED)
 find_package(Poco REQUIRED Foundation)
 find_package(Poco REQUIRED Util)
 target_link_libraries(ppmdu_stats_util 
@@ -158,10 +158,6 @@ target_link_libraries(ppmdu_stats_util
     Poco::Foundation 
     Poco::Util
 )
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ppmdu_stats_util PROPERTY CXX_STANDARD 17)
-endif()
 
 file(
     COPY 

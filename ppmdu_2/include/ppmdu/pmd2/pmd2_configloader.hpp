@@ -13,6 +13,7 @@ Description: Loads on demand certain values from the config file!
 #include <tuple>
 #include <sstream>
 #include <iomanip>
+#include <limits>
 
 namespace pmd2
 {

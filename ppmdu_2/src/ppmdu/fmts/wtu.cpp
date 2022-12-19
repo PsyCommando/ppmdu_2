@@ -67,6 +67,6 @@ namespace filetypes
         wtu_rule_registrator
             A small singleton that has for only task to register the wtu_rule!
     */
-    RuleRegistrator<wtu_rule> RuleRegistrator<wtu_rule>::s_instance;
+    template<> RuleRegistrator<wtu_rule> RuleRegistrator<wtu_rule>::s_instance;
 };
 

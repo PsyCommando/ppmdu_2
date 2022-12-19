@@ -242,14 +242,14 @@ namespace wave
             throw std::runtime_error("GetWaveFormatInfo(): Error, the container specified is not a valid WAVE file. RIFF header is invalid!");
 
         //Read format tag
-        uin32_t fmttag = utils::ReadIntFromBytes<uint32_t>( itwavbeg, false ); //Iterator incremented!
+        uint32_t fmttag = utils::ReadIntFromBytes<uint32_t>( itwavbeg, false ); //Iterator incremented!
 
         if( fmttag != WAVE_FormatTag )
             throw std::runtime_error("GetWaveFormatInfo(): Error, the container specified is not a valid WAVE file! Missing WAVE format tag after the header!");
 
         WAVE_fmt_chunk fmtchunk;
         itwavbeg = fmtchunk.Read( itwavbeg );
-        return move(fmtchunk); 
+        return fmtchunk; 
     }
 
 //=============================================================================
@@ -332,8 +332,8 @@ namespace wave
         class WaveFile
     {
     public:
-        typedef typename _WaveTrait          trait_t;
-        typedef typename trait_t::sample_t   sample_t;
+        typedef _WaveTrait                 trait_t;
+        typedef typename trait_t::sample_t sample_t;
 
         WaveFile( uint32_t samplerate = 44100 )
             :m_samplerate(samplerate)
@@ -460,15 +460,15 @@ namespace wave
                     throw std::runtime_error( "WaveFile::ReadWave(): Error, no data chunk present in the WAVE container!!" );
 
                 //Begin parsing
-                auto       & datachunk        = myriff.subchunks_[datachnkindex];
-                const size_t totalnbsamples   = datachunk.size() / ( info.nbchannels_ * sizeof(sample_t) );
+                riff::Chunk& datachunk        = myriff.subchunks_[datachnkindex];
+                const size_t totalnbsamples   = datachunk.data_.size() / ( info.nbchannels_ * sizeof(sample_t) );
                 const size_t nbsamplesperchan = totalnbsamples / info.nbchannels_;
                 
                 //Resize for all the channels
                 m_samples.resize(info.nbchannels_, move(std::vector<sample_t>(nbsamplesperchan, 0)) );
 
-                auto itrawdata    = datachunk.begin();
-                auto itendrawdata = datachunk.end();
+                auto itrawdata    = datachunk.data_.begin();
+                auto itendrawdata = datachunk.data_.end();
 
                 for( size_t cntsample = 0; cntsample < nbsamplesperchan && itrawdata != itendrawdata; ++cntsample )
                 {

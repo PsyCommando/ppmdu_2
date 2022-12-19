@@ -87,6 +87,36 @@ namespace pmd2
 //  Script Manager/Loader
 //==========================================================================================================
 
+    /***********************************************************************************************
+        ScrSetLoader
+            Helper class by the GameScripts class.
+            Used to load known existing directories from the list of indexed directories.
+    ***********************************************************************************************/
+    //! #TODO: Is this even necessary??
+    class GameScripts;
+    class ScrSetLoader
+    {
+    public:
+        ScrSetLoader(GameScripts& parent, const std::string& filepath);
+        ScrSetLoader(ScrSetLoader&& mv);
+        ScrSetLoader(const ScrSetLoader& cp);
+
+        ScrSetLoader& operator=(const ScrSetLoader& cp);
+        ScrSetLoader& operator=(ScrSetLoader&& mv);
+
+        LevelScript operator()()const;
+        void      operator()(const LevelScript& set)const;
+
+        constexpr const std::string& path()const
+        {
+            return m_path;
+        }
+
+    private:
+        std::string   m_path;
+        GameScripts* m_parent;
+    };
+
     //! #TODO: The purpose  of this should be reviewed and insisted on. Its for transparently accesing
     //!        indexed script files in the rom's directory, and triggering export and
     //!        importing over some of these.
@@ -99,6 +129,7 @@ namespace pmd2
 
             #TODO: Actually indexes things and classify them, once we know more about the format!
     ***********************************************************************************************/
+    class GameScriptsHandler;
     class GameScripts
     {
         friend class GameScriptsHandler;
@@ -163,51 +194,6 @@ namespace pmd2
         //bool                                         m_bbscriptdebug;
         const ConfigLoader                         & m_gconf;
     };
-
-
-    /***********************************************************************************************
-        ScrSetLoader
-            Helper class by the GameScripts class. 
-            Used to load known existing directories from the list of indexed directories.
-    ***********************************************************************************************/
-    //! #TODO: Is this even necessary??
-    class ScrSetLoader
-    {
-    public:
-        ScrSetLoader(GameScripts & parent, const std::string & filepath );
-
-        ScrSetLoader( ScrSetLoader && mv )
-            :m_parent(mv.m_parent), m_path(std::move(mv.m_path))
-        {}
-
-        ScrSetLoader( const ScrSetLoader & cp )
-            :m_parent(cp.m_parent), m_path(cp.m_path)
-        {}
-
-        ScrSetLoader & operator=( const ScrSetLoader & cp )
-        {
-            m_path   = cp.m_path;
-            m_parent = cp.m_parent;
-            return *this;
-        }
-
-        ScrSetLoader & operator=( ScrSetLoader && mv )
-        {
-            m_path   = std::move(mv.m_path);
-            m_parent = mv.m_parent;
-            return *this;
-        }
-
-        LevelScript operator()()const;
-        void      operator()(const LevelScript & set)const;
-
-        inline const std::string & path()const {return m_path;}
-
-    private:
-        std::string   m_path;
-        GameScripts * m_parent;
-    };
-
 
 //====================================================================================
 //  Import/Export

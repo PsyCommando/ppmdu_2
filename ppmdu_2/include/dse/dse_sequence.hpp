@@ -21,10 +21,10 @@ namespace DSE
 //====================================================================================================
 
     //Default tick rate of the Digital Sound Element Sound Driver for sequence playback.
-    static const uint16_t     DefaultTickRte   = 48;                //Possibly in ticks per quartner notes
-    static const unsigned int NbTrkDelayValues = 16;                //The nb of track delay prefixes in the DSE format
-    static const uint32_t     TrkParam1Default = 0x01000000;        //The default value for the parameter 1 value in the trk chunk header!
-    static const uint32_t     TrkParam2Default = 0x0000FF04;        //The default value for the parameter 2 value in the trk chunk header!
+    const uint16_t     DefaultTickRte   = 48;                //Possibly in ticks per quartner notes
+    const unsigned int NbTrkDelayValues = 16;                //The nb of track delay prefixes in the DSE format
+    const uint32_t     TrkParam1Default = 0x01000000;        //The default value for the parameter 1 value in the trk chunk header!
+    const uint32_t     TrkParam2Default = 0x0000FF04;        //The default value for the parameter 2 value in the trk chunk header!
 
 //  Track Events Specifics Constants
 
@@ -210,7 +210,7 @@ namespace DSE
 
         //If all else fails, return the last!
         std::clog << "FindClosestTrkDelayID(): No closer delay found for " <<static_cast<uint16_t>(delayticks) <<" ticks !!\n";
-        return std::move( std::make_pair( eTrkDelays::_half, false ) ); //Couldn't find something below the longest pause!
+        return std::make_pair( eTrkDelays::_half, false ); //Couldn't find something below the longest pause!
     }
 
     //static uint8_t FindClosestTrkDelayCode( uint8_t delayticks )
@@ -501,8 +501,6 @@ namespace DSE
     {
         uint8_t              evcode = 0;
         std::vector<uint8_t> params;
-
-        friend std::ostream & operator<<( std::ostream &  strm, const TrkEvent & ev );
     };
 
     /************************************************************************
@@ -762,5 +760,10 @@ namespace DSE
     void LogEventToClog( const TrkEvent & ev );
 
 };
+
+//
+//Stream Operators
+//
+std::ostream& operator<<(std::ostream& strm, const DSE::TrkEvent& ev);
 
 #endif

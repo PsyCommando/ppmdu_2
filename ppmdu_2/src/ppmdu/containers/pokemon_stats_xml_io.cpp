@@ -12,6 +12,8 @@
 #include <fstream>
 #include <memory>
 #include <functional>
+#include <charconv>
+#include <system_error>
 #include <Poco/DirectoryIterator.h>
 #include <Poco/File.h>
 #include <Poco/Path.h>
@@ -136,37 +138,45 @@ namespace pmd2 {namespace stats
         //Returns a pointer to the buffer passed as argument
         inline const char * FastTurnIntToHexCStr( unsigned int value )
         {
-            //!#FIXME: sprintf_s is not portable!!! Better just use stringstreams now..
-            sprintf_s( m_convBuff.data(), CBuffSZ, "0x%s", _itoa( value, m_secConvbuffer.data(), 16 ) );
+            std::to_chars_result res = std::to_chars(m_secConvbuffer.data(), m_secConvbuffer.data() + m_secConvbuffer.size(), value, 16);
+            if (res.ec != std::errc())
+                throw std::runtime_error(std::make_error_code(res.ec).message());
+
+#ifdef _MSVC_VER
+            sprintf_s(m_convBuff.data(), m_convBuff.size(), "0x%s", m_secConvbuffer.data());
+#else
+            snprintf(m_convBuff.data(), m_convBuff.size(), "0x%s", m_secConvbuffer.data()); //#TODO: Replace me with std::format when its out!
+#endif
             return m_convBuff.data();
         }
 
-        inline const char * FastTurnIntToCStr( uint32_t value )
+        template<class INTT>
+            inline const char * FastTurnIntToCStr(INTT value )
         {
-            //stringstream sstr;
-            //sstr <<dec << value;
-            //strcpy_s( m_convBuff.data(), m_convBuff.size(), sstr.str().c_str() );
-            //return m_convBuff.data();
-            return _itoa( value, m_convBuff.data(), 10 );
+            static_assert(std::is_integral_v<INTT>, "Tried to pass a value that's not an integer!");
+            std::to_chars_result res = std::to_chars(m_secConvbuffer.data(), m_secConvbuffer.data() + m_secConvbuffer.size(), value);
+            if (res.ec != std::errc())
+                throw std::runtime_error(std::make_error_code(res.ec).message());
+            return m_secConvbuffer.data();
         }
 
-        inline const char * FastTurnIntToCStr( uint16_t value )
-        {
-            //stringstream sstr;
-            //sstr <<dec << value;
-            //strcpy_s( m_convBuff.data(), m_convBuff.size(), sstr.str().c_str() );
-            //return m_convBuff.data();
-            return _itoa( value, m_convBuff.data(), 10 );
-        }
+        //inline const char * FastTurnIntToCStr( uint16_t value )
+        //{
+        //    //stringstream sstr;
+        //    //sstr <<dec << value;
+        //    //strcpy_s( m_convBuff.data(), m_convBuff.size(), sstr.str().c_str() );
+        //    //return m_convBuff.data();
+        //    return _itoa( value, m_convBuff.data(), 10 );
+        //}
 
-        inline const char * FastTurnIntToCStr( uint8_t value )
-        {
-            //stringstream sstr;
-            //sstr <<dec << value;
-            //strcpy_s( m_convBuff.data(), m_convBuff.size(), sstr.str().c_str() );
-            //return m_convBuff.data();
-            return _itoa( value, m_convBuff.data(), 10 );
-        }
+        //inline const char * FastTurnIntToCStr( uint8_t value )
+        //{
+        //    //stringstream sstr;
+        //    //sstr <<dec << value;
+        //    //strcpy_s( m_convBuff.data(), m_convBuff.size(), sstr.str().c_str() );
+        //    //return m_convBuff.data();
+        //    return _itoa( value, m_convBuff.data(), 10 );
+        //}
 
 
         inline string PreparePokeNameFName( const string & name, eGameLanguages lang )
@@ -357,7 +367,11 @@ namespace pmd2 {namespace stats
             {
                 //Write comment indicating the level #
                 array<char,32> buflvl = {0};
-                sprintf_s( buflvl.data(), buflvl.size(), "Level %i", (i+1) );
+#ifdef _MSVC_VER
+                sprintf_s(buflvl.data(), buflvl.size(), "Level %i", (i + 1));
+#else
+                snprintf(buflvl.data(), buflvl.size(), "Level %i", (i + 1));
+#endif
                 WriteCommentNode( growthnode, buflvl.data() );
 
                 //Write lvl-up data
@@ -380,7 +394,11 @@ namespace pmd2 {namespace stats
             xml_node mvsetnode = pn.append_child( NODE_Moveset.c_str() );
             array<char,32> commentbuf = {0};
 
-            sprintf_s( commentbuf.data(), commentbuf.size(), "Learns %zi move(s)", mv.lvlUpMoveSet.size() );
+#ifdef _MSVC_VER
+            sprintf_s(commentbuf.data(), commentbuf.size(), "Learns %zi move(s)", mv.lvlUpMoveSet.size());
+#else
+            snprintf(commentbuf.data(), commentbuf.size(), "Learns %zi move(s)", mv.lvlUpMoveSet.size());
+#endif
             WriteCommentNode( mvsetnode, commentbuf.data() );
 
             //Level-up moves
@@ -392,7 +410,11 @@ namespace pmd2 {namespace stats
                 WriteNodeWithValue( learnnode, PROP_MoveID, FastTurnIntToCStr(lvlupmv.second) );
             }
 
-            sprintf_s( commentbuf.data(), commentbuf.size(), "Has %zi egg move(s)", mv.eggmoves.size() );
+#ifdef _MSVC_VER
+            sprintf_s(commentbuf.data(), commentbuf.size(), "Has %zi egg move(s)", mv.eggmoves.size());
+#else
+            snprintf(commentbuf.data(), commentbuf.size(), "Has %zi egg move(s)", mv.eggmoves.size());
+#endif
             WriteCommentNode( mvsetnode, commentbuf.data() );
 
             //Egg Moves
@@ -400,7 +422,11 @@ namespace pmd2 {namespace stats
             for( const auto & eggmv : mv.eggmoves )
                 WriteNodeWithValue( eggnode, PROP_MoveID, FastTurnIntToCStr(eggmv) );
 
-            sprintf_s( commentbuf.data(), commentbuf.size(), "Can learn %zi HM/TM move(s)", mv.teachableHMTMs.size() );
+#ifdef _MSVC_VER
+            sprintf_s(commentbuf.data(), commentbuf.size(), "Can learn %zi HM/TM move(s)", mv.teachableHMTMs.size());
+#else
+            snprintf(commentbuf.data(), commentbuf.size(), "Can learn %zi HM/TM move(s)", mv.teachableHMTMs.size());
+#endif
             WriteCommentNode( mvsetnode, commentbuf.data() );
 
             //HM/TM moves

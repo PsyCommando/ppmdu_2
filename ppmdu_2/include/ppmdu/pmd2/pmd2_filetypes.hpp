@@ -132,10 +132,13 @@ namespace pmd2 { namespace filetypes
     */
     std::vector<::filetypes::cnt_t> GetFileTypeFromExtension( const std::string & ext );
 
+
+
     //For the given data, returns a file extension
     std::string GetAppropriateFileExtension( std::vector<uint8_t>::const_iterator & itdatabeg,
                                              std::vector<uint8_t>::const_iterator & itdataend );
-
+    std::string GetAppropriateFileExtension(std::vector<uint8_t>::const_iterator&& itdatabeg,
+                                            std::vector<uint8_t>::const_iterator&& itdataend);
     //#TODO: Deprecate this !
     //Returns a short string identifying what is the type of content is in this kind of file !
     //std::string GetContentTypeName( e_ContentType type );

@@ -19,6 +19,7 @@ http://www.pjb.com.au/midi/sfspec21.html
 #include <memory>
 #include <array>
 #include <functional>
+#include <limits>
 
 
 /***************************************************************************************************************
@@ -224,12 +225,12 @@ namespace sf2
     static const utils::value_limits<int16_t>  SF_GenLimitsKeynumToModEnvHold {    -1200,        0,  1200,    0 };
     static const utils::value_limits<int16_t>  SF_GenLimitsKeynumToModEnvDecay{    -1200,        0,  1200,    0 };
 
-    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvDelay        { SHRT_MIN,   -12000,  5000,    0 }; //Shortest valid value is -12000. SHRT_MIN means its disabled. Other values between SHRT_MIN and -12000 have undefined effects!
-    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvAttack       { SHRT_MIN,   -12000,  8000,    0 };
-    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvHold         { SHRT_MIN,   -12000,  5000,    0 };
-    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvDecay        { SHRT_MIN,   -12000,  8000,    0 };
+    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvDelay        { std::numeric_limits<int16_t>::min(),   -12000,  5000,    0 }; //Shortest valid value is -12000. SHRT_MIN means its disabled. Other values between SHRT_MIN and -12000 have undefined effects!
+    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvAttack       { std::numeric_limits<int16_t>::min(),   -12000,  8000,    0 };
+    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvHold         { std::numeric_limits<int16_t>::min(),   -12000,  5000,    0 };
+    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvDecay        { std::numeric_limits<int16_t>::min(),   -12000,  8000,    0 };
     static const utils::value_limits<uint16_t> SF_GenLimitsVolEnvSustain      {        0,        0,  1440,  720 };
-    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvRelease      { SHRT_MIN,   -12000,  8000,    0 };
+    static const utils::value_limits<int16_t>  SF_GenLimitsVolEnvRelease      { std::numeric_limits<int16_t>::min(),   -12000,  8000,    0 };
 
     static const utils::value_limits<int16_t>  SF_GenLimitsKeynumToVolEnvHold {    -1200,        0,  1200,    0 };
     static const utils::value_limits<int16_t>  SF_GenLimitsKeynumToVolEnvDecay{    -1200,        0,  1200,    0 };
@@ -247,7 +248,7 @@ namespace sf2
 
     static const utils::value_limits<uint16_t> SF_GenLimitsScaleTuning        {        0,      100,  1200,  600 };
     static const utils::value_limits<uint16_t> SF_GenLimitsExcClass           {        0,        0,   127,    0 };
-    static const utils::value_limits<uint16_t> SF_GenLimitsOverrideRootKey    {        0,       -1,   127,    0 };
+    static const utils::value_limits<int16_t>  SF_GenLimitsOverrideRootKey    {        0,       -1,   127,    0 };
 
 //===========================================================================================
 //  Structures and Enums
@@ -316,7 +317,7 @@ namespace sf2
             15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
             |......Type.....| P  D  C  |.......Index......|
             */
-            return ( static_cast<uint16_t>(type_)            | 
+            return (static_cast<uint16_t>(type_)             | 
                    (static_cast<uint16_t>(contctrlrf_) << 7) |
                    (static_cast<uint16_t>(direction_)  << 8) |
                    (static_cast<uint16_t>(polarity_)   << 9) |
@@ -714,8 +715,8 @@ namespace sf2
                 a unique priority value to each generator type..
         */
         typedef uint16_t genpriority_t;
-        static const genpriority_t DefaultPriority = USHRT_MAX/2; 
-        static const genpriority_t HighPriority    = USHRT_MAX;
+        static const genpriority_t DefaultPriority = std::numeric_limits<uint16_t>::max()/2;
+        static const genpriority_t HighPriority    = std::numeric_limits<uint16_t>::max();
         static const genpriority_t LowPriority     = 0;
 
         /*

@@ -1,4 +1,5 @@
 #include <ext_fmts/adpcm.hpp>
+#include <utils/audio_utilities.hpp>
 #include <utils/utility.hpp>
 #include <vector>
 #include <array>
@@ -205,17 +206,17 @@ namespace audio
         std::vector<int16_t> ParseSamples()
         {
             std::vector<int16_t> results;
-            results.reserve( m_data.size() * 2 );
+            results.reserve(m_data.size() * 2);
             
             uint32_t cnt = 0;
-            while( m_itread != m_data.end() )
+            while(m_itread != m_data.end())
             {
                 //Read two 4 bits samples
                 uint8_t          curbuff = ReadIntFromBytes<int8_t>(m_itread,m_data.end()); //iterator is incremented 
-                array<int8_t, 2> smpls   = { curbuff & 0x0F, (curbuff >> 4) & 0x0F };
+                array<int8_t, 2> smpls   = {static_cast<int8_t>(curbuff & 0x0Fui8), static_cast<int8_t>((curbuff >> 4) & 0x0Fui8) };
 
                 //Decode them
-                for( auto & smpl : smpls )
+                for(auto & smpl : smpls)
                 {
                     uint32_t curchan = (cnt % m_chan.size()); //Pick current channel depending on what sample we're working on
                     results.push_back( ParseSample( smpl, m_chan[curchan]) );
@@ -223,7 +224,7 @@ namespace audio
                 }
 
             }
-            return std::move( results );
+            return results;
         }
 
         int16_t ParseSample( uint8_t smpl, chanstate & curchan )
@@ -603,7 +604,7 @@ namespace audio
             //}
         }
 
-        return std::move(chanbuf);
+        return chanbuf;
 
         //Interlace if multi-channels //#FIXME: We should seriously just return a multi-dimensionnal vector instead!! 
     }

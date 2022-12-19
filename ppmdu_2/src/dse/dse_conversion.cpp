@@ -136,13 +136,13 @@ namespace DSE
             :m_loader(loader)
         {}
 
-        bool ComputeBankAndInstID( size_t cntpair, size_t cntinst, int8_t & bankid, int8_t & instid )
+        bool ComputeBankAndInstID(size_t cntpair, size_t cntinst, int8_t & bankid, int8_t & instid)
         {
             //Default strategy, assign presets as-is one bank per file. And loop the bank id when we reach bank 127
-            if( bankid < CHAR_MAX )
+            if( bankid < std::numeric_limits<int8_t>::max())
                 bankid = static_cast<int8_t>(cntpair);
             else
-                bankid = static_cast<int8_t>( cntpair % CHAR_MAX );
+                bankid = static_cast<int8_t>(cntpair % std::numeric_limits<int8_t>::max());
 
             instid = static_cast<int8_t>(cntinst);
             return true;
@@ -172,10 +172,10 @@ namespace DSE
         */
         bool ComputeBankAndInstID( size_t cntpair, size_t cntinst, int8_t & bankid, int8_t & presetid )
         {
-            if( m_curbank >= CHAR_MAX )
+            if( m_curbank >= std::numeric_limits<int8_t>::max())
                 return false;
 
-            if( m_curpreset < CHAR_MAX )
+            if( m_curpreset < std::numeric_limits<int8_t>::max())
             {
                 ++m_curpreset;
             }
@@ -797,7 +797,7 @@ namespace DSE
             //    atkvolenv.hold = MSecsToTimecents( dseinst.attack - 10 );
             //else
                 atkvolenv.hold = myenv.attack;
-            atkvolenv.decay   = (dseinst.env.hold > 0)? myenv.hold : (dseinst.env.decay > 0 || dseinst.env.decay2 > 0)? myenv.decay : SHRT_MIN; 
+            atkvolenv.decay   = (dseinst.env.hold > 0)? myenv.hold : (dseinst.env.decay > 0 || dseinst.env.decay2 > 0)? myenv.decay : std::numeric_limits<int16_t>::min();
             atkvolenv.sustain = SF_GenLimitsVolEnvSustain.max_;
 
             //Leave everything else to default
@@ -953,7 +953,12 @@ namespace DSE
         // A DSE Preset is an SF2 instrument
 
         std::array<char,20> insame;
-        sprintf_s( insame.data(), insame.size(), "Inst%i", instidcnt ); //Had to use this, as stringstreams are just too slow for this..
+        //Had to use this, as stringstreams are just too slow for this..
+#ifdef _MSVC_VER
+        sprintf_s( insame.data(), insame.size(), "Inst%i", instidcnt );
+#else
+        sprintf(insame.data(), "Inst%i", instidcnt); 
+#endif
         Instrument myinst( string( insame.begin(), insame.end() ) );
         ZoneBag    instzone;
 
@@ -1410,7 +1415,7 @@ namespace DSE
         vector<SMDLPresetConversionInfo> trackprgconvlist;
         m_stats = audiostats(); //reset stats
 
-        if( m_pairs.size() > CHAR_MAX && !m_bSingleSF2 )
+        if((m_pairs.size() > std::numeric_limits<int8_t>::max()) && !m_bSingleSF2 )
         {
             cout << "<!>- Error: Got over 127 different SMDL+SWDL pairs and set to preserve program numbers. Splitting into multiple soundfonts is not implemented yet!\n";
             //We need to build several smaller sf2 files, each in their own sub-dir with the midis they're tied to!
@@ -1539,7 +1544,7 @@ namespace DSE
     {
         using namespace sf2;
 
-        if( m_pairs.size() > CHAR_MAX && !m_bSingleSF2 )
+        if((m_pairs.size() > std::numeric_limits<int8_t>::max()) && !m_bSingleSF2)
         {
             cout << "<!>- Error: Got over 127 different SMDL+SWDL pairs and set to preserve program numbers. Splitting into multiple soundfonts is not implemented yet!\n";
             //We need to build several smaller sf2 files, each in their own sub-dir with the midis they're tied to!
@@ -2322,8 +2327,9 @@ namespace DSE
                         //We only have mono samples
                         outwave.GetSamples().resize(1);
                         outwave.SampleRate( ptrinfo->smplrate );
+                        auto & outsamp = outwave.GetSamples().front();
 
-                        switch( ConvertDSESample( static_cast<uint16_t>(ptrinfo->smplfmt), ptrinfo->loopbeg, *ptrdata, cvinf, outwave.GetSamples().front() ) )
+                        switch( ConvertDSESample(static_cast<uint16_t>(ptrinfo->smplfmt), ptrinfo->loopbeg, *ptrdata, cvinf, outsamp) )
                         {
                             case eDSESmplFmt::ima_adpcm:
                             {
