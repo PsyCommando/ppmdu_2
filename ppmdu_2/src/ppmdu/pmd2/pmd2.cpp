@@ -276,7 +276,7 @@ namespace pmd2
         bool ParsePmd2EscapeSeq( _init & itc, _init & itend, std::string & out )
     {
         static const regex EoTDEscapeSeq("\x7E([0-9a-fA-F]{2})");
-        if( c == 0x7E &&                         //0x7E is the escape sequence marker in EoT and EoD games!
+        if(((*itc) == 0x7E) &&                         //0x7E is the escape sequence marker in EoT and EoD games!
             std::distance(itc, itend) >= 3 ) //Check if we have enough space for the digits
         {
             smatch sm;

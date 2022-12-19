@@ -223,6 +223,8 @@ namespace riff
             return totalsz;
         }
 
+
+
         uint32_t             fourcc_;       //The chunk id
         uint32_t             fmtid_;        //If the chunk contains sub-chunks, it has a format id tag
         std::vector<uint8_t> data_;         //If its a simple data chunk, its content is stored here
@@ -343,9 +345,9 @@ namespace riff
             itread = riffhdr.Read(itread);
             curoffset += ChunkHeader::SIZE;
 
-            if( riffhdr.chunk_id != eChunkIDs::RIFF && riffhdr.chunk_id != eChunkIDs::RIFFX )
+            if( riffhdr.chunk_id != static_cast<uint32_t>(eChunkIDs::RIFF) && riffhdr.chunk_id != static_cast<uint32_t>(eChunkIDs::RIFX) )
                 throw std::runtime_error( "RIFFMap::analyze(): Unrecognized RIFF header!" );
-            else if( riffhdr.chunk_id == eChunkIDs::RIFFX )
+            else if( riffhdr.chunk_id == static_cast<uint32_t>(eChunkIDs::RIFX) )
                 throw std::runtime_error( "RIFFMap::analyze(): RIFX(Big endian RIFF) format not supported." );
 
             //Read the content type tag
@@ -377,7 +379,7 @@ namespace riff
             cinf.fileoffset = curoffset;
 
             //Handle LIST chunks differently to list their content.
-            if( cinf.hdr.chunk_id == eChunkIDs::LIST )
+            if(cinf.hdr.chunk_id == static_cast<uint32_t>(eChunkIDs::LIST))
             {
                 //Get an iterator to the end of the chunk
                 auto itchnkend = itread;

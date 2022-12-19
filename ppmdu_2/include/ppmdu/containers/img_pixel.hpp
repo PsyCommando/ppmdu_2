@@ -19,20 +19,20 @@ namespace gimg
 //=============================================================================
 // ConvertToRGB Function
 //=============================================================================
-    /*
-        ConvertToRGB
+    ///*
+    //    ConvertToRGB
 
-    */
-    template< class _PIXEL_T >
-        inline colorRGB24 ConvertToRGB( _PIXEL_T pixeldata )
-    {
-        //#REMOVEME: is this even used anymore ?
+    //*/
+    //template< class _PIXEL_T >
+    //    inline colorRGB24 ConvertToRGB( _PIXEL_T pixeldata )
+    //{
+    //    //#REMOVEME: is this even used anymore ?
 
-        _PIXELDATA_T myred   = (pixeldata & _MASK_RED)   >> _BITSHIFT_RED,
-                     mygreen = (pixeldata & _MASK_GREEN) >> _BITSHIFT_GREEN,
-                     myblue  = (pixeldata & _MASK_BLUE)  >> _BITSHIFT_BLUE;
-        return colorRGB24( static_cast<uint8_t>(myred), static_cast<uint8_t>(mygreen), static_cast<uint8_t>(myblue) );
-    }
+    //    _PIXEL_T myred   = (pixeldata & _MASK_RED)   >> _BITSHIFT_RED,
+    //             mygreen = (pixeldata & _MASK_GREEN) >> _BITSHIFT_GREEN,
+    //             myblue  = (pixeldata & _MASK_BLUE)  >> _BITSHIFT_BLUE;
+    //    return colorRGB24( static_cast<uint8_t>(myred), static_cast<uint8_t>(mygreen), static_cast<uint8_t>(myblue) );
+    //}
 
     /*************************************************************************************************
         pixel_RGB_component_indexes

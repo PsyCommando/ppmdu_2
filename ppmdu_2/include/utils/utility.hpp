@@ -11,6 +11,7 @@ Description: A header with a bunch of useful includes for the PPMD utilities.
 #include "gstringutils.hpp"
 #include "gbyteutils.hpp"
 #include "poco_wrapper.hpp"
+#include "common_suffixes.hpp"
 #include <chrono>
 #include <string>
 #include <iostream>
@@ -222,7 +223,6 @@ namespace utils
         sstr <<std::hex <<"0x" <<std::uppercase <<val;
         return std::move(sstr.str());
     }
-
 };
 
 

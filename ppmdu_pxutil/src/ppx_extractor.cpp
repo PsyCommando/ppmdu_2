@@ -114,7 +114,9 @@ namespace ppx_extract
         if( outfilepath.getExtension().empty() )
         {
             //Set the file extension only
-            outputpath.setExtension( GetAppropriateFileExtension( decompressed.begin(), decompressed.end() ) );
+            vector<uint8_t>::const_iterator itdecbeg = decompressed.begin();
+            vector<uint8_t>::const_iterator itdecend = decompressed.begin();
+            outputpath.setExtension( GetAppropriateFileExtension(itdecbeg, itdecend) );
         }
 
         //Write file out

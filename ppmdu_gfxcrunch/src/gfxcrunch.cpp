@@ -1960,9 +1960,11 @@ namespace gfx_util
                     //Output the packed file's content as is
                     auto & cursubf = inpack.getSubFile(i);
                     stringstream sstr;
+                    auto _itfdatbeg = cursubf.begin();
+                    auto _itfdatend = cursubf.end();
                     sstr << inputPath.getBaseName()
                          <<"_" <<setw(4) <<setfill('0') <<i <<"." 
-                         << GetAppropriateFileExtension( cursubf.begin(), cursubf.end() );                   
+                         << GetAppropriateFileExtension(_itfdatbeg, _itfdatend);
 
                     taskmanager.AddTask( 
                         multitask::pktask_t( 

@@ -638,7 +638,7 @@ namespace pmd2{ namespace graphics
         SpriteData<gimg::tiled_image_i4bpp>                    result;
         DirectoryToSprite<SpriteData<gimg::tiled_image_i4bpp>> myreader(result);
         myreader.ParseSpriteFromDirectory( inpath, bReadImgByIndex, /*progresscnt,*/ bParseXmlPal, bNoResAutoFix );
-        return std::move( result );
+        return result;
     }
 
     /**************************************************************
@@ -653,7 +653,7 @@ namespace pmd2{ namespace graphics
         SpriteData<gimg::tiled_image_i8bpp>                    result;
         DirectoryToSprite<SpriteData<gimg::tiled_image_i8bpp>> myreader(result);
         myreader.ParseSpriteFromDirectory( inpath, bReadImgByIndex, /*progresscnt,*/ bParseXmlPal, bNoResAutoFix );
-        return std::move( result );
+        return result;
     }
 
 };};

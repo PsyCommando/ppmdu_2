@@ -77,11 +77,12 @@ namespace pmd2 {namespace filetypes
             hdr.ReadFromContainer(data.begin(), data.end());
 
             const uint32_t NbEntries = (hdr.ptrPtrOffsetLst - hdr.subheaderptr) / stats::ItemDataLen_EoS;
-            auto           itCur     = (data.begin() + hdr.subheaderptr);
+            vector<uint8_t>::const_iterator itCur = std::next(data.begin(), hdr.subheaderptr);
+            vector<uint8_t>::const_iterator itEnd = data.end();
             itemdat.resize(NbEntries);
 
             for( unsigned int cnt = 0; cnt < NbEntries; ++cnt )
-                ParseItem_p_entry( itCur, data.end(), itemdat[cnt] );
+                ParseItem_p_entry( itCur, itEnd, itemdat[cnt] );
         }
 
         void ParseItem_p_entry( vector<uint8_t>::const_iterator & itread, vector<uint8_t>::const_iterator & itend, stats::itemdata & item )
@@ -109,7 +110,8 @@ namespace pmd2 {namespace filetypes
             hdr.ReadFromContainer(data.begin(), data.end());
 
             const uint32_t NbEntries = (hdr.ptrPtrOffsetLst - hdr.subheaderptr) / stats::ExclusiveItemDataLen; //Nb of entries in the exclusive item data file
-            auto           itdatbeg  = data.begin() + hdr.subheaderptr;
+            vector<uint8_t>::const_iterator itdatbeg = std::next(data.begin(), hdr.subheaderptr);
+            vector<uint8_t>::const_iterator itdatend = data.end();
 
             size_t cntitemID = ExclusiveItemBaseDataIndex; // cntitemID = Counter for the actual item id in the database (Exlusive items begin at a specific index)
             
@@ -121,7 +123,7 @@ namespace pmd2 {namespace filetypes
             //
             for( size_t cntExEntry = 0; cntExEntry < NbEntries && cntitemID < itemdat.size(); ++cntExEntry, ++cntitemID )
             {
-                ParseItem_s_p_entry( itdatbeg, data.end(), itemdat[cntitemID] );
+                ParseItem_s_p_entry( itdatbeg, itdatend, itemdat[cntitemID] );
             }
         }
 

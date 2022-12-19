@@ -137,10 +137,10 @@ namespace utils{ namespace io
         uint16_t nbcolors = 0;
 
         //#1 - Validate palette
-        std::vector<gimg::colorRGB24>   out_palette;
-        vector<uint8_t>::const_iterator foundRiff = find_first_of( in_riffpalette.begin(), in_riffpalette.end(), RIFF_MAGIC_NUMBER.begin(), RIFF_MAGIC_NUMBER.end() );
-        vector<uint8_t>::const_iterator foundPal;
-        vector<uint8_t>::const_iterator foundDataChunk;
+       vector<gimg::colorRGB24>   out_palette;
+       vector<uint8_t>::const_iterator foundRiff = find_first_of( in_riffpalette.begin(), in_riffpalette.end(), RIFF_MAGIC_NUMBER.begin(), RIFF_MAGIC_NUMBER.end() );
+       vector<uint8_t>::const_iterator foundPal;
+       vector<uint8_t>::const_iterator foundDataChunk;
 
         if( foundRiff != in_riffpalette.end() )
         {
@@ -212,14 +212,14 @@ namespace utils{ namespace io
         //    std::advance( itcolor, 2 );
         //}
 
-        return std::move( out_palette );
+        return out_palette;
     }
 
     std::vector<gimg::colorRGB24> ImportFrom_RIFF_Palette( const std::string & inputpath )
     {
         vector<uint8_t>          riffpaldata = ReadFileToByteVector( inputpath );
         vector<gimg::colorRGB24> output      = ImportFrom_RIFF_Palette( riffpaldata );
-        return std::move(output);
+        return output;
     }
 
 };};

@@ -35,7 +35,10 @@ namespace pmd2
         {this->operator=(cp);}
 
         inline int15_t & operator=(const int15_t & cp)
-        {val = cp.val;}
+        {
+            val = cp.val;
+            return *(const_cast<int15_t*>(this));
+        }
 
         //
         inline explicit int15_t(uint16_t otherval)
@@ -48,13 +51,22 @@ namespace pmd2
         {this->operator=(otherval);}
 
         inline int15_t & operator=(uint16_t otherval)
-        {val = Convert16bTo15b(otherval);}
+        {
+            val = Convert16bTo15b(otherval);
+            return *(const_cast<int15_t*>(this));
+        }
 
         inline int15_t & operator=(int otherval)
-        {val = Convert16bTo15b(static_cast<unsigned int>(otherval));}
+        {
+            val = Convert16bTo15b(static_cast<unsigned int>(otherval)); 
+            return *(const_cast<int15_t*>(this));
+        }
 
         inline int15_t & operator=(unsigned int otherval)
-        {val = Convert16bTo15b(static_cast<unsigned int>(otherval));}
+        {
+            val = Convert16bTo15b(static_cast<unsigned int>(otherval)); 
+            return *(const_cast<int15_t*>(this));
+        }
 
         // --- Operators ---
 

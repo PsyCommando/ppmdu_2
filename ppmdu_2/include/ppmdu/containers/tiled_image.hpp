@@ -264,7 +264,7 @@ namespace gimg
         }
 
         //Access the image data like a 2D bitmap
-        inline const pixel_t & getPixel( unsigned int x, unsigned int y )const
+        const pixel_t & getPixel( unsigned int x, unsigned int y )const
         {
             return const_cast<tiled_image<_PIXEL_T, _TILE_Height, _TILE_Width> *>(this)->getPixel(x,y);
         }
@@ -405,11 +405,11 @@ namespace gimg
 
         // ------ Constructors ------
         tiled_indexed_image()
-            :_parentty(), m_palette(pixel_t::mypixeltrait_t::MAX_VALUE_PER_COMPONEMENT)
+            :_parentty(), m_palette(_parentty::pixel_t::mypixeltrait_t::MAX_VALUE_PER_COMPONEMENT)
         {}
 
         tiled_indexed_image( unsigned int pixelsWidth, unsigned int pixelsHeigth )
-            :_parentty(pixelsWidth,pixelsHeigth), m_palette(pixel_t::mypixeltrait_t::MAX_VALUE_PER_COMPONEMENT)
+            :_parentty(pixelsWidth,pixelsHeigth), m_palette(_parentty::pixel_t::mypixeltrait_t::MAX_VALUE_PER_COMPONEMENT)
         {}
 
         tiled_indexed_image( unsigned int pixelsWidth, unsigned int pixelsHeigth, unsigned int nbcolors )
@@ -472,7 +472,7 @@ namespace gimg
         //Get the color of a pixel at (X, Y) directly
         inline pal_color_t & getPixelColorFromPalette( unsigned int x, unsigned int y )
         {
-            return getColor( getPixel(x,y) );
+            return getColor(this->getPixel(x,y) );
         }
 
         inline const pal_color_t & getPixelColorFromPalette( unsigned int x, unsigned int y )const

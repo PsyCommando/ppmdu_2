@@ -14,6 +14,8 @@
 #include <Poco/File.h>
 #include <Poco/Path.h>
 #include <cassert>
+#include <charconv>
+#include <system_error>
 #include <ppmdu/pmd2/pmd2_text.hpp>
 
 using namespace std;
@@ -171,20 +173,19 @@ namespace pmd2 { namespace stats
         //    return m_convBuff.data();
         //}
 
+        std::array<char, 32> m_convBuffer;
+        std::array<char, 32> m_secConvBuffer;
+
         template<class T>
             inline string TurnIntToHexStr( T value )
         {
-            stringstream sstr;
-            sstr << "0x" <<hex <<uppercase <<value;
-            return sstr.str();
-        }
-
-        template<>
-            inline string TurnIntToHexStr( uint8_t value )
-        {
-            stringstream sstr;
-            sstr << "0x" <<hex <<uppercase <<static_cast<unsigned short>(value);
-            return sstr.str();
+            static_assert(std::is_integral_v<T>, "Passed a non integral value!");
+            std::to_chars_result res = std::to_chars(m_convBuffer.data(), m_convBuffer.data() + m_convBuffer.size(), value, 16);
+            if (res.ec != std::errc())
+                throw std::runtime_error(std::make_error_code(res.ec).message());
+            std::transform(m_convBuffer.begin(), m_convBuffer.end(), m_convBuffer.begin(), [](unsigned char c) { return std::toupper(c); });
+            snprintf(m_secConvBuffer.data(), m_secConvBuffer.size(), "0x%s", res.ptr);
+            return m_secConvBuffer.data();
         }
 
         inline string PrepareItemFName( const string & name, eGameLanguages glang )

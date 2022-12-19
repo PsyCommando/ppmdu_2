@@ -244,7 +244,7 @@ namespace pmd2
                 findoccurence
             */
             template<class T>
-               typename vector<pair<int, typename T> >::iterator findoccurence( vector< pair<int, T> > & vecoccur, T lookingfor )
+               typename vector<pair<int, T> >::iterator findoccurence( vector< pair<int, T> > & vecoccur, T lookingfor )
             {
                 return std::find_if( vecoccur.begin(), vecoccur.end(), [&lookingfor]( pair<int, T> & thatoccur ){ return lookingfor == thatoccur.second; } );
             }
@@ -526,7 +526,7 @@ namespace pmd2
                 findoccurence
             */
             template<class T>
-               typename vector<pair<int, typename T> >::iterator findoccurence( vector< pair<int, T> > & vecoccur, T lookingfor )
+               typename vector<pair<int, T> >::iterator findoccurence( vector< pair<int, T> > & vecoccur, T lookingfor )
             {
                 return std::find_if( vecoccur.begin(), vecoccur.end(), [&lookingfor]( pair<int, T> & thatoccur ){ return lookingfor == thatoccur.second; } );
             }
@@ -1505,8 +1505,9 @@ namespace pmd2
 
         void sprite_parser::ReadPalette()
         {
+            decltype(m_itbegdata) _itdata = std::next(m_itbegdata, m_sprfrmdat.ptrPal);
             //#1 - Calculate the size of the palette
-            uint32_t           offsetPalBeg = ReadIntFromBytes<uint32_t>( (m_itbegdata + m_sprfrmdat.ptrPal), m_itenddata );
+            uint32_t           offsetPalBeg = ReadIntFromBytes<uint32_t>(_itdata, m_itenddata);
             uint32_t           nbcolorspal  = ( m_sprfrmdat.ptrPal - offsetPalBeg ) / 4;
             vector<colRGB24>   mypalette( nbcolorspal );
             rgbx32_parser      theparser( mypalette.begin() );
@@ -1628,7 +1629,7 @@ namespace pmd2
                 else
                 {
                     assert(false); //This means I've failed..
-                    throw exception( "pmd2_sprites.cpp->ReadASingleDatablockHTable(): Couldn't convert an offset from Datablock H !" );
+                    throw std::runtime_error( "pmd2_sprites.cpp->ReadASingleDatablockHTable(): Couldn't convert an offset from Datablock H !" );
                 }
 
                 anoffset = offset; //Assign the result
@@ -1721,13 +1722,14 @@ namespace pmd2
 
                     //See if we already did this offset
                     auto itfound = find( uniquefileoffsetDBITables.begin(), uniquefileoffsetDBITables.end(), currentptr );
+                    decltype(m_itbegdata) itcur = std::next(m_itbegdata, currentptr);
                     if( itfound == uniquefileoffsetDBITables.end() )
                     {
                         //If not found, add it !
                         uniquefileoffsetDBITables.push_back( currentptr );
 
                         //And read the data
-                        DataBlockI.push_back( ReadASingleDatablockITable( m_itbegdata + currentptr, m_itenddata ) );
+                        DataBlockI.push_back( ReadASingleDatablockITable(itcur, m_itenddata ) );
 
                         //Transform the offset in DBH to the offset we just inserted to in DataBlockI
                         DataBlockH[i][j] = uniquefileoffsetDBITables.size() - 1;

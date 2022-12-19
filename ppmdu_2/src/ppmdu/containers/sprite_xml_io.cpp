@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <iostream>
 #include <array>
+#include <charconv>
 #include <pugixml.hpp>
 #include <Poco/DirectoryIterator.h>
 #include <Poco/File.h>
@@ -356,7 +357,7 @@ namespace pmd2 { namespace graphics
             using namespace SpriteXMLStrings;
             vector<SpriteAnimationGroup> grps;
 
-            auto & animgrpsrange = agtblnode.children(XML_NODE_ANIMGRP.c_str());
+            auto animgrpsrange = agtblnode.children(XML_NODE_ANIMGRP.c_str());
             for( auto & animgrpnode : animgrpsrange )
             {
                 SpriteAnimationGroup agrp;
@@ -377,7 +378,7 @@ namespace pmd2 { namespace graphics
                 //Add an empty group if we don't have any sequences !
                 grps.push_back( std::move(agrp) );
             }
-            return std::move( grps );
+            return grps;
         }
 
         /**************************************************************
@@ -392,7 +393,7 @@ namespace pmd2 { namespace graphics
             if( ! mydoc.load(in) )
                 throw std::runtime_error("Failed to create xml_document for parsing Sprite Meta-Frames!");
 
-            auto & animsrange = mydoc.child(XML_ROOT_ANIMDAT.c_str()).children();
+            auto animsrange = mydoc.child(XML_ROOT_ANIMDAT.c_str()).children();
             //Read every elements
             for( auto & curnode : animsrange )
             {
@@ -415,7 +416,7 @@ namespace pmd2 { namespace graphics
             if( ! mydoc.load(in) )
                 throw std::runtime_error("Failed to create xml_document for parsing Sprite Meta-Frames!");
 
-            auto & offsetsrange = mydoc.child(XML_ROOT_OFFLST.c_str()).children(XML_NODE_OFFSET.c_str());
+            auto offsetsrange = mydoc.child(XML_ROOT_OFFLST.c_str()).children(XML_NODE_OFFSET.c_str());
             //Read every elements
             for( auto & offnode : offsetsrange )
             {
@@ -726,14 +727,21 @@ namespace pmd2 { namespace graphics
         //Returns a pointer to the buffer passed as argument
         inline const char * FastTurnIntToHexCStr( unsigned int value )
         {
-            sprintf_s( m_convBuff.data(), CBuffSZ, "0x%s", _itoa( value, m_secConvbuffer.data(), 16 ) );
+            std::to_chars_result res = std::to_chars(m_secConvbuffer.data(), m_secConvbuffer.data() + m_secConvbuffer.size(), value, 16);
+            if (res.ec != std::errc())
+                throw std::runtime_error(std::make_error_code(res.ec).message());
+            sprintf(m_convBuff.data(), "0x%s", res.ptr);
+            //sprintf_s( m_convBuff.data(), CBuffSZ, "0x%s", _itoa( value, m_secConvbuffer.data(), 16 ) );
             return m_convBuff.data();
         }
 
         //Returns a pointer to the buffer passed as argument
         inline const char * FastTurnIntToCStr( unsigned int value )
         {
-            return _itoa( value, m_convBuff.data(), 10 );
+            std::to_chars_result res = std::to_chars(m_convBuff.data(), m_convBuff.data() + m_convBuff.size(), value);
+            if (res.ec != std::errc())
+                throw std::runtime_error(std::make_error_code(res.ec).message());
+            return res.ptr; //It's pointing on a class member array, so the pointer should stay valid
         }
 
         /**************************************************************

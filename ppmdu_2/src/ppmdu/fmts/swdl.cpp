@@ -1832,6 +1832,7 @@ namespace DSE
         class SWDLParser
     {
     public:
+        using my_t = SWDLParser<_rait>;
         typedef _rait rd_iterator_t;
 
         SWDLParser( _rait itbeg, _rait itend )
@@ -1859,30 +1860,27 @@ namespace DSE
                 if( m_hdr.pcmdlen != 0 && (m_hdr.pcmdlen & 0xFFFF0000) != SWDL_PCMDSpecialSize )
                 {
                     //Grab the info on every samples
-                    vector<SampleBank::smpldata_t> smpldat(std::move( ParseWaviChunk<WavInfo_v415>() ));
+                    vector<SampleBank::smpldata_t> smpldat(ParseWaviChunk_v415());
                     auto psmpls = ParseSamples(smpldat);
 
                     if( utils::LibWide().isLogOn() )
                         clog << "\n\n";
 
-                    return std::move( PresetBank( move(m_meta), 
-                                      move(pinst), 
-                                      move(psmpls) ) );
+                    return PresetBank( move(m_meta), move(pinst), move(psmpls) );
                 }
                 else
                 {
                     if( utils::LibWide().isLogOn() )
                         clog << "\n\n";
 
-                    return std::move( PresetBank( move(m_meta), 
-                                      move(pinst) ) );
+                    return PresetBank( move(m_meta), move(pinst) );
                 }
             }
             else if( m_hdr.version == DseVerToInt(eDSEVersion::V402) )
             {
                 auto pinst  = ParsePrograms<ProgramInfo_v402>();
                 //Grab the info on every samples
-                vector<SampleBank::smpldata_t> smpldat(std::move( ParseWaviChunk<WavInfo_v402>() ));
+                vector<SampleBank::smpldata_t> smpldat(ParseWaviChunk_v402());
                 auto psmpls = ParseSamples(smpldat);
 
                 if( utils::LibWide().isLogOn() )
@@ -1935,8 +1933,7 @@ namespace DSE
                 m_meta.origversion = intToDseVer(m_hdr.version);
         }
 
-        template<class _PrgInfoTy>
-            std::unique_ptr<ProgramBank> ParsePrograms()
+        template<class _PrgInfoTy> std::unique_ptr<ProgramBank> ParsePrograms()
         {
             //using namespace pmd2::audio;
 
@@ -1983,7 +1980,7 @@ namespace DSE
             }
             if( utils::LibWide().isLogOn() )
                 clog << endl;
-            return move( unique_ptr<ProgramBank>( new ProgramBank( move(prginf), move(kgrps) ) ) );
+            return unique_ptr<ProgramBank>( new ProgramBank( move(prginf), move(kgrps) ) );
         }
 
         vector<KeyGroup> ParseKeygroups()
@@ -2053,8 +2050,7 @@ namespace DSE
             return std::unique_ptr<SampleBank>( new SampleBank( move(smpldat) ) );
         }
 
-        template<class _WaviEntryFmt>
-            vector<SampleBank::smpldata_t> ParseWaviChunk()
+        vector<SampleBank::smpldata_t> ParseWaviChunk_v415()
         {
             auto itwavi = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::wavi );
 
@@ -2082,7 +2078,7 @@ namespace DSE
 
                 if( smplinfoffset != 0 )
                 {
-                    _WaviEntryFmt winf;
+                    WavInfo_v415 winf;
                     winf.ReadFromContainer( smplinfoffset + itwavi, m_itend );
                     if( utils::LibWide().isLogOn() )
                     {
@@ -2104,11 +2100,10 @@ namespace DSE
                 ++cntslot;
             }
 
-            return move(waviptrs);
+            return waviptrs;
         }
 
-        template<>
-            vector<SampleBank::smpldata_t> ParseWaviChunk<WavInfo_v402>()
+        vector<SampleBank::smpldata_t> ParseWaviChunk_v402()
         {
             auto itwavi = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::wavi );
 
@@ -2182,7 +2177,7 @@ namespace DSE
                 ++cntslot;
             }
 
-            return move(waviptrs);
+            return waviptrs;
         }
 
     private:
@@ -2194,6 +2189,8 @@ namespace DSE
 
         //const std::vector<uint8_t> & m_src;
     };
+
+
 
 //====================================================================================================
 // SMDL_Writer
@@ -2253,7 +2250,7 @@ namespace DSE
             //Write PCMD
             size_t pcmdlen = 0;
             if(hassmpldata)
-                pcmdlen = WritePCMD( itout, sampleOffsets, *ptrsbnk );
+                pcmdlen = static_cast<size_t>(WritePCMD( itout, sampleOffsets, *ptrsbnk ));
             else
             {
                 //If we end up here, we need to come up with the offset values for each samples. 
@@ -2625,7 +2622,7 @@ namespace DSE
         }
 
         //Return pcm data length
-        fpos_t WritePCMD( writeit_t & itout, std::vector<uint32_t> & sampleoffsets, const DSE::SampleBank & smplbank )
+        std::streamoff WritePCMD( writeit_t & itout, std::vector<uint32_t> & sampleoffsets, const DSE::SampleBank & smplbank )
         {
             //auto ptrsbnk = m_src.smplbank().lock();
             //if( ptrsbnk == nullptr )
@@ -2665,7 +2662,7 @@ namespace DSE
             //Seek back to end
             m_tgtcn.seekp(afterdata);
 
-            return static_cast<std::streamoff>(afterdata);
+            return static_cast<streamoff>(afterdata);
         }
 
         void WriteKgrp( writeit_t & itout )
@@ -2911,6 +2908,6 @@ namespace DSE
             swdl_rule_registrator
                 A small singleton that has for only task to register the swdl_rule!
         */
-        RuleRegistrator<swdl_rule> RuleRegistrator<swdl_rule>::s_instance;
+        template<> RuleRegistrator<swdl_rule> RuleRegistrator<swdl_rule>::s_instance;
     };
 #endif

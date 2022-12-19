@@ -615,7 +615,7 @@ namespace pmd2{ namespace graphics
         bool                                    m_isUsingIterator; //Whether we've received an iterator at construction
 
         //Input
-        std::vector<uint8_t>::const_iterator                    m_itbegdata,
+        std::vector<uint8_t>::const_iterator    m_itbegdata,
                                                 m_itcurdata,
                                                 m_itenddata;
 

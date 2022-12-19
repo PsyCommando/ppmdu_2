@@ -69,10 +69,10 @@ namespace DSE
     public:
         struct PresetEntry
         {
-            PresetEntry()
+            PresetEntry() noexcept
             {}
 
-            PresetEntry( PresetEntry && mv )
+            PresetEntry( PresetEntry && mv ) noexcept
                 :prginf(std::move(mv.prginf)), splitsmplinf(std::move( mv.splitsmplinf )), splitsamples( std::move(mv.splitsamples) )
             {
             }

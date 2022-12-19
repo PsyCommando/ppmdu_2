@@ -62,7 +62,7 @@ namespace DSE
             midinote_t destnote   = 0;                //The note to use instead
             presetid_t destpreset = InvalidPresetID;  //The preset to use for playing only this note!
             bankid_t   destbank   = InvalidBankID;    //The bank to use for playing only this note!
-            uint8_t    idealchan  = UCHAR_MAX;        //The channel the note should be played on!
+            uint8_t    idealchan  = std::numeric_limits<uint8_t>::max();        //The channel the note should be played on!
             uint16_t   origsmplid = 0;                //The original sample ID associated to this note. Only used when writing a cvinfo file
         };
 
@@ -74,7 +74,7 @@ namespace DSE
         */
         struct PresetConvData
         {
-            static const uint8_t Invalid_Chan = UCHAR_MAX;
+            static const uint8_t Invalid_Chan = std::numeric_limits<uint8_t>::max();
 
             PresetConvData( presetid_t presid         = 0, 
                             bankid_t   bank           = 0, 

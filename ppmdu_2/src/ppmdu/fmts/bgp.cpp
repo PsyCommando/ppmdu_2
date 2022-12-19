@@ -13,11 +13,11 @@ using namespace std;
 
 namespace filetypes
 {
-    static const ContentTy CnTy_BGP{BGP_FileExt}; //Content ID handle
-    static const size_t    PaletteByteLength = 64;//bytes
-    static const size_t    PaletteNbColors   = 16;
-    static const size_t    BGPTileNbPix      = 64; //pixels 8x8
-    static const size_t    BGPTileNbBytes    = BGPTileNbPix/2; //bytes
+    const ContentTy CnTy_BGP{BGP_FileExt}; //Content ID handle
+    const size_t    PaletteByteLength = 64;//bytes
+    const size_t    PaletteNbColors   = 16;
+    const size_t    BGPTileNbPix      = 64; //pixels 8x8
+    const size_t    BGPTileNbBytes    = BGPTileNbPix/2; //bytes
 
     //Default sizes
     const size_t BGPDefPalByteLen       = 1024;
@@ -46,10 +46,10 @@ namespace filetypes
     private:
         static BGP::tilemapdata DecodeTileMappingData( uint16_t entry )
         {
-            return move( BGP::tilemapdata{  static_cast<uint16_t>(entry & 0x3FF),              //0000 0011 1111 1111, tile index
-                                            static_cast<uint16_t>((entry & 0xF000) >> 12),     //1111 0000 0000 0000, pal index
-                                            (entry & 0x800) > 0,        //0000 1000 0000 0000, vflip
-                                            (entry & 0x400) > 0} );     //0000 0100 0000 0000, hflip 
+            return move( BGP::tilemapdata{  static_cast<uint16_t>(entry & 0x3FFui16),       //0000 0011 1111 1111, tile index
+                                            static_cast<uint8_t>((entry & 0xF000) >> 12),   //1111 0000 0000 0000, pal index
+                                            (entry & 0x800ui16) > 0,                        //0000 1000 0000 0000, vflip
+                                            (entry & 0x400ui16) > 0} );                     //0000 0100 0000 0000, hflip 
         }
 
         void DoParse()
@@ -367,5 +367,5 @@ namespace filetypes
         bgp_rule_registrator
             A small singleton that has for only task to register the bgp_rule!
     */
-    RuleRegistrator<bgp_rule> RuleRegistrator<bgp_rule>::s_instance;
+    template<> RuleRegistrator<bgp_rule> RuleRegistrator<bgp_rule>::s_instance;
 };

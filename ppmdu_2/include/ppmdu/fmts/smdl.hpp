@@ -174,8 +174,6 @@ namespace DSE
 
         //    return itReadfrom;
         //}
-
-        friend std::ostream & operator<<( std::ostream &os, const SMDL_Header & hdr );
     };
 
 
@@ -202,5 +200,10 @@ namespace DSE
     MusicSequence ParseSMDL( std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend );
 
 };
+
+//
+//Stream Operators
+//
+std::ostream& operator<<(std::ostream& os, const DSE::SMDL_Header& hdr);
 
 #endif

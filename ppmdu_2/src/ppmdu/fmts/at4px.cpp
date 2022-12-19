@@ -632,7 +632,7 @@ namespace filetypes
     at4px_rule_registrator
         A small singleton that has for only task to register the at4px_rule!
 */
-RuleRegistrator    <at4px_rule>     RuleRegistrator    <at4px_rule>    ::s_instance;
-SIR0RuleRegistrator<sir0at4px_rule> SIR0RuleRegistrator<sir0at4px_rule>::s_instance;
+template<> RuleRegistrator    <at4px_rule>     RuleRegistrator    <at4px_rule>    ::s_instance;
+template<> SIR0RuleRegistrator<sir0at4px_rule> SIR0RuleRegistrator<sir0at4px_rule>::s_instance;
 };
 

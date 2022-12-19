@@ -184,9 +184,9 @@ namespace filetypes
         void     ReadSubFilesFromPackFileUsingFOT( std::vector<uint8_t>::const_iterator itbegin, std::vector<uint8_t>::const_iterator itend );
 
         //Returns the forced offset from the file's raw data is using one, or 0 if its not!
-        uint32_t CPack::IsPackFileUsingForcedFFOffset( std::vector<uint8_t>::const_iterator itbeg, 
-                                                       std::vector<uint8_t>::const_iterator itend, 
-                                                       unsigned int                         nbsubfiles )const;
+        uint32_t IsPackFileUsingForcedFFOffset( std::vector<uint8_t>::const_iterator itbeg, 
+                                                std::vector<uint8_t>::const_iterator itend, 
+                                                unsigned int                         nbsubfiles )const;
 
         //Opens for copying to the subfile vector a single file. 
         //void     ReadLooseFileToFileDataVector( const std::string & inpath, unsigned long long filesize, uint32_t insertatindex );

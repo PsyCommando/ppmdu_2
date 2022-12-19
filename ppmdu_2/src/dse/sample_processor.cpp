@@ -435,10 +435,10 @@ namespace DSE
                     double scaledsmpl = lround( smpl[cntlerp] * curvolratio );
 
                     //Clamp
-                    if( scaledsmpl > SHRT_MAX )
-                        scaledsmpl = SHRT_MAX;
-                    else if( scaledsmpl < SHRT_MIN )
-                        scaledsmpl = SHRT_MIN;
+                    if( scaledsmpl > std::numeric_limits<int16_t>::max())
+                        scaledsmpl = std::numeric_limits<int16_t>::max();
+                    else if( scaledsmpl < std::numeric_limits<int16_t>::min())
+                        scaledsmpl = std::numeric_limits<int16_t>::min();
 
                     smpl[cntlerp] = static_cast<int16_t>( scaledsmpl );
                     curvolratio  += rate;
@@ -452,10 +452,10 @@ namespace DSE
                     double scaledsmpl = lround( smpl[cntlerp] * destvol );
 
                     //Clamp
-                    if( scaledsmpl > SHRT_MAX )
-                        scaledsmpl = SHRT_MAX;
-                    else if( scaledsmpl < SHRT_MIN )
-                        scaledsmpl = SHRT_MIN;
+                    if( scaledsmpl > std::numeric_limits<int16_t>::max())
+                        scaledsmpl = std::numeric_limits<int16_t>::max();
+                    else if( scaledsmpl < std::numeric_limits<int16_t>::min())
+                        scaledsmpl = std::numeric_limits<int16_t>::min();
 
                     smpl[cntlerp] = static_cast<int16_t>( scaledsmpl );
                 }

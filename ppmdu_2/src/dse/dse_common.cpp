@@ -150,170 +150,171 @@ namespace DSE
     //    (*this) = splitentry.env;
     //    return *this;
     //}
+};
 
 //==========================================================================================
 //  StreamOperators
 //==========================================================================================
     //Global stream operator
-    std::ostream & operator<<(std::ostream &os, const DateTime &obj )
+std::ostream& operator<<(std::ostream& os, const DSE::DateTime& obj)
+{
+    os << static_cast<unsigned long>(obj.year) << "/"
+        << static_cast<unsigned long>(obj.month) + 1 << "/"
+        << static_cast<unsigned long>(obj.day) + 1 << "-"
+        << static_cast<unsigned long>(obj.hour) << "h"
+        << static_cast<unsigned long>(obj.minute) << "m"
+        << static_cast<unsigned long>(obj.second) << "s";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& strm, const DSE::KeyGroup& other)
+{
+    strm << "\t== Keygroup ==\n"
+        << "\tID        : " << other.id << "\n"
+        << "\tPolyphony : " << static_cast<short>(other.poly) << "\n"
+        << "\tPriority  : " << static_cast<short>(other.priority) << "\n"
+        << "\tVc.Low    : " << static_cast<short>(other.vclow) << "\n"
+        << "\tVc.High   : " << static_cast<short>(other.vchigh) << "\n"
+        << "\tunk50     : " << static_cast<short>(other.unk50) << "\n"
+        << "\tunk51     : " << static_cast<short>(other.unk51) << "\n";
+
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const DSE::ProgramInfo& other)
+{
+    using namespace DSE;
+    strm << "\t== ProgramInfo ==\n"
+        << "\tID        : " << other.id << "\n"
+        << "\tNbSplits  : " << other.m_splitstbl.size() << "\n"
+        << "\tVol       : " << static_cast<short>(other.prgvol) << "\n"
+        << "\tPan       : " << static_cast<short>(other.prgpan) << "\n"
+        //<< "\tUnk3      : " << other.unk3 <<"\n"
+        << "\tUnk4      : " << static_cast<short>(other.unk4) << "\n"
+        //<< "\tUnk5      : " << static_cast<short>(other.unk5) <<"\n"
+        << "\tnblfos    : " << static_cast<short>(other.m_lfotbl.size()) << "\n"
+        << "\tpadbyte   : " << static_cast<short>(other.padbyte) << "\n"
+        << "\tUnkpoly      : " << static_cast<short>(other.unkpoly) << "\n"
+        //<< "\tUnk8      : " << static_cast<short>(other.unk8) <<"\n"
+        //<< "\tUnk9      : " << static_cast<short>(other.unk9) <<"\n";
+        ;
+
+    //Write the LFOs
+    int cntlfo = 0;
+    for (const auto& lfoen : other.m_lfotbl)
     {
-        os << static_cast<unsigned long>(obj.year) <<"/" 
-           <<static_cast<unsigned long>(obj.month)+1 <<"/" 
-           <<static_cast<unsigned long>(obj.day)+1 <<"-" 
-           <<static_cast<unsigned long>(obj.hour) <<"h" 
-           <<static_cast<unsigned long>(obj.minute) <<"m" 
-           <<static_cast<unsigned long>(obj.second) <<"s";
-        return os;
+        strm << "\t-- LFO #" << cntlfo << " --\n"
+            << "\tUnk34        : " << static_cast<short>(lfoen.unk34) << "\n"
+            << "\tUnk52        : " << static_cast<short>(lfoen.unk52) << "\n"
+            << "\tDest         : " << static_cast<short>(lfoen.dest) << "\n"
+            << "\tWave Shape   : " << static_cast<short>(lfoen.wshape) << "\n"
+            << "\tRate         : " << lfoen.rate << "\n"
+            << "\tUnk29        : " << lfoen.unk29 << "\n"
+            << "\tDepth        : " << lfoen.depth << "\n"
+            << "\tDelay        : " << lfoen.delay << "\n"
+            << "\tUnk32        : " << lfoen.unk32 << "\n"
+            << "\tUnk33        : " << lfoen.unk33 << "\n";
+        ++cntlfo;
     }
 
-    std::ostream & operator<<( std::ostream &  strm, const KeyGroup & other )
+    //Write the Splits
+    int cntsplits = 0;
+    for (const auto& split : other.m_splitstbl)
     {
-        strm <<"\t== Keygroup ==\n"
-            << "\tID        : " << other.id                           <<"\n"
-            << "\tPolyphony : " << static_cast<short>(other.poly)     <<"\n"
-            << "\tPriority  : " << static_cast<short>(other.priority) <<"\n"
-            << "\tVc.Low    : " << static_cast<short>(other.vclow)    <<"\n"
-            << "\tVc.High   : " << static_cast<short>(other.vchigh)   <<"\n"
-            << "\tunk50     : " << static_cast<short>(other.unk50)    <<"\n"
-            << "\tunk51     : " << static_cast<short>(other.unk51)    <<"\n";
-
-        return strm;
+        strm << "\t-- Split #" << cntlfo << " --\n"
+            //<< "\tUnk10        : " << static_cast<short>(split.unk10)     <<"\n"
+            << "\tID           : " << static_cast<short>(split.id) << "\n"
+            << "\tUnk11        : " << static_cast<short>(split.unk11) << "\n"
+            << "\tUnk25        : " << static_cast<short>(split.unk25) << "\n"
+            << "\tlowkey       : " << static_cast<short>(split.lowkey) << "\n"
+            << "\thikey        : " << static_cast<short>(split.hikey) << "\n"
+            << "\tlowkey2      : " << static_cast<short>(split.lowkey2) << "\n"
+            << "\thikey2       : " << static_cast<short>(split.hikey2) << "\n"
+            << "\tlovel        : " << static_cast<short>(split.lovel) << "\n"
+            << "\thivel        : " << static_cast<short>(split.hivel) << "\n"
+            << "\tlovel2       : " << static_cast<short>(split.lovel2) << "\n"
+            << "\thivel2       : " << static_cast<short>(split.hivel2) << "\n"
+            //<< "\tunk16        : " << split.unk16     <<"\n"
+            //<< "\tunk17        : " << split.unk17     <<"\n"
+            << "\tsmplid       : " << static_cast<short>(split.smplid) << "\n"
+            << "\tftune        : " << static_cast<short>(split.ftune) << "\n"
+            << "\tctune        : " << static_cast<short>(split.ctune) << "\n"
+            << "\trootkey      : " << static_cast<short>(split.rootkey) << "\n"
+            << "\tktps         : " << static_cast<short>(split.ktps) << "\n"
+            << "\tsmplvol      : " << static_cast<short>(split.smplvol) << "\n"
+            << "\tsmplpan      : " << static_cast<short>(split.smplpan) << "\n"
+            << "\tkgrpid       : " << static_cast<short>(split.kgrpid) << "\n"
+            //<< "\tunk22        : " << static_cast<short>(split.unk22)     <<"\n"
+            //<< "\tunk23        : " << split.unk23     <<"\n"
+            //<< "\tunk24        : " << split.unk24     <<"\n"
+            << "\tenvon        : " << static_cast<short>(split.envon) << "\n"
+            << "\tenvmult      : " << static_cast<short>(split.env.envmulti) << "\n"
+            //<< "\tunk37        : " << static_cast<short>(split.env.unk37)     <<"\n"
+            //<< "\tunk38        : " << static_cast<short>(split.env.unk38)     <<"\n"
+            //<< "\tunk39        : " << split.unk39     <<"\n"
+            //<< "\tunk40        : " << split.unk40     <<"\n"
+            << "\tatkvol       : " << static_cast<short>(split.env.atkvol) << "\n"
+            << "\tattack       : " << static_cast<short>(split.env.attack) << "\n"
+            << "\tdecay        : " << static_cast<short>(split.env.decay) << "\n"
+            << "\tsustain      : " << static_cast<short>(split.env.sustain) << "\n"
+            << "\thold         : " << static_cast<short>(split.env.hold) << "\n"
+            << "\tdecay2       : " << static_cast<short>(split.env.decay2) << "\n"
+            << "\trelease      : " << static_cast<short>(split.env.release) << "\n"
+            //<< "\trx           : " << static_cast<short>(split.env.rx)     <<"\n"
+            ;
+        ++cntsplits;
     }
 
-    std::ostream & operator<<( std::ostream &  strm, const ProgramInfo & other )
+    return strm;
+}
+
+//SMDL
+std::ostream& operator<<(std::ostream& strm, const DSE::TrkEvent& ev)
+{
+    using namespace DSE;
+    auto info = GetEventInfo(static_cast<eTrkEventCodes>(ev.evcode));
+
+    //strm
+    //     <<setfill(' ') <<setw(6) <<right << static_cast<unsigned short>(ev.dt) <<"t : ";
+
+    if (info.first)
     {
-        strm << "\t== ProgramInfo ==\n"
-             << "\tID        : " << other.id     <<"\n"
-             << "\tNbSplits  : " << other.m_splitstbl.size() <<"\n"
-             << "\tVol       : " << static_cast<short>(other.prgvol) <<"\n"
-             << "\tPan       : " << static_cast<short>(other.prgpan) <<"\n"
-             //<< "\tUnk3      : " << other.unk3 <<"\n"
-             << "\tUnk4      : " << static_cast<short>(other.unk4) <<"\n"
-             //<< "\tUnk5      : " << static_cast<short>(other.unk5) <<"\n"
-             << "\tnblfos    : " << static_cast<short>(other.m_lfotbl.size()) <<"\n"
-             << "\tpadbyte   : " << static_cast<short>(other.padbyte) <<"\n"
-             << "\tUnkpoly      : " << static_cast<short>(other.unkpoly) <<"\n"
-             //<< "\tUnk8      : " << static_cast<short>(other.unk8) <<"\n"
-             //<< "\tUnk9      : " << static_cast<short>(other.unk9) <<"\n";
-             ;
+        strm << "(0x" << setfill('0') << setw(2) << hex << uppercase << right << static_cast<unsigned short>(ev.evcode) << ") : "
+            << nouppercase << dec << setfill(' ') << setw(16) << left << info.second.evlbl;
 
-        //Write the LFOs
-        int cntlfo = 0;
-        for( const auto & lfoen : other.m_lfotbl )
+        if (!ev.params.empty())
         {
-            strm << "\t-- LFO #" <<cntlfo <<" --\n"
-                << "\tUnk34        : " << static_cast<short>(lfoen.unk34)     <<"\n"
-                << "\tUnk52        : " << static_cast<short>(lfoen.unk52)     <<"\n"
-                << "\tDest         : " << static_cast<short>(lfoen.dest)      <<"\n"
-                << "\tWave Shape   : " << static_cast<short>(lfoen.wshape)    <<"\n"
-                << "\tRate         : " << lfoen.rate      <<"\n"
-                << "\tUnk29        : " << lfoen.unk29     <<"\n"
-                << "\tDepth        : " << lfoen.depth     <<"\n"
-                << "\tDelay        : " << lfoen.delay     <<"\n"
-                << "\tUnk32        : " << lfoen.unk32     <<"\n"
-                << "\tUnk33        : " << lfoen.unk33     <<"\n";
-            ++cntlfo;
-        }
-
-        //Write the Splits
-        int cntsplits = 0;
-        for( const auto & split : other.m_splitstbl )
-        {
-            strm << "\t-- Split #" <<cntlfo <<" --\n"
-                //<< "\tUnk10        : " << static_cast<short>(split.unk10)     <<"\n"
-                << "\tID           : " << static_cast<short>(split.id)        <<"\n"
-                << "\tUnk11        : " << static_cast<short>(split.unk11)     <<"\n"
-                << "\tUnk25        : " << static_cast<short>(split.unk25)     <<"\n"
-                << "\tlowkey       : " << static_cast<short>(split.lowkey)    <<"\n"
-                << "\thikey        : " << static_cast<short>(split.hikey)     <<"\n"
-                << "\tlowkey2      : " << static_cast<short>(split.lowkey2) <<"\n"
-                << "\thikey2       : " << static_cast<short>(split.hikey2)     <<"\n"
-                << "\tlovel        : " << static_cast<short>(split.lovel)     <<"\n"
-                << "\thivel        : " << static_cast<short>(split.hivel)     <<"\n"
-                << "\tlovel2       : " << static_cast<short>(split.lovel2)     <<"\n"
-                << "\thivel2       : " << static_cast<short>(split.hivel2)     <<"\n"
-                //<< "\tunk16        : " << split.unk16     <<"\n"
-                //<< "\tunk17        : " << split.unk17     <<"\n"
-                << "\tsmplid       : " << static_cast<short>(split.smplid)     <<"\n"
-                << "\tftune        : " << static_cast<short>(split.ftune)     <<"\n"
-                << "\tctune        : " << static_cast<short>(split.ctune)     <<"\n"
-                << "\trootkey      : " << static_cast<short>(split.rootkey)   <<"\n"
-                << "\tktps         : " << static_cast<short>(split.ktps)     <<"\n"
-                << "\tsmplvol      : " << static_cast<short>(split.smplvol)   <<"\n"
-                << "\tsmplpan      : " << static_cast<short>(split.smplpan)   <<"\n"
-                << "\tkgrpid       : " << static_cast<short>(split.kgrpid)  <<"\n"
-                //<< "\tunk22        : " << static_cast<short>(split.unk22)     <<"\n"
-                //<< "\tunk23        : " << split.unk23     <<"\n"
-                //<< "\tunk24        : " << split.unk24     <<"\n"
-                << "\tenvon        : " << static_cast<short>(split.envon)     <<"\n"
-                << "\tenvmult      : " << static_cast<short>(split.env.envmulti)     <<"\n"
-                //<< "\tunk37        : " << static_cast<short>(split.env.unk37)     <<"\n"
-                //<< "\tunk38        : " << static_cast<short>(split.env.unk38)     <<"\n"
-                //<< "\tunk39        : " << split.unk39     <<"\n"
-                //<< "\tunk40        : " << split.unk40     <<"\n"
-                << "\tatkvol       : " << static_cast<short>(split.env.atkvol)     <<"\n"
-                << "\tattack       : " << static_cast<short>(split.env.attack)     <<"\n"
-                << "\tdecay        : " << static_cast<short>(split.env.decay)     <<"\n"
-                << "\tsustain      : " << static_cast<short>(split.env.sustain)     <<"\n"
-                << "\thold         : " << static_cast<short>(split.env.hold)     <<"\n"
-                << "\tdecay2       : " << static_cast<short>(split.env.decay2)     <<"\n"
-                << "\trelease      : " << static_cast<short>(split.env.release)     <<"\n"
-                //<< "\trx           : " << static_cast<short>(split.env.rx)     <<"\n"
-                ;
-            ++cntsplits;
-        }
-
-        return strm;
-    }
-
-    //SMDL
-    std::ostream & operator<<( std::ostream &  strm, const TrkEvent & ev )
-    {
-        auto info = GetEventInfo( static_cast<eTrkEventCodes>(ev.evcode) );
-
-        //strm
-        //     <<setfill(' ') <<setw(6) <<right << static_cast<unsigned short>(ev.dt) <<"t : ";
-
-        if( info.first )
-        {
-            strm <<"(0x" <<setfill('0') <<setw(2) <<hex <<uppercase <<right <<static_cast<unsigned short>(ev.evcode) <<") : "
-                 <<nouppercase <<dec <<setfill(' ') <<setw(16) <<left << info.second.evlbl;
-
-            if( !ev.params.empty() )
             {
+                strm << hex << uppercase << "( ";
+                for (size_t i = 0; i < ev.params.size(); ++i)
                 {
-                    strm <<hex <<uppercase <<"( ";
-                    for( size_t i = 0; i < ev.params.size(); ++i ) 
-                    {
-                        strm <<"0x" <<setfill('0') <<setw(2) <<right << static_cast<unsigned short>(ev.params[i]);
-                        if( i != (ev.params.size() - 1) )
-                            strm << ", ";
-                    } 
-                    strm <<dec <<nouppercase <<" )";
+                    strm << "0x" << setfill('0') << setw(2) << right << static_cast<unsigned short>(ev.params[i]);
+                    if (i != (ev.params.size() - 1))
+                        strm << ", ";
                 }
+                strm << dec << nouppercase << " )";
             }
-            else if( ev.evcode >= static_cast<uint8_t>(eTrkEventCodes::Delay_HN) && ev.evcode <= static_cast<uint8_t>(eTrkEventCodes::Delay_64N) )
-            {
-                strm <<dec << static_cast<unsigned short>(TrkDelayCodeVals.at( ev.evcode )) <<" ticks";
-            }
-            else
-            {
-                strm <<"N/A";
-            }
+        }
+        else if (ev.evcode >= static_cast<uint8_t>(eTrkEventCodes::Delay_HN) && ev.evcode <= static_cast<uint8_t>(eTrkEventCodes::Delay_64N))
+        {
+            strm << dec << static_cast<unsigned short>(TrkDelayCodeVals.at(ev.evcode)) << " ticks";
         }
         else
         {
-            strm <<"ERROR EVENT CODE " <<uppercase <<hex <<static_cast<unsigned short>(ev.evcode) <<dec <<nouppercase;
+            strm << "N/A";
         }
-
-        return strm;
     }
-
-    std::ostream & operator<<(std::ostream &strm, const DSE::eDSEContainers cnty )
+    else
     {
-        uint32_t convertedty = static_cast<uint32_t>(cnty);
-        strm << static_cast<char>( convertedty >> 24 ) << static_cast<char>( convertedty >> 16 ) << static_cast<char>( convertedty >> 8 ) << static_cast<char>( convertedty );
-        return strm;
+        strm << "ERROR EVENT CODE " << uppercase << hex << static_cast<unsigned short>(ev.evcode) << dec << nouppercase;
     }
 
-};
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const DSE::eDSEContainers cnty)
+{
+    uint32_t convertedty = static_cast<uint32_t>(cnty);
+    strm << static_cast<int8_t>(convertedty >> 24) << static_cast<int8_t>(convertedty >> 16) << static_cast<int8_t>(convertedty >> 8) << static_cast<int8_t>(convertedty);
+    return strm;
+}

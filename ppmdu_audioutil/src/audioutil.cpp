@@ -407,15 +407,16 @@ namespace audioutil
     void CreateOutputDir( const std::string & outputdir )
     {
         Poco::File outdir(outputdir);
+        Poco::Path outpath(outputdir);
         if( !outdir.exists() )
         {
             if( outdir.createDirectory() )
-                cout << "<*>- Created output directory \"" << outdir.path() <<"\" !\n";
+                cout << "<*>- Created output directory \"" << outpath.absolute().toString() <<"\" !\n";
             else
-                cout << "<!>- Couldn't create output directory \"" << outdir.path() <<"\" !\n";
+                cout << "<!>- Couldn't create output directory \"" << outpath.absolute().toString() <<"\" !\n";
         }
         else if( !outdir.isDirectory() )
-            throw std::runtime_error( "Error, output path " + outputdir + " already exists, but not as a directory!" );
+            throw std::runtime_error( "Error, output path " + outpath.absolute().toString() + " already exists, but not as a directory!" );
     }
 
     /*

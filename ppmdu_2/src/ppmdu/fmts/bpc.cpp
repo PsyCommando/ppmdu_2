@@ -6,7 +6,7 @@ using namespace std;
 
 namespace filetypes
 {
-    static const ContentTy CnTy_BPC{BPC_FileExt}; //Content ID handle
+    const ContentTy CnTy_BPC{BPC_FileExt}; //Content ID handle
 
 //============================================================================================
 //  BPCParser
@@ -228,5 +228,5 @@ namespace filetypes
         bpc_rule_registrator
             A small singleton that has for only task to register the bpc_rule!
     */
-    RuleRegistrator<bpc_rule> RuleRegistrator<bpc_rule>::s_instance;
+    template<> RuleRegistrator<bpc_rule> RuleRegistrator<bpc_rule>::s_instance;
 };

@@ -80,7 +80,6 @@ namespace pmd2
 //==========================================================================================================
 //  Script Instructions
 //==========================================================================================================
-    //! #TODO: Make this a single class, and get rid of inheritance. We could just make a wrapper around the instruction that contains both and instruction and a list of sub instruction, to remedy the problem.
     /***********************************************************************************************
         ScriptInstruction
             Represents a single instruction from a script.
@@ -88,85 +87,24 @@ namespace pmd2
             Is also used to represent meta-command which do not exist in the game's script engine, 
             but are neccessary here to make processing faster. Such as jump labels. 
     ***********************************************************************************************/
-    struct ScriptBaseInstruction
+    struct ScriptInstruction;
+    struct ScriptInstruction
     {
         typedef std::deque<uint16_t>          paramcnt_t;
+        typedef std::vector<ScriptInstruction> subinst_t; //Would us deque here too, but MSVC loses its shit because it's running a constexpr sizeof on the type passed, which isn't completely defined yet and crashes everything...
         uint16_t            value;          //Depends on the value of "type". Can be opcode, data, or ID.
         paramcnt_t          parameters;     //The parameters for the instruction
         eInstructionType    type;           //How to handle the instruction
         size_t              dbg_origoffset; //Original offset of the instruction in the source file if applicable. For debugging purpose
-    };
-    struct ScriptInstruction : public ScriptBaseInstruction
-    {
-        //typedef std::deque<uint16_t>             paramcnt_t;
-        typedef std::deque<ScriptBaseInstruction> subinst_t;
-        //uint16_t            value;          //Depends on the value of "type". Can be opcode, data, or ID.
-        //paramcnt_t          parameters;     //The parameters for the instruction
-        //eInstructionType    type;           //How to handle the instruction
         subinst_t           subinst;        //Contains sub-instructions linked to this instruction
 
-        ScriptInstruction():ScriptBaseInstruction::ScriptBaseInstruction()
-        {}
+        //ScriptInstruction() = default;
+        //~ScriptInstruction() = default;
+        //ScriptInstruction(ScriptInstruction&& mv);
+        //ScriptInstruction(const ScriptInstruction& cp);
 
-        ScriptInstruction(ScriptInstruction && mv)
-        {this->operator=(std::forward<ScriptInstruction>(mv));}
-
-        ScriptInstruction(const ScriptInstruction & cp)
-        {this->operator=(cp);}
-
-        ScriptInstruction(ScriptBaseInstruction && mv)
-        {this->operator=(std::forward<ScriptBaseInstruction>(mv));}
-
-        ScriptInstruction(const ScriptBaseInstruction & cp)
-        {this->operator=(cp);}
-
-        ScriptInstruction & operator=(const ScriptInstruction & cp)
-        {
-            subinst     = cp.subinst;
-            type        = cp.type;
-            parameters  = cp.parameters;
-            value       = cp.value;
-            dbg_origoffset = cp.dbg_origoffset; 
-            return *this;
-        }
-
-        ScriptInstruction & operator=(ScriptInstruction && mv)
-        {
-            subinst     = std::move(mv.subinst);
-            type        = mv.type;
-            parameters  = std::move(mv.parameters);
-            value       = mv.value;
-            dbg_origoffset = mv.dbg_origoffset; 
-            return *this;
-        }
-
-        ScriptInstruction & operator=(const ScriptBaseInstruction & cp)
-        {
-            type        = cp.type;
-            parameters  = cp.parameters;
-            value       = cp.value;
-            dbg_origoffset = cp.dbg_origoffset; 
-            return *this;
-        }
-
-        ScriptInstruction & operator=(ScriptBaseInstruction && mv)
-        {
-            type        = mv.type;
-            parameters  = std::move(mv.parameters);
-            value       = mv.value;
-            dbg_origoffset = mv.dbg_origoffset; 
-            return *this;
-        }
-
-        operator ScriptBaseInstruction()const
-        {
-            ScriptBaseInstruction out;
-            out.parameters  = parameters;
-            out.value       = value;
-            out.type        = type;
-            out.dbg_origoffset = dbg_origoffset; 
-            return std::move(out);
-        }
+        //ScriptInstruction& operator=(const ScriptInstruction& cp);
+        //ScriptInstruction& operator=(ScriptInstruction&& mv);
     };
 
 

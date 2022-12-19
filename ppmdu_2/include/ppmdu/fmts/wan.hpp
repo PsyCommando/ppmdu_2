@@ -503,7 +503,7 @@ namespace filetypes
         template<class TIMG_t>
             pmd2::graphics::SpriteData<TIMG_t> Parse( std::atomic<uint32_t> * pProgress = nullptr )
         {
-            SpriteData<TIMG_t> sprite;
+            pmd2::graphics::SpriteData<TIMG_t> sprite;
 
             m_pProgress = pProgress;
         
@@ -536,19 +536,19 @@ namespace filetypes
             //Read images, use meta frames to get proper res, thanks to the refs!
             ReadImages<TIMG_t>( sprite.m_frames, sprite.m_metaframes, sprite.m_metarefs, sprite.getPalette(), sprite.getImgsInfo() );
 
-            return std::move( sprite );
+            return sprite;
         }
 
         //This parse all images of the sprite as 4bpp!
         pmd2::graphics::SpriteData<gimg::tiled_image_i4bpp> ParseAs4bpp( std::atomic<uint32_t> * pProgress = nullptr)
         {
-            return std::move(Parse<gimg::tiled_image_i4bpp>(pProgress));
+            return Parse<gimg::tiled_image_i4bpp>(pProgress);
         }
 
         //This parse all images of the sprite as 8bpp!
         pmd2::graphics::SpriteData<gimg::tiled_image_i8bpp> ParseAs8bpp(std::atomic<uint32_t> * pProgress = nullptr)
         {
-            return std::move(Parse<gimg::tiled_image_i8bpp>(pProgress));
+            return Parse<gimg::tiled_image_i8bpp>(pProgress);
         }
 
     private:
@@ -604,8 +604,9 @@ namespace filetypes
                                uint32_t                                  curfrmindex,
                                std::vector<pmd2::graphics::ImageInfo>        & out_imginfo )
         {
+            using namespace pmd2::graphics;
             auto              itfound    = metarefs.find( curfrmindex ); //Find if we have a meta-frame pointing to that frame
-            utils::Resolution myres      = RES_64x64_SPRITE;
+            utils::Resolution myres      = pmd2::graphics::RES_64x64_SPRITE;
             uint32_t          totalbyamt = 0;
 
             //Read the assembly table
@@ -628,14 +629,14 @@ namespace filetypes
                 totalbyamt += entry.pixamt;
 
             //Keep track of the z index
-            ImageInfo imginf;
+            pmd2::graphics::ImageInfo imginf;
             imginf.zindex = asmtable.front().zIndex;
             out_imginfo.push_back(imginf);
 
             if( itfound != metarefs.end() )
             {
                 //If we have a meta-frame for this image, take the resolution from it.
-                myres = MetaFrame::eResToResolution( metafrms[itfound->second].resolution );
+                myres = pmd2::graphics::MetaFrame::eResToResolution( metafrms[itfound->second].resolution );
             }
             else
             {
@@ -773,7 +774,9 @@ namespace filetypes
         template<class _retty>
             inline _retty ReadOff( uint32_t fileoffset, bool littleendian = true )const
         {
-            return utils::ReadIntFromBytes<_retty>( (m_rawdata.begin() + fileoffset), m_rawdata.end(), littleendian );
+            auto itbeg = m_rawdata.begin() + fileoffset;
+            auto itend = m_rawdata.end();
+            return utils::ReadIntFromBytes<_retty>(itbeg, itend, littleendian );
         }
 
     private:

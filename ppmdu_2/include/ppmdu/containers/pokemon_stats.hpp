@@ -353,7 +353,7 @@ namespace pmd2 { namespace stats
         inline PokeMoveSet           & MoveSet2()                  { return m_moveset_2;   }
 
         inline bool                    Has2GenderEntries()const    { return m_bHas2GenderEntries; }
-        inline bool                    Has2GenderEntries(bool val) { m_bHas2GenderEntries = val; }
+        inline bool                    Has2GenderEntries(bool val) { m_bHas2GenderEntries = val; return m_bHas2GenderEntries; }
 
     public:
         ////DEBUG

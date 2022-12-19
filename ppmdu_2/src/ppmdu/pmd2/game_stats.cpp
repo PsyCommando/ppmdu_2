@@ -236,7 +236,7 @@ namespace pmd2
     void GameStats::_LoadDungeonData()
     {
         cout<<"GameStats::_LoadDungeonData() : Not implemented yet !\n";
-        throw exception("Not Implemented!"); 
+        throw std::runtime_error("Not Implemented!"); 
     }
 
 //--------------------------------------------------------------
@@ -460,7 +460,7 @@ namespace pmd2
 
     void GameStats::_WriteDungeonData()
     {
-        throw exception("Not Implemented!"); //Not implemented yet !
+        throw std::runtime_error("Not Implemented!"); //Not implemented yet !
     }
 
 
