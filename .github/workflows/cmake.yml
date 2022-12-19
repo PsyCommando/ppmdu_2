@@ -27,6 +27,8 @@ jobs:
 
     - name: Setup Ninja + CMake
       uses: symbitic/install-cmake@master
+      with:
+        cmake: '3.19'
 
     - name: Check CMake Version
       run: cmake -version
