@@ -1141,13 +1141,8 @@ namespace sf2
 
             //End the list with a zeroed out entry
             static const std::array<char,4> EOPMarker{{'E','O','P',0}};
-
-            //Set some compile time constants here, so less chances for me to derp again! :D
-            static const size_t             LenFirstPart = sizeof( result_of<decltype(&Preset::GetPresetNo)(Preset)>::type) +
-                                                           sizeof( result_of<decltype(&Preset::GetBankNo)  (Preset)>::type);
-            static const size_t             LenLastPart  = sizeof( result_of<decltype(&Preset::GetLibrary) (Preset)>::type) +
-                                                           sizeof( result_of<decltype(&Preset::GetGenre)   (Preset)>::type) +
-                                                           sizeof( result_of<decltype(&Preset::GetMorpho)  (Preset)>::type);
+            static const size_t             LenFirstPart = 4; //Bytes
+            static const size_t             LenLastPart  = 12; //Bytes
 
             itout = std::copy  ( EOPMarker.begin(), EOPMarker.end(),itout );
             itout = std::fill_n( itout, (ShortNameLen - EOPMarker.size()),  0  ); //Put the zeros after the string
