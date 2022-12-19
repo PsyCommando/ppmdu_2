@@ -23,8 +23,8 @@
       }
     },
     {
-      "name": "x64-debug",
-      "displayName": "x64 Debug",
+      "name": "x64-windows-debug",
+      "displayName": "x64 Windows Debug",
       "inherits": "windows-base",
       "architecture": {
         "value": "x64",
@@ -35,30 +35,16 @@
       }
     },
     {
-      "name": "x64-debug-gcc",
-      "displayName": "x64 Debug",
-      "inherits": "windows-base",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "gcc.exe",
-        "CMAKE_CXX_COMPILER": "g++.exe",
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "x64-release",
-      "displayName": "x64 Release",
-      "inherits": "x64-debug",
+      "name": "x64-windows-release",
+      "displayName": "x64 Windows Release",
+      "inherits": "x64-windows-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
-      "name": "x86-debug",
-      "displayName": "x86 Debug",
+      "name": "x86-windows-debug",
+      "displayName": "x86 Windows Debug",
       "inherits": "windows-base",
       "architecture": {
         "value": "x86",
@@ -69,9 +55,9 @@
       }
     },
     {
-      "name": "x86-release",
-      "displayName": "x86 Release",
-      "inherits": "x86-debug",
+      "name": "x86-windows-release",
+      "displayName": "x86 Windows Release",
+      "inherits": "x86-windows-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -106,8 +92,8 @@
       }
     },
     {
-      "name": "macos-debug",
-      "displayName": "macOS Debug",
+      "name": "x64-macos-debug",
+      "displayName": "x64 macOS Debug",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
@@ -125,9 +111,34 @@
           "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}"
         }
       }
+    },
+    {
+      "name": "x64-macos-release",
+      "displayName": "x64 macOS Release",
+      "inherits": "x64-linux-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ],
   "buildPresets": [
+    {
+      "name": "x64-windows-debug",
+      "configurePreset": "x64-windows-debug"
+    },
+    {
+      "name": "x64-windows-release",
+      "configurePreset": "x64-windows-release"
+    },
+    {
+      "name": "x86-windows-release",
+      "configurePreset": "x86-windows-release"
+    },
+    {
+      "name": "x86-windows-debug",
+      "configurePreset": "x86-windows-debug"
+    },
+
     {
       "name": "x64-linux-debug",
       "configurePreset": "x64-linux-debug"
@@ -135,6 +146,15 @@
     {
       "name": "x64-linux-release",
       "configurePreset": "x64-linux-release"
+    },
+
+    {
+      "name": "x64-macos-debug",
+      "configurePreset": "x64-macos-debug"
+    },
+    {
+      "name": "x64-macos-release",
+      "configurePreset": "x64-macos-release"
     }
   ],
   "version": 3
