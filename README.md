@@ -75,16 +75,21 @@ Then make sure you got the ninja build system installed. On Windows, just grab i
 Next, you either want to make sure the path to ninja.exe is in your PATH environment variable, or you can set the full path to it in the ``CMakePresets.json`` file under the ``"CMAKE_MAKE_PROGRAM"`` variable entry for the ``"windows-base"`` configuration preset. 
 
 ### Configuring and Building the Project
-The next part should be relatively straightforward.
+The next part should be relatively straightforward. Make sure you're in the ppmdu_2 directory first.
 
 #### Windows
 
-You should format the configuration command this way:
+In theory, if you got cmake.exe and ninja.exe in your PATH environment variable you can just:
+```
+cmake --preset x64-windows-debug .
+```
+But I couldn't test that at the time of writing.
+
+Alterinatively. You could format the configuration command this way:
 ```
 cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="cl.exe" -DCMAKE_CXX_COMPILER:STRING="cl.exe" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM=[PATH TO THE NINJA.EXE] -DCMAKE_BUILD_TYPE:STRING=[BUILD TYPE EITHER "Debug" or "Release"] -DCMAKE_INSTALL_PREFIX:PATH="out/install/["ARCH-BUILD_TYPE" FOR EXAMPLE: "x64-debug"]"
 ```
 (Note that if you're using gcc or ming or another compiler on windows, you'll have to put in the proper compiler exe in the command-line.)
-
 Example:
 ```
 cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="cl.exe" -DCMAKE_CXX_COMPILER:STRING="cl.exe" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM="ninja.exe" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX:PATH="out/install/x64-debug"
@@ -100,15 +105,14 @@ Where ``[CONFIGURATION PRESET]`` should be replaced with one of the presets in t
 
 
 #### Linux
-You should format the configuration command this way:
+If everything is installed correctly, you can just do this:
 ```
-cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="gcc" -DCMAKE_CXX_COMPILER:STRING="g++" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM="ninja" -DCMAKE_BUILD_TYPE:STRING=[BUILD TYPE EITHER "Debug" or "Release"] -DCMAKE_INSTALL_PREFIX:PATH="out/install/["ARCH-BUILD_TYPE" FOR EXAMPLE: "x64-debug"]"
+cmake --preset [CONFIGURATION PRESET]
 ```
-
 Where ``[CONFIGURATION PRESET]`` should be replaced with one of the presets in the ``CMakePresets.json`` file.
 For example:
 ```
-cmake -G "Ninja" -DCMAKE_C_COMPILER:STRING="gcc" -DCMAKE_CXX_COMPILER:STRING="g++" -DCMAKE_TOOLCHAIN_FILES="vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_MAKE_PROGRAM="ninja" -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX:PATH="out/install/x64-debug"
+cmake --preset x64-linux-release
 ```
 
 If all goes well, vspkg will automatically grab the needed dependencies and install them to the vspkg directory in the repository's root.
@@ -116,14 +120,18 @@ Next you can build the project using the command:
 ```
 cmake --build --preset [CONFIGURATION PRESET]
 ```
+Since we went with a 64 bits debug build earlier, lets use ``"x64-linux-debug"`` for example here:
+```
+cmake --build --preset x64-linux-release
+```
 
-Where ``[CONFIGURATION PRESET]`` should be replaced with one of the presets in the ``CMakePresets.json`` file. Since we went with a 64 bits debug build earlier, lets use ``"x64-linux-debug"`` for example here.
+Now the build should start and create all the executables for the utilities under their respective subfolers's ``bin/`` directory, and move over all the necessary files.
 
 ## Portability:
   Should be compatible with Windows 7+ 32/64, Linux 64bits. I have no ways of testing Apple support.
-	All the libraries, either the submodules, or the ones I had to include in the code, should be multi-platform.
+  All the libraries, either the submodules, or the ones I had to include in the code, should be multi-platform.
 
 ## License:
-  Those tools and their source code, excluding the content of the /deps/ directory (present only for convenience), is [Creative Common 0](https://creativecommons.org/publicdomain/zero/1.0/), AKA Public Domain.
+  Those tools and their source code, excluding the content of the /deps/ directory (present only for convenience, and because some of the libs need some slight tweaking), is [Creative Common 0](https://creativecommons.org/publicdomain/zero/1.0/), AKA Public Domain.
   Do what you want with it. Use the code in your coding horror museum, copy-paste it in your pmd2 tools, anything! XD
   You don't have to credit me, but its always appreciated if you do ! And I'd love to see what people will do with this code.
