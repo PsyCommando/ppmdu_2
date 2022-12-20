@@ -26,7 +26,7 @@ namespace utils{ namespace cmdl
     {
 #ifdef WIN32
         m_nullbuff.open( "nul", std::ios::out );
-#elif __linux__
+#else
         m_nullbuff.open( "/dev/null", std::ios::out );
 #endif
         m_oldbuf = std::clog.rdbuf( &m_nullbuff );

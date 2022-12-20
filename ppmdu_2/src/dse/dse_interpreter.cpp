@@ -1001,7 +1001,7 @@ namespace DSE
                 auto itfound = m_convtable->FindConversionInfo(state.origdseprgm_);
 
                 if( itfound != m_convtable->end() && itfound->second.maxkeydowndur != 0 )
-                    noteofftime = state.ticks_ +  utils::Clamp( state.lasthold_, 0ui32, itfound->second.maxkeydowndur );
+                    noteofftime = state.ticks_ +  utils::Clamp( state.lasthold_, 0_ui32, itfound->second.maxkeydowndur );
             }
 
             if( utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn() )
