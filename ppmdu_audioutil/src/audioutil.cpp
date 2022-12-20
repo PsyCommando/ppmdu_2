@@ -301,13 +301,13 @@ namespace audioutil
             std::bind( &CAudioUtil::ParseOptionOutputXML, &GetInstance(), placeholders::_1 ),
         },
 
-        //nobake -> This disables sample baking
+        //bake -> This enable sample enveloppe baking
         {
-            "nobake",
+            "bake",
             0,
-            "Specifying this will disable the rendering of individual samples for every preset split.",
-            "-nobake",
-            std::bind( &CAudioUtil::ParseOptionNoSampleBake, &GetInstance(), placeholders::_1 ),
+            "Specifying this will enable the pre-rendering of individual samples envelopes for every preset split. In short, it'll render longer version of all samples, and apply the volume envelope directly to them.",
+            "-bake",
+            std::bind( &CAudioUtil::ParseOptionSampleBake, &GetInstance(), placeholders::_1 ),
         },
 
         //nofx
@@ -377,7 +377,7 @@ namespace audioutil
         m_isPMD2          = false;
         m_isListPresets   = false;
         m_useHexaNumbers  = false;
-        m_bBakeSamples    = true;
+        m_bBakeSamples    = false;
         m_bUseLFOFx       = true;
         m_bMakeCvinfo     = false;
         m_bConvertSamples = true;
@@ -727,9 +727,9 @@ namespace audioutil
         return true;
     }
 
-    bool CAudioUtil::ParseOptionNoSampleBake( const std::vector<std::string> & optdata )
+    bool CAudioUtil::ParseOptionSampleBake( const std::vector<std::string> & optdata )
     {
-        m_bBakeSamples = false;
+        m_bBakeSamples = true;
         return true;
     }
 

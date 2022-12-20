@@ -73,7 +73,7 @@ namespace audioutil
         bool ParseOptionOutputSF2  ( const std::vector<std::string> & optdata );
         bool ParseOptionOutputXML  ( const std::vector<std::string> & optdata );
 
-        bool ParseOptionNoSampleBake( const std::vector<std::string> & optdata );
+        bool ParseOptionSampleBake( const std::vector<std::string> & optdata );
 
         bool ParseOptionNoFX( const std::vector<std::string> & optdata );
 
