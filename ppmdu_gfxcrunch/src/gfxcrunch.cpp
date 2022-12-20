@@ -297,7 +297,7 @@ namespace gfx_util
             "Path to an additional item to process.",
 #ifdef WIN32
             "\"c:/mysprites/sprite.wan\"",
-#elif __linux__
+#else
             "\"/mysprites/sprite.wan\"",
 #endif
             std::bind( &CGfxUtil::ParseExtraPath, &GetInstance(), placeholders::_1 ),
@@ -318,7 +318,7 @@ namespace gfx_util
             "The path to either a folder structure containing the data of a sprite to build, or a sprite file to unpack.",
 #ifdef WIN32
             "\"c:/mysprites/sprite.wan\"",
-#elif __linux__
+#else
             "\"/mysprites/sprite.wan\"",
 #endif
             std::bind( &CGfxUtil::ParseInputPath, &GetInstance(), placeholders::_1 ),
@@ -332,7 +332,7 @@ namespace gfx_util
             "The path where to output the result of the operation. Can be a folder, or a file, depending on whether we're building a sprite, or unpacking one.",
 #ifdef WIN32
             "\"c:/mysprites/sprite.wan\"",
-#elif __linux__
+#else
             "\"/mysprites/sprite.wan\"",
 #endif
             std::bind( &CGfxUtil::ParseOutputPath,       &GetInstance(), placeholders::_1 ),

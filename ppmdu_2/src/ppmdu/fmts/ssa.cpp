@@ -290,7 +290,7 @@ namespace filetypes
     {
         static const size_t LEN        = 20;
         static const size_t LENPadding = 4;
-        constexpr int8_t PadByte()const { return 0xFFi8; }
+        constexpr int8_t PadByte()const { return 0xFF_i8; }
 
         int16_t type;
         int16_t facing;   

@@ -88,7 +88,7 @@ namespace audioutil
             "Path to the file/directory to export, or the directory to assemble.",
 #ifdef WIN32
             "\"c:/pmd_romdata/data.bin\"",
-#elif __linux__
+#else
             "\"/pmd_romdata/data.bin\"",
 #endif
             std::bind( &CAudioUtil::ParseInputPath,       &GetInstance(), placeholders::_1 ),
@@ -103,7 +103,7 @@ namespace audioutil
             "Output path. The result of the operation will be placed, and named according to this path!",
 #ifdef WIN32
             "\"c:/pmd_romdata/data\"",
-#elif __linux__
+#else
             "\"/pmd_romdata/data\"",
 #endif
             std::bind( &CAudioUtil::ParseOutputPath,       &GetInstance(), placeholders::_1 ),
