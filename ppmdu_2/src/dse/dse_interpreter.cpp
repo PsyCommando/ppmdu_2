@@ -19,7 +19,7 @@
 #include <deque>
 #include <set>
 #include <stack>
-
+#include <algorithm>
 
 #ifndef AUDIOUTIL_VER
     #define AUDIOUTIL_VER "Poochyena"
@@ -34,6 +34,9 @@ namespace DSE
     static const string TXT_LoopEnd        = "LoopEnd";
     static const string TXT_HoldNote       = "HoldNote";
     static const string TXT_DSE_Event      = "DSE_Event"; //Marks DSE events that have no MIDI equivalents
+    const string TXT_RepeatMark            = "RepeatMark"s;
+    const string TXT_RepeatFromMark        = "RepeatFromMark"s;
+    const string TXT_AfterRepeatMark       = "AfterRepeatMark"s;
 
     static const int8_t DSE_MaxOctave      = 9; //The maximum octave value possible to handle
     const int           NbMidiKeysInOctave = static_cast<uint8_t>(eNote::nbNotes);
@@ -41,7 +44,9 @@ namespace DSE
 
     //const int8_t        NBMidiOctaves      = 128 / NbMidiKeysInOctave; //128 keys total, 12 keys per octave
 
-    static const uint8_t MIDI_CC32_BankLSB = 32; 
+    const uint8_t MIDI_CC32_BankLSB          = 32ui8; 
+    const uint8_t MIDI_CC72_SoundReleaseTime = 72ui8;
+    const uint8_t MIDI_CC73_SoundAttackTime  = 73ui8;
 
     //
     //
@@ -66,122 +71,6 @@ namespace DSE
         outtrack.PutEvent(bankselMSB);
         outtrack.PutEvent(bankselLSB);
     }
-
-
-//======================================================================================
-//  DSESequenceToMidi_Improv
-//======================================================================================
-#if 0
-    /*
-        Improved version of the DSE MIDI Sequence converter.
-
-        This version will work based on MIDI channels
-        It will process all DSE tracks together at the same time. So it will be much easier
-        to process the effect of an event, and pick an output MIDI channel for it.
-
-        We should also keep preset/program states, so we can keep track of polyphony. 
-        And then, we need to see what presets are playing at the same time on other channels, 
-        and "prioritize" some based on their keygroup priority. I suspect it involves making
-        one channel louder than the other by a certain amount of decibel!
-    */
-    class DSESequenceToMidi_Improv
-    {
-    public:
-        typedef uint32_t ticks_t;
-
-        /*
-            Holds data about a note event. What time it began, what time it ends on. And all the required
-            data to make a midi event.
-
-            Those are used to keep track of the notes played at the same time.
-        */
-        class NoteEvent
-        {
-        public:
-            NoteEvent( midinote_t noteid, int8_t velocity, uint8_t midichan, ticks_t begtime, ticks_t endtime );
-
-            //This creates a MIDI event from the data contained in the note!
-            operator jdksmidi::MIDITimedBigMessage()const;
-
-            //This returns whether the note is finished playing from the time passed in parameters.
-            bool IsNoteFinished( ticks_t time )const;
-
-            //This changes the endtime value to the time in ticks specified!
-            void CutNoteNow( ticks_t ticks );
-
-            //The midi note to play
-            midinote_t NoteID()const;
-
-            //Get or set the target midi channel
-            uint8_t MidiChan()const;
-            void    MidiChan( uint8_t midichan );
-
-        private:
-        };
-
-        /*
-            Holds state data for a single dse program.
-        */
-        class PrgState
-        {
-        public:
-
-        private:
-            deque<NoteEvent> m_notes;
-        };
-
-        /*
-            Holds state data for a single channel.
-        */
-        class ChannelState
-        {
-        public:
-
-        private:
-        };
-
-        /*
-            Holds the state of a DSE sequencer track
-        */
-        class TrackState
-        {
-        public:
-
-            //This makes a DSE tracks determine if it needs to handle an event, and if it does handle it.
-            void Process( ticks_t now );
-
-            ticks_t NextEvent()const;
-
-            size_t EventIndex()const;
-
-        private:
-            ticks_t m_nextev;   //The time in ticks when the next event will be processed
-            size_t  m_evindex;  //The index of the DSE event being processed
-        };
-
-        /*
-            Contains the sequencer-wide state variables.
-        */
-        struct SequencerState
-        {
-            ticks_t            m_globalTicks;  //The ticks the Sequencer is at.
-            vector<TrackState> m_TrkState;     //State of all the DSE tracks
-            deque<PrgState>    m_prgstates;    //State of all the DSE programs
-        };
-
-
-    private:
-        //This calls the Process() method of all tracks
-        void ProcessATick();
-
-
-    private:
-        SequencerState        m_CurState;     //Current state of the sequencer
-        SequencerState        m_LoopBegState; //Saved state of the sequencer at the beginning of the loop
-        const MusicSequence * m_seq;          //The Music sequence we're working on
-        
-    };
-#endif
 
 
 //======================================================================================
@@ -218,7 +107,16 @@ namespace DSE
             bankid_t               curbank_        = 0;
             int8_t                 curmaxpoly_     = -1; //Maximum polyphony for current preset!
 
+            int8_t                 trkvol_         = 0; //The volume the track is currently set to
+            int8_t                 trkpan_         = 0; //The pan the track is currently set to
+
             size_t                 looppoint_      = 0; //The index of the envent after the loop pos
+
+            size_t                 repeatmark_     = 0; //Index of the last event indicating the start of a repeated segment.
+            uint8_t                repeattimes_    = 1; //The amount of times to repeat the segment between the repeat mark and repeat message.
+            size_t                 repeat_         = 0; //Index of the last event indicating we should repeat from the last mark.
+            size_t                 afterrepmark_   = 0; //Index of the event indicating where to jump to after repeating the repeated segment.
+
             std::deque<NoteOnData> noteson_; //The notes currently on
             
             bool                   hasinvalidbank  = false; //This is toggled when a bank couldn't be found. It stops all playnote events from playing. 
@@ -526,6 +424,8 @@ namespace DSE
                         outtrack.PutEvent( mess );
                         break;
                     }
+
+                    // --- Octave ---
                     case eTrkEventCodes::SetOctave:
                     {
                         int8_t newoctave = ev.params.front();
@@ -543,6 +443,8 @@ namespace DSE
                         state.octave_ = newoctave;
                         break;
                     }
+
+                    // --- Volume ---
                     case eTrkEventCodes::SetExpress:
                     {
                         mess.SetControlChange( trkchan, jdksmidi::C_EXPRESSION, ev.params.front() );
@@ -552,28 +454,88 @@ namespace DSE
                     }
                     case eTrkEventCodes::SetTrkVol:
                     {
-                        mess.SetControlChange( trkchan, jdksmidi::C_MAIN_VOLUME, ev.params.front() );
+                        state.trkvol_ = std::clamp(static_cast<int8_t>(ev.params.front()), static_cast<int8_t>(0), std::numeric_limits<int8_t>::max()); //Always a positive value
+                        mess.SetControlChange(trkchan, jdksmidi::C_MAIN_VOLUME, state.trkvol_);
                         mess.SetTime(state.ticks_);
                         outtrack.PutEvent( mess );
                         break;
                     }
+                    case eTrkEventCodes::AddTrkVol:
+                    {
+                        state.trkvol_ += static_cast<int8_t>(ev.params.front());
+                        state.trkvol_ = std::clamp(state.trkvol_, static_cast<int8_t>(0), std::numeric_limits<int8_t>::max()); //Always a positive value
+                        mess.SetControlChange(trkchan, jdksmidi::C_MAIN_VOLUME, state.trkvol_);
+                        mess.SetTime(state.ticks_);
+                        outtrack.PutEvent(mess);
+                        break;
+                    }
+                    case eTrkEventCodes::SweepTrackVol:
+                    {
+                        //TODO: Figure something out for this one. Sweeping the track's volume is kinda tricky to handle if we wanna convert the midis back after. 
+                        //Note: Maybe check if this is actually something related to legato?
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+
+                    case eTrkEventCodes::SetChanVol: //Channel Pressure?
+                    {
+                        //Attempting channel pressure
+                        mess.SetChannelPressure(trkchan, ev.params.front());
+                        mess.SetTime(state.ticks_);
+                        outtrack.PutEvent(mess);
+                        break;
+                    }
+                    case eTrkEventCodes::FadeSongVolume:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+                    case eTrkEventCodes::SetNoteVol: //Aftertouch?
+                    {
+                        //Attempting aftertouch
+                        uint8_t lastnote = !(state.noteson_.empty())? state.noteson_.front().noteid : 0;
+                        mess.SetPolyPressure(trkchan, lastnote, ev.params.front());
+                        outtrack.PutEvent(mess);
+                        break;
+                    }
+
+                    // --- Pan/Balance ---
                     case eTrkEventCodes::SetTrkPan:
                     {
-                        //assert(false); //#TODO: Need to track pan for the whole channel + track
-                        mess.SetControlChange( trkchan, jdksmidi::C_PAN, ev.params.front() );
+                        state.trkpan_ = static_cast<int8_t>(ev.params.front());
+                        mess.SetControlChange( trkchan, jdksmidi::C_PAN, state.trkpan_);
                         mess.SetTime(state.ticks_);
-                        outtrack.PutEvent( mess );
+                        outtrack.PutEvent(mess);
+                        break;
+                    }
+                    case eTrkEventCodes::AddTrkPan:
+                    {
+                        state.trkpan_ += static_cast<int8_t>(ev.params.front()); //They probably don't gate against overflows...
+                        mess.SetControlChange(trkchan, jdksmidi::C_PAN, state.trkpan_);
+                        mess.SetTime(state.ticks_);
+                        outtrack.PutEvent(mess);
+                        break;
+                    }
+                    case eTrkEventCodes::SweepTrkPan:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
                         break;
                     }
                     case eTrkEventCodes::SetChanPan:
                     {
                         //assert(false); //#TODO: Need to track pan for the whole channel + track
-                        //Set the channel pan
-                        mess.SetControlChange(trkchan, jdksmidi::C_PAN, ev.params.front());
+
+                        //TEST with balance!
+                        mess.SetControlChange(trkchan, jdksmidi::C_BALANCE, ev.params.front());
                         mess.SetTime(state.ticks_);
-                        outtrack.PutEvent( mess );
+                        outtrack.PutEvent(mess);
                         break;
                     }
+
+                    // --- Pitch ---
                     case eTrkEventCodes::SetPitchBend: //################### FIXME LATER ######################
                     {
                         //NOTE: Pitch bend's range is implementation specific in MIDI. Though PMD2's pitch bend range may vary per program split
@@ -600,28 +562,111 @@ namespace DSE
                         outtrack.PutEvent( mess );
                         break;
                     }
-                    case eTrkEventCodes::LoopPointSet:
+                    case eTrkEventCodes::SetFTune:
+                    case eTrkEventCodes::AddFTune:
+                    case eTrkEventCodes::SetCTune:
+                    case eTrkEventCodes::AddCTune:
+                    case eTrkEventCodes::SweepTune:
+                    case eTrkEventCodes::SetRndNoteRng:
                     {
-                        if( m_nbloops == 0 )
-                        {
-                            if( !m_bLoopBegSet )
-                            {
-                                //Only place an event if we don't loop the track via code, and haven't placed it already to avoid playbak issues
-                                mess.SetMetaType(META_TRACK_LOOP);
-                                mess.SetTime(state.ticks_);
-                                outtrack.PutTextEvent( state.ticks_, META_MARKER_TEXT, TXT_LoopStart.c_str(), TXT_LoopStart.size() );
-                                outtrack.PutEvent( mess );
-                            }
-                        }
-
-                        m_bTrackLoopable = true; //If we got a loop pos, then the track is loopable
-                        m_bLoopBegSet    = true;
-
-                        //Mark the loop position
-                        state.looppoint_          = (state.eventno_ + 1);  //Add one to avoid re-processing the loop marker
-                        m_beflooptrkstates[trkno] = state;                 //Save the track state
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
                         break;
                     }
+
+                    case eTrkEventCodes::SetDetuneRng:
+                    {
+                        //#TODO: This seems to be wrong. detune only takes a byte of value, but the event's params are 2 bytes
+                        mess.SetControlChange(trkchan, jdksmidi::C_CELESTE_DEPTH, ev.params.front());
+                        mess.SetTime(state.ticks_);
+                        outtrack.PutEvent(mess);
+                        break;
+                    }
+
+                    // --- Volume Envelope Controls ---
+                    case eTrkEventCodes::DisableEnvelope:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+                    case eTrkEventCodes::SetEnvAtkLvl:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+                    case eTrkEventCodes::SetEnvAtkTime:
+                    {
+                        mess.SetControlChange(trkchan, MIDI_CC73_SoundAttackTime, ev.params.front());
+                        mess.SetTime(state.ticks_);
+                        outtrack.PutEvent(mess);
+                        break;
+                    }
+                    case eTrkEventCodes::SetEnvHold:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+                    case eTrkEventCodes::SetEnvDecSus:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+                    case eTrkEventCodes::SetEnvFade:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+                    case eTrkEventCodes::SetEnvRelease:
+                    {
+                        mess.SetControlChange(trkchan, MIDI_CC72_SoundReleaseTime, ev.params.front());
+                        mess.SetTime(state.ticks_);
+                        outtrack.PutEvent(mess);
+                        break;
+                    }
+
+                    // --- LFO Controls ---
+                    case eTrkEventCodes::SetLFO1:
+                    case eTrkEventCodes::SetLFO1DelayFade:
+                    case eTrkEventCodes::RouteLFO1ToPitch:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+                    //LFO2
+                    case eTrkEventCodes::SetLFO2:
+                    case eTrkEventCodes::SetLFO2DelFade:
+                    case eTrkEventCodes::RouteLFO2ToVol:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+                    //LFO3
+                    case eTrkEventCodes::SetLFO3:
+                    case eTrkEventCodes::SetLFO3DelFade:
+                    case eTrkEventCodes::RouteLFO3ToPan:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+
+                    case eTrkEventCodes::SetLFO:
+                    case eTrkEventCodes::SetLFODelFade:
+                    case eTrkEventCodes::SetLFOParam:
+                    case eTrkEventCodes::SetLFORoute:
+                    {
+                        if (ShouldMarkUnsupported())
+                            HandleUnsupported(ev, trkno, state, mess, outtrack);
+                        break;
+                    }
+
 
                     //------------------ Program bank related events ------------------
                     case eTrkEventCodes::SetPreset:
@@ -639,23 +684,56 @@ namespace DSE
                         break;
                     }
 
-                    //------------------ Repeat segment events ------------------
-                    case eTrkEventCodes::RepeatFrom:
+                    //------------------ Repeat segment/loop events ------------------
+                    case eTrkEventCodes::LoopPointSet:
                     {
-                        //#TODO: Will require some special implementation
-                        //assert(false);
+                        if (m_nbloops == 0)
+                        {
+                            if (!m_bLoopBegSet)
+                            {
+                                //Only place an event if we don't loop the track via code, and haven't placed it already to avoid playbak issues
+                                mess.SetMetaType(META_TRACK_LOOP);
+                                mess.SetTime(state.ticks_);
+                                outtrack.PutTextEvent(state.ticks_, META_MARKER_TEXT, TXT_LoopStart.c_str(), TXT_LoopStart.size());
+                                outtrack.PutEvent(mess);
+                            }
+                        }
+
+                        m_bTrackLoopable = true; //If we got a loop pos, then the track is loopable
+                        m_bLoopBegSet = true;
+
+                        //Mark the loop position
+                        state.looppoint_ = (state.eventno_ + 1);  //Add one to avoid re-processing the loop marker
+                        m_beflooptrkstates[trkno] = state;                 //Save the track state
                         break;
                     }
-                    case eTrkEventCodes::RepeatSegment:
+
+                    // Since midi has no support whatsoever for these below, we're going to mark the points as they are
+                    case eTrkEventCodes::RepeatFrom: //"Dal Segno" symbol
                     {
-                        //#TODO: Will require some special implementation
-                        //assert(false);
+                        //#TODO: Will require some special implementation!
+                        //#      Additionally, if ripping the midi not for playback it might be desirable to process the midis as close to original as possible!
+                        stringstream sstr;
+                        sstr << TXT_RepeatMark <<":" << static_cast<unsigned int>(ev.params.front());
+                        const string evtxt = sstr.str();
+
+                        outtrack.PutTextEvent(state.ticks_, META_MARKER_TEXT, evtxt.c_str(), evtxt.size());
+                        state.repeatmark_ = (state.eventno_ + 1); //Make sure we don't start repeating on the same event
+                        state.repeattimes_ = ev.params.front();
                         break;
                     }
-                    case eTrkEventCodes::AfterRepeat:
+                    case eTrkEventCodes::RepeatSegment: //"D.S." Becomes "D.S. to coda" if the after repeat is set?
                     {
                         //#TODO: Will require some special implementation
-                        //assert(false);
+                        outtrack.PutTextEvent(state.ticks_, META_MARKER_TEXT, TXT_RepeatFromMark.c_str(), TXT_RepeatFromMark.size());
+                        state.repeat_ = state.eventno_; //Make sure we don't end repeating on the same event
+                        break;
+                    }
+                    case eTrkEventCodes::AfterRepeat: //"Coda"
+                    {
+                        //#TODO: Will require some special implementation
+                        outtrack.PutTextEvent(state.ticks_, META_MARKER_TEXT, TXT_AfterRepeatMark.c_str(), TXT_AfterRepeatMark.size());
+                        state.afterrepmark_ = (state.eventno_ + 1);
                         break;
                     }
 
@@ -714,11 +792,7 @@ namespace DSE
                 itfound->second += 1;
             else
                 m_unhandledEvList.insert(std::make_pair(ev.evcode, 1));
-
-            //if( ev.evcode != static_cast<uint8_t>(eTrkEventCodes::SetSwdl) && ev.evcode != static_cast<uint8_t>(eTrkEventCodes::SetBank) )
-            //{
-            //    cout << "\tEvent ID: 0x" <<hex <<uppercase <<static_cast<unsigned short>(ev.evcode) << ", is unsupported ! Ignoring..\n" <<nouppercase <<dec;
-            //}
+            clog << "\tEvent ID: 0x" <<hex <<uppercase <<static_cast<unsigned short>(ev.evcode) << nouppercase << dec << ", is unsupported ! Ignoring..\n";
         }
 
         /***********************************************************************************
@@ -2232,4 +2306,123 @@ namespace DSE
         }
         return MIDIToDSE(inmidi)();
     }
+
+
+
+
+    //======================================================================================
+//  DSESequenceToMidi_Improv
+//======================================================================================
+#if 0
+    /*
+        Improved version of the DSE MIDI Sequence converter.
+
+        This version will work based on MIDI channels
+        It will process all DSE tracks together at the same time. So it will be much easier
+        to process the effect of an event, and pick an output MIDI channel for it.
+
+        We should also keep preset/program states, so we can keep track of polyphony.
+        And then, we need to see what presets are playing at the same time on other channels,
+        and "prioritize" some based on their keygroup priority. I suspect it involves making
+        one channel louder than the other by a certain amount of decibel!
+    */
+    class DSESequenceToMidi_Improv
+    {
+    public:
+        typedef uint32_t ticks_t;
+
+        /*
+            Holds data about a note event. What time it began, what time it ends on. And all the required
+            data to make a midi event.
+
+            Those are used to keep track of the notes played at the same time.
+        */
+        class NoteEvent
+        {
+        public:
+            NoteEvent(midinote_t noteid, int8_t velocity, uint8_t midichan, ticks_t begtime, ticks_t endtime);
+
+            //This creates a MIDI event from the data contained in the note!
+            operator jdksmidi::MIDITimedBigMessage()const;
+
+            //This returns whether the note is finished playing from the time passed in parameters.
+            bool IsNoteFinished(ticks_t time)const;
+
+            //This changes the endtime value to the time in ticks specified!
+            void CutNoteNow(ticks_t ticks);
+
+            //The midi note to play
+            midinote_t NoteID()const;
+
+            //Get or set the target midi channel
+            uint8_t MidiChan()const;
+            void    MidiChan(uint8_t midichan);
+
+        private:
+        };
+
+        /*
+            Holds state data for a single dse program.
+        */
+        class PrgState
+        {
+        public:
+
+        private:
+            deque<NoteEvent> m_notes;
+        };
+
+        /*
+            Holds state data for a single channel.
+        */
+        class ChannelState
+        {
+        public:
+
+        private:
+        };
+
+        /*
+            Holds the state of a DSE sequencer track
+        */
+        class TrackState
+        {
+        public:
+
+            //This makes a DSE tracks determine if it needs to handle an event, and if it does handle it.
+            void Process(ticks_t now);
+
+            ticks_t NextEvent()const;
+
+            size_t EventIndex()const;
+
+        private:
+            ticks_t m_nextev;   //The time in ticks when the next event will be processed
+            size_t  m_evindex;  //The index of the DSE event being processed
+        };
+
+        /*
+            Contains the sequencer-wide state variables.
+        */
+        struct SequencerState
+        {
+            ticks_t            m_globalTicks;  //The ticks the Sequencer is at.
+            vector<TrackState> m_TrkState;     //State of all the DSE tracks
+            deque<PrgState>    m_prgstates;    //State of all the DSE programs
+        };
+
+
+    private:
+        //This calls the Process() method of all tracks
+        void ProcessATick();
+
+
+    private:
+        SequencerState        m_CurState;     //Current state of the sequencer
+        SequencerState        m_LoopBegState; //Saved state of the sequencer at the beginning of the loop
+        const MusicSequence* m_seq;          //The Music sequence we're working on
+
+    };
+#endif
+
 };

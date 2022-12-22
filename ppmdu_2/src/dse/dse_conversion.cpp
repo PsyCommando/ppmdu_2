@@ -6,6 +6,7 @@
 #include <utils/library_wide.hpp>
 #include <utils/audio_utilities.hpp>
 #include <utils/poco_wrapper.hpp>
+#include <utils/parse_utils.hpp>
 
 #include <ppmdu/fmts/sedl.hpp>
 #include <ppmdu/fmts/smdl.hpp>
