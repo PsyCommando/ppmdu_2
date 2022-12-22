@@ -34,7 +34,7 @@ namespace DSE
     }};
 
 
-    //Duration lookup tables for DSE volume envelopes:
+    //Duration lookup tables for DSE volume envelopes extracted from the game:
     const std::array<int16_t,128> Duration_Lookup_Table =
     {
         0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 
@@ -55,7 +55,7 @@ namespace DSE
         0x1E1E, 0x1F22, 0x2030, 0x2148, 0x2260, 0x2382, 0x2710, 0x7FFF
     };
     
-    //Duration lookup tables for DSE volume envelopes:
+    //Duration lookup tables for DSE volume envelopes extracted from the game:
     const std::array<int32_t,128> Duration_Lookup_Table_NullMulti =
     {
         0x00000000, 0x00000004, 0x00000007, 0x0000000A, 
@@ -113,7 +113,7 @@ namespace DSE
 
     int32_t DSEEnveloppeDurationToMSec( int8_t param, int8_t multiplier )
     { 
-        param = utils::Clamp( abs(param), 0, 127 );
+        param = utils::Clamp( abs(param), 0, 127 ); //Table indices go from 0 to 127
 #if 1
         if( multiplier == 0 )
             return (Duration_Lookup_Table_NullMulti[labs(param)]);
@@ -158,7 +158,7 @@ namespace DSE
     //Global stream operator
 std::ostream& operator<<(std::ostream& os, const DSE::DateTime& obj)
 {
-    os << static_cast<unsigned long>(obj.year) << "/"
+    os  << static_cast<unsigned long>(obj.year) << "/"
         << static_cast<unsigned long>(obj.month) + 1 << "/"
         << static_cast<unsigned long>(obj.day) + 1 << "-"
         << static_cast<unsigned long>(obj.hour) << "h"

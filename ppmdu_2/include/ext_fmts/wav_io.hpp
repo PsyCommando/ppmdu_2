@@ -232,23 +232,23 @@ namespace wave
             Read and returns the fmt chunk for the WAVE file/container specified.
     ******************************************************************************/
     template<class _init>
-        WAVE_fmt_chunk GetWaveFormatInfo( _init itwavbeg )
+        WAVE_fmt_chunk GetWaveFormatInfo( _init itwavbeg, _init itwavend )
     {
         using namespace riff;
         ChunkHeader hdr;
-        itwavbeg = hdr.Read( itwavbeg );
+        itwavbeg = hdr.Read( itwavbeg, itwavend);
 
         if( hdr.chunk_id != static_cast<uint32_t>(eChunkIDs::RIFF) )
             throw std::runtime_error("GetWaveFormatInfo(): Error, the container specified is not a valid WAVE file. RIFF header is invalid!");
 
         //Read format tag
-        uint32_t fmttag = utils::ReadIntFromBytes<uint32_t>( itwavbeg, false ); //Iterator incremented!
+        uint32_t fmttag = utils::ReadIntFromBytes<uint32_t>( itwavbeg, itwavend, false ); //Iterator incremented!
 
         if( fmttag != WAVE_FormatTag )
             throw std::runtime_error("GetWaveFormatInfo(): Error, the container specified is not a valid WAVE file! Missing WAVE format tag after the header!");
 
         WAVE_fmt_chunk fmtchunk;
-        itwavbeg = fmtchunk.Read( itwavbeg );
+        itwavbeg = fmtchunk.Read( itwavbeg, itwavend);
         return fmtchunk; 
     }
 
@@ -424,7 +424,7 @@ namespace wave
             _init ReadWave( _init itfile, _init itfileend )
         {
             //First check if our format matches 
-            WAVE_fmt_chunk info = GetWaveFormatInfo( itfile );
+            WAVE_fmt_chunk info = GetWaveFormatInfo(itfile, itfileend);
             
             if( info.audiofmt_ != static_cast<uint16_t>(trait_t::AudioFormat) )
                 throw std::runtime_error( "WaveFile::ReadWave(): Error, the format of the wave file doesn't match the parser's!" );

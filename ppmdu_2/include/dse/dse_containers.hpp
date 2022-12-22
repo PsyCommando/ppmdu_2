@@ -132,8 +132,17 @@ namespace DSE
                 return nullptr;
         }
 
-        inline std::vector<uint8_t>       * operator[]         ( unsigned int index )      { return sample(index); }
-        inline const std::vector<uint8_t> * operator[]         ( unsigned int index )const { return sample(index); }
+        void setSampleData( unsigned int index, std::vector<uint8_t> && data) 
+        {
+            if(m_SampleData.size() <= index)
+                m_SampleData.resize(index + 1); //Make sure we're big enough
+
+            if (m_SampleData.size() > index)
+                m_SampleData[index].pdata_.reset(new std::vector<uint8_t>(data));
+        }
+
+        inline std::vector<uint8_t>       * operator[]( unsigned int index )      { return sample(index); }
+        inline const std::vector<uint8_t> * operator[]( unsigned int index )const { return sample(index); }
 
     private:
 

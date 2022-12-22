@@ -84,7 +84,7 @@ namespace DSE
         pcm8      = 0x000,
         pcm16     = 0x100,
         ima_adpcm = 0x200,
-        psg       = 0x300, //Probably not PSG!
+        psg       = 0x300, //Probably not PSG! (its probably adpcm3)
     };
 
     inline eDSESmplFmt IntToDSESmplFmt( uint16_t val )
@@ -195,6 +195,7 @@ namespace DSE
             hour    = src.tm_hour;
             minute  = src.tm_min;
             second  = (src.tm_sec == 60)? 59 : src.tm_sec; //We're not dealing with leap seconds...
+            centsec = 0;
         }
 
         //Convert into the standard std::tm calendar time format 

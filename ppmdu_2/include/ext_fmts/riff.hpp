@@ -51,10 +51,10 @@ namespace riff
             Return new read position, after the chunk header that was parsed.
         */
         template<class _init>
-            _init Read( _init itbeg )
+            _init Read( _init itbeg, _init itend)
         {
-            chunk_id = utils::ReadIntFromBytes<decltype(chunk_id)>(itbeg, false);
-            length   = utils::ReadIntFromBytes<decltype(length)>  (itbeg);
+            chunk_id = utils::ReadIntFromBytes<decltype(chunk_id)>(itbeg, itend, false);
+            length   = utils::ReadIntFromBytes<decltype(length)>  (itbeg, itend);
             return itbeg;
         }
 
@@ -129,7 +129,7 @@ namespace riff
             _init Read( _init itbeg, _init itfileend )
         {
             ChunkHeader hdr;
-            itbeg = hdr.Read( itbeg );
+            itbeg = hdr.Read( itbeg, itfileend);
             fourcc_ = hdr.chunk_id; //Fill our fourcc
 
             //Check if we're a standard sub-chunk containing chunk
@@ -139,7 +139,7 @@ namespace riff
                 std::advance(itchnkend, hdr.length);
 
                 //Read format tag 
-                fmtid_ = utils::ReadIntFromBytes<decltype(fmtid_)>(itbeg, false);
+                fmtid_ = utils::ReadIntFromBytes<decltype(fmtid_)>(itbeg, itchnkend, false);
 
                 //Read all sub-chunks
                 while( itbeg != itchnkend )
@@ -256,7 +256,7 @@ namespace riff
             _init ReadAndValidate( _init itbeg, _init itfileend )
         {
             ChunkHeader hdr;
-            hdr.Read( itbeg );
+            hdr.Read( itbeg, itfileend);
 
             //Validate
             if( hdr.chunk_id != static_cast<uint32_t>(eChunkIDs::RIFF) )
@@ -342,7 +342,7 @@ namespace riff
 
             //Read the RIFF header
             ChunkHeader riffhdr;
-            itread = riffhdr.Read(itread);
+            itread = riffhdr.Read(itread, m_end);
             curoffset += ChunkHeader::SIZE;
 
             if( riffhdr.chunk_id != static_cast<uint32_t>(eChunkIDs::RIFF) && riffhdr.chunk_id != static_cast<uint32_t>(eChunkIDs::RIFX) )
@@ -351,7 +351,7 @@ namespace riff
                 throw std::runtime_error( "RIFFMap::analyze(): RIFX(Big endian RIFF) format not supported." );
 
             //Read the content type tag
-            itread = utils::ReadIntFromBytes( m_fmt, itread, false );
+            itread = utils::ReadIntFromBytes( m_fmt, itread, m_end, false );
             curoffset += sizeof(m_fmt);
 
             //Make a list of all the contained chunks
@@ -396,7 +396,7 @@ namespace riff
                 curoffset += cinf.hdr.length;
             }
 
-            return std::move(cinf);
+            return cinf;
         }
 
 

@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <iostream>
 #include <unordered_map>
+#include <map>
 
 #include <Poco/Path.h>
 #include <Poco/File.h>
@@ -259,6 +260,20 @@ namespace DSE
     std::vector<int16_t> RawBytesToPCM16Vec( const std::vector<uint8_t> * praw )
     {
         return std::move( utils::RawPCM16Parser<int16_t>( *praw ) );
+    }
+
+    std::vector<uint8_t> PCM16VecToRawBytes(const std::vector<int16_t>* vec)
+    {
+        std::vector<uint8_t> result;
+        result.reserve(vec->size() * 2);
+        for (uint16_t smpl : *vec)
+        {
+            uint8_t  hi  = static_cast<uint8_t>((smpl >> 8) & 0xFF);
+            uint8_t  low = static_cast<uint8_t>(smpl & 0xFF);
+            result.push_back(low);
+            result.push_back(hi);
+        }
+        return result;
     }
 
     /*
@@ -2231,10 +2246,91 @@ namespace DSE
 //===========================================================================================
 //  Functions
 //===========================================================================================
-    
+    const string _DefaultSamplesSubDir = "samples"s;
+    const string SupportedImportSound_Wav = "wav"s;
+    const string SupportedImportSound_Adpcm = "adpcm"s;
+
+    DSE::PresetBank ImportPresetBank(const std::string& directory)
+    {
+        PresetBank bnk      = XMLToPresetBank(directory);
+        Poco::File smplsdir = Poco::Path(directory).absolute().append(_DefaultSamplesSubDir);
+
+        //Handle sound samples:
+        if (smplsdir.isDirectory() && smplsdir.exists())
+        {
+            Poco::DirectoryIterator itdir(smplsdir);
+            Poco::DirectoryIterator itdirend;
+            map<unsigned int, Poco::Path> samplepaths;
+            //Read samples
+            for (Poco::DirectoryIterator itdir(smplsdir); itdir != itdirend; ++itdir)
+            {
+                if (itdir->isFile())
+                {
+                    Poco::Path curfile(itdir->path());
+                    if (curfile.getExtension() == SupportedImportSound_Wav || curfile.getExtension() == SupportedImportSound_Adpcm)
+                        samplepaths[utils::parseHexaValToValue<unsigned int>(curfile.getBaseName())] = curfile; //Make sure we sort hexadecimal names properly
+                }
+            }
+
+            auto samplebank = bnk.smplbank().lock();
+            for (auto entry : samplepaths)
+            {
+                WavInfo * psmplinfo = samplebank->sampleInfo(entry.first);
+
+                string ext = entry.second.getExtension();
+                if (ext == SupportedImportSound_Wav)
+                {
+                    vector<uint8_t> fdat = utils::io::ReadFileToByteVector(entry.second.toString());
+                    wave::WAVE_fmt_chunk fmt = wave::GetWaveFormatInfo(fdat.begin(), fdat.end());
+                    if (fmt.bitspersample_ == 8)
+                    {
+                        wave::PCM8WaveFile fl;
+                        fl.ReadWave(fdat.begin(), fdat.end());
+                        auto samples = fl.GetSamples().front(); //Always one channel only
+
+                        //#TODO: Check wtf is going on here?
+                        for (auto & asample : samples)
+                            asample ^= 0x80; //Since we did this on export, do it on import too. Flip the first bit, to turn from 2's complement to offset binary(excess-K).
+
+                        samplebank->setSampleData(entry.first, std::move(samples));
+                        if (psmplinfo)
+                        {
+                            psmplinfo->smplfmt = eDSESmplFmt::pcm8;
+                            psmplinfo->loopbeg /= 2;
+                            psmplinfo->looplen /= 2;
+                        }
+                    }
+                    else if(fmt.bitspersample_ == 16)
+                    {
+                        wave::PCM16sWaveFile fl;
+                        fl.ReadWave(fdat.begin(), fdat.end());
+                        auto samples = fl.GetSamples().front(); //Always one channel only
+                        samplebank->setSampleData(entry.first, PCM16VecToRawBytes(&samples));
+                        if (psmplinfo)
+                        {
+                            psmplinfo->smplfmt = eDSESmplFmt::pcm16;
+                        }
+                    }
+                    
+                }
+                else if (ext == SupportedImportSound_Adpcm)
+                {
+                    samplebank->setSampleData(entry.first, audio::ReadADPCMDump(entry.second.toString()));
+                    if (psmplinfo)
+                    {
+                        psmplinfo->smplfmt = eDSESmplFmt::ima_adpcm;
+                        psmplinfo->loopbeg = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
+                        psmplinfo->looplen = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
+                    }
+                }
+            }
+        }
+
+        return bnk;
+    }
+
     void ExportPresetBank( const std::string & directory, const DSE::PresetBank & bnk, bool samplesonly, bool hexanumbers, bool noconvert )
     {
-        static const string _DeafaultSamplesSubDir = "samples";
         auto smplptr = bnk.smplbank().lock();
         
         if( smplptr != nullptr )
@@ -2246,7 +2342,7 @@ namespace DSE
             if( !samplesonly )
             {
                 Poco::Path smpldirpath(directory);
-                smpldirpath.append(_DeafaultSamplesSubDir).makeDirectory();
+                smpldirpath.append(_DefaultSamplesSubDir).makeDirectory();
                 if( ! utils::DoCreateDirectory( smpldirpath.toString() ) )
                     throw runtime_error( "ExportPresetBank(): Couldn't create sample directory ! " + smpldirpath.toString() );
                 smpldir = smpldirpath.toString();
@@ -2287,7 +2383,7 @@ namespace DSE
                         cvinf.loopbeg_ = (cvinf.loopbeg_ - SizeADPCMPreambleWords) * 8; //loopbeg is counted in int32, for APCM data, so multiply by 8 to get the loop beg as pcm16. Subtract one, because of the preamble.
                         cvinf.loopend_ = ::audio::ADPCMSzToPCM16Sz( ptrdata->size() );
 
-                        sstrname <<"_adpcm";
+                        //sstrname <<"_adpcm";
 
                         loopinfo.start_ = cvinf.loopbeg_;
                         loopinfo.end_   = cvinf.loopend_;
@@ -2308,10 +2404,11 @@ namespace DSE
                         outwave.SampleRate( ptrinfo->smplrate );
 
                         auto backins = std::back_inserter(outwave.GetSamples().front());
+                        //#TODO: Check wtf is going on here?
                         for( const auto asample : *ptrdata )
                             (*backins) = asample ^ 0x80; //Flip the first bit, to turn from 2's complement to offset binary(excess-K)
 
-                        sstrname <<"_pcm8";
+                        //sstrname <<"_pcm8";
                         loopinfo.start_ = cvinf.loopbeg_;
                         loopinfo.end_   = cvinf.loopend_;
 
@@ -2344,7 +2441,7 @@ namespace DSE
                             }
                             case eDSESmplFmt::pcm16:
                             {
-                                sstrname <<"_pcm16";
+                                //sstrname <<"_pcm16";
                                 break;
                             }
                             case eDSESmplFmt::psg:
@@ -2380,13 +2477,7 @@ namespace DSE
 
         if( !samplesonly )
         {
-            //auto prgptr  = bnk.prgmbank().lock();
-            //if( prgptr != nullptr )
-            //{
-                PresetBankToXML( bnk, directory );
-            //}
-            //else
-            //    cout << "<!>- The SWDL contains no preset data to export!\n";
+            PresetBankToXML( bnk, directory );
         }
     }
 
