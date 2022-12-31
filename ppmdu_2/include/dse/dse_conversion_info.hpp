@@ -17,6 +17,16 @@ Description: Conversion info data used while converting SMDL files into MIDIs.
 
 namespace DSE
 {
+    /*
+        DSESampleConvertionInfo
+            Details on the resulting sample after being converted.
+    */
+    struct DSESampleConvertionInfo
+    {
+        //In sample points
+        size_t loopbeg_ = 0;
+        size_t loopend_ = 0;
+    };
 
 //================================================================================
 //  SMDLPresetConversionInfo
@@ -139,9 +149,10 @@ namespace DSE
             AddPresetConvInfo
                 Adds an entry for the specified DSE preset!
         */
-        inline void AddPresetConvInfo( dsepresetid_t dseid, PresetConvData && remapdat )
+        inline iterator AddPresetConvInfo( dsepresetid_t dseid, PresetConvData && remapdat )
         {
-           convtbl.emplace( std::make_pair( dseid, std::move(remapdat) ) );
+           auto result = convtbl.emplace( std::make_pair( dseid, std::move(remapdat) ) );
+           return result.first;
         }
 
         void SetOutputName( const std::string & name ) { outputname = name; }
@@ -204,7 +215,7 @@ namespace DSE
             AddConversionInfo
                 Add a conversion info entry
         */
-        void AddConversionInfo( const std::string & name, SMDLPresetConversionInfo && info );
+        void AddConversionInfo( const std::string & name, SMDLPresetConversionInfo info );
 
         /*
             Required STD methods for using with a C++11 foreach loop.

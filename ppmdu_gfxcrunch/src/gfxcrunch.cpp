@@ -839,7 +839,7 @@ namespace gfx_util
                 ++i;
             }
 
-            updtProgress = std::async( std::launch::async, PrintProgressLoop, std::ref(completed), mysprites.size(), std::ref(shouldUpdtProgress) );
+            updtProgress = std::async( std::launch::async, PrintProgressLoop, std::ref(completed), static_cast<uint32_t>(mysprites.size()), std::ref(shouldUpdtProgress) );
             
             taskmanager.Execute();
             taskmanager.BlockUntilTaskQueueEmpty();

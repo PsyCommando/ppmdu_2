@@ -64,8 +64,8 @@ namespace DSE
         uint32_t unk18           = 0;
         uint32_t flen            = 0;
         uint16_t version         = 0;
-        uint8_t  unk1            = 0;
-        uint8_t  unk2            = 0;
+        uint8_t  bankid_low      = 0;
+        uint8_t  bankid_high     = 0;
         uint32_t unk3            = 0;
         uint32_t unk4            = 0;
 
@@ -235,8 +235,8 @@ namespace DSE
             smddat.unk18           = unk18;
             smddat.flen            = flen;
             smddat.version         = version;
-            smddat.unk1            = unk1;
-            smddat.unk2            = unk2;
+            smddat.bankid_low      = unk1;
+            smddat.bankid_high     = unk2;
             smddat.unk3            = unk3;
             smddat.unk4            = unk4;
 
@@ -289,8 +289,8 @@ namespace DSE
         uint32_t unk18           = 0;
         uint32_t flen            = 0;
         uint16_t version         = 0;
-        uint8_t  unk1            = 0;
-        uint8_t  unk2            = 0;
+        uint8_t  bankid_low      = 0;
+        uint8_t  bankid_high     = 0;
         uint32_t unk3            = 0;
         uint32_t unk4            = 0;
 
@@ -323,8 +323,8 @@ namespace DSE
             itwriteto = utils::WriteIntToBytes   ( unk18,            itwriteto );
             itwriteto = utils::WriteIntToBytes   ( flen,             itwriteto );
             itwriteto = utils::WriteIntToBytes   ( version,          itwriteto );
-            itwriteto = utils::WriteIntToBytes   ( unk1,             itwriteto );
-            itwriteto = utils::WriteIntToBytes   ( unk2,             itwriteto );
+            itwriteto = utils::WriteIntToBytes   ( bankid_low,       itwriteto );
+            itwriteto = utils::WriteIntToBytes   ( bankid_high,      itwriteto );
             itwriteto = utils::WriteIntToBytes   ( unk3,             itwriteto );
             itwriteto = utils::WriteIntToBytes   ( unk4,             itwriteto );
 
@@ -359,8 +359,8 @@ namespace DSE
             itReadfrom = utils::ReadIntFromBytes( unk18,        itReadfrom, itEnd );
             itReadfrom = utils::ReadIntFromBytes( flen,         itReadfrom, itEnd );
             itReadfrom = utils::ReadIntFromBytes( version,      itReadfrom, itEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk1,         itReadfrom, itEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk2,         itReadfrom, itEnd );
+            itReadfrom = utils::ReadIntFromBytes( bankid_low,   itReadfrom, itEnd );
+            itReadfrom = utils::ReadIntFromBytes( bankid_high,  itReadfrom, itEnd );
             itReadfrom = utils::ReadIntFromBytes( unk3,         itReadfrom, itEnd );
             itReadfrom = utils::ReadIntFromBytes( unk4,         itReadfrom, itEnd );
 
@@ -388,15 +388,15 @@ namespace DSE
         }
 
         //#DEPRECATED
-        template<class _init>
-            _init ReadFromContainer(  _init itReadfrom )
+        
+        template<class _init> [[deprecated]] _init ReadFromContainer(  _init itReadfrom )
         {
             magicn      = utils::ReadIntFromBytes<decltype(magicn)>     (itReadfrom, false ); //iterator is incremented
             unk18       = utils::ReadIntFromBytes<decltype(unk18)>      (itReadfrom);
             flen        = utils::ReadIntFromBytes<decltype(flen)>       (itReadfrom);
             version     = utils::ReadIntFromBytes<decltype(version)>    (itReadfrom);
-            unk1        = utils::ReadIntFromBytes<decltype(unk1)>       (itReadfrom);
-            unk2        = utils::ReadIntFromBytes<decltype(unk2)>       (itReadfrom);
+            bankid_low  = utils::ReadIntFromBytes<decltype(bankid_low)> (itReadfrom);
+            bankid_high = utils::ReadIntFromBytes<decltype(bankid_high)>(itReadfrom);
             unk3        = utils::ReadIntFromBytes<decltype(unk3)>       (itReadfrom);
             unk4        = utils::ReadIntFromBytes<decltype(unk4)>       (itReadfrom);
 
@@ -443,8 +443,8 @@ namespace DSE
             smddat.unk18           = unk18;
             smddat.flen            = flen;
             smddat.version         = version;
-            smddat.unk1            = unk1;
-            smddat.unk2            = unk2;
+            smddat.bankid_low      = bankid_low;
+            smddat.bankid_high     = bankid_high;
             smddat.unk3            = unk3;
             smddat.unk4            = unk4;
 

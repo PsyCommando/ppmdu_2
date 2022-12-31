@@ -8,6 +8,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <functional>
 using namespace std;
 
 namespace utils
@@ -145,6 +146,30 @@ namespace utils
         if( relative.isAbsolute() )
             return relp;
         return std::move(relative.makeAbsolute().toString());
+    }
+
+    void ProcessAllFileWithExtension(const std::string& dir, const std::string& fext, std::function<void(const std::string&, size_t, size_t)>&& operation)
+    {
+        Poco::DirectoryIterator dirit(dir);
+        Poco::DirectoryIterator diritend;
+
+        //First list all the files we wanna process
+        std::vector<Poco::Path> filesToProcess;
+        for (; dirit != diritend; ++dirit)
+        {
+            string curfext = dirit.path().getExtension();
+            std::transform(curfext.begin(), curfext.end(), curfext.begin(), ::tolower);
+            if (dirit->isFile() && curfext == fext)
+                filesToProcess.push_back(dirit.path());
+        }
+
+        //Then run the operation
+        size_t cntparsed = 0;
+        for (Poco::Path curf : filesToProcess)
+        {
+            operation(Poco::Path::transcode(curf.toString()), cntparsed, filesToProcess.size());
+            ++cntparsed;
+        }
     }
 
 //#ifndef POCO_STATIC

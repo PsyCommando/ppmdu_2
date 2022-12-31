@@ -1136,8 +1136,8 @@ namespace filetypes
 //=======================================================================================
     pmd2::ScriptData ParseScriptData( const std::string & fpath )
     {
-        vector<uint8_t> fdata( std::move(utils::io::ReadFileToByteVector(fpath)) );
-        return std::move( SSDataParser<vector<uint8_t>::const_iterator>(fdata.begin(), fdata.end(), utils::GetFilename(fpath) ).Parse() );
+        vector<uint8_t> fdata(utils::io::ReadFileToByteVector(fpath));
+        return SSDataParser<vector<uint8_t>::const_iterator>(fdata.begin(), fdata.end(), utils::GetFilename(fpath) ).Parse();
     }
 
     void WriteScriptData( const std::string & fpath, const pmd2::ScriptData & scrdat )

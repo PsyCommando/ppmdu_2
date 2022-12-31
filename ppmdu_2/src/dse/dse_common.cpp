@@ -1,6 +1,8 @@
 #include <dse/dse_common.hpp>
 
 #include <ppmdu/fmts/smdl.hpp> //#TODO #MOVEME
+#include <ppmdu/fmts/sedl.hpp>
+#include <ext_fmts/adpcm.hpp>
 
 #include <sstream>
 #include <iomanip>
@@ -92,6 +94,8 @@ namespace DSE
         0x00044A45, 0x00046277, 0x00047B00, 0x7FFFFFFF
     };
 
+    const int SizeADPCMPreambleWords = ::audio::IMA_ADPCM_PreambleLen / sizeof(int32_t);
+
     //inline eDSEChunks IntToChunkID( uint32_t value )
     //{
     //    for( auto cid : DSEChunksList )
@@ -150,6 +154,29 @@ namespace DSE
     //    (*this) = splitentry.env;
     //    return *this;
     //}
+
+
+    void DSE_MetaDataSEDL::setFromHeader(const DSE::SEDL_Header& hdr)
+    {
+        bankid_coarse = hdr.bankid_low;
+        bankid_fine = hdr.bankid_high;
+        fname = std::string(fname.begin(), fname.end());
+
+        createtime.year = hdr.year;
+        createtime.month = hdr.month;
+        createtime.day = hdr.day;
+        createtime.hour = hdr.hour;
+        createtime.minute = hdr.minute;
+        createtime.second = hdr.second;
+        createtime.centsec = hdr.centisec;
+
+        origversion = static_cast<eDSEVersion>(hdr.version);
+
+        unk5 = hdr.unk5;
+        unk6 = hdr.unk6;
+        unk7 = hdr.unk7;
+        unk8 = hdr.unk8;
+    }
 };
 
 //==========================================================================================
@@ -201,7 +228,7 @@ std::ostream& operator<<(std::ostream& strm, const DSE::ProgramInfo& other)
 
     //Write the LFOs
     int cntlfo = 0;
-    for (const auto& lfoen : other.m_lfotbl)
+    for (const DSE::LFOTblEntry& lfoen : other.m_lfotbl)
     {
         strm << "\t-- LFO #" << cntlfo << " --\n"
             << "\tUnk34        : " << static_cast<short>(lfoen.unk34) << "\n"
@@ -219,7 +246,7 @@ std::ostream& operator<<(std::ostream& strm, const DSE::ProgramInfo& other)
 
     //Write the Splits
     int cntsplits = 0;
-    for (const auto& split : other.m_splitstbl)
+    for (const DSE::SplitEntry& split : other.m_splitstbl)
     {
         strm << "\t-- Split #" << cntlfo << " --\n"
             //<< "\tUnk10        : " << static_cast<short>(split.unk10)     <<"\n"
@@ -265,6 +292,33 @@ std::ostream& operator<<(std::ostream& strm, const DSE::ProgramInfo& other)
         ++cntsplits;
     }
 
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const DSE::WavInfo& other)
+{
+    strm << "WavI: SmplID:" << other.id 
+         << ", Tune:(f: " << (int)other.ftune 
+         << ",c:" << (int)other.ctune
+         << "), Root:" << (int)other.rootkey 
+         << ", KTps.:" << (int)other.ktps 
+         << ", Vol:" << (int)other.vol
+         << ", Pan:" << (int)other.pan 
+         << ", Fmt:\"" << DSE::DseSmplFmtToString(other.smplfmt)
+         << "\", Loop:" << other.smplloop 
+         << ", SmplRate:" << (double)(other.smplrate / 1000.0)
+         << " kHz, Loop(beg:" << other.loopbeg 
+         << ", len:" << other.looplen 
+         << "), Env:" << (other.envon ? "On"s : "Off"s)
+         << "(atklvl:" << other.atkvol 
+         << ", atk:" << other.attack 
+         << ", dec:" << other.decay 
+         << ", sus:" << other.sustain 
+         << ",hold:" << other.hold 
+         << ",dec2:" << other.decay2 
+         << ",rel:" << other.release 
+         << ")\n"
+        ;
     return strm;
 }
 

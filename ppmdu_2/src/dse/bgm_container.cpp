@@ -89,50 +89,38 @@ namespace DSE
         return false;
     }
 
-
-    /*
-        ReadBgmContainer
-            Read the bgm container's content into a preset bank and a musicsequence.
-    */
-    std::pair<PresetBank, MusicSequence> ReadBgmContainer( const std::string & filepath )
+    std::pair<PresetBank, MusicSequence> ReadBgmContainer(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend, std::string filepath)
     {
-        vector<uint8_t> fdata( move( utils::io::ReadFileToByteVector( filepath ) ) );
-        sir0_header     hdr;
+        sir0_header hdr;
+        hdr.ReadFromContainer(itbeg, itend);
 
-        hdr.ReadFromContainer( fdata.begin(), fdata.end() );
+        if (hdr.magic != sir0_header::MAGIC_NUMBER)
+            throw runtime_error("ReadBgmContainer() : File is missing SIR0 header!");
 
-        if( hdr.magic != sir0_header::MAGIC_NUMBER )
-            throw runtime_error( "ReadBgmContainer() : File is missing SIR0 header!" );
-            
-        auto        offsets = ReadOffsetsSubHeader( fdata.begin(), fdata.end(), hdr.subheaderptr );
-
-        //SWDL_Header swdhdr;
-        //SMDL_Header smdhdr;
-        //swdhdr.ReadFromContainer( fdata.begin() + offsets[0] );
-        //smdhdr.ReadFromContainer( fdata.begin() + offsets[1] );
+        auto     offsets = ReadOffsetsSubHeader(itbeg, itend, hdr.subheaderptr);
         uint32_t magicn1 = 0;
         uint32_t magicn2 = 0;
-        utils::ReadIntFromBytes(magicn1, fdata.begin() + offsets[0], fdata.end(), false);
-        utils::ReadIntFromBytes(magicn2, fdata.begin() + offsets[1], fdata.end(), false);
+        utils::ReadIntFromBytes(magicn1, itbeg + offsets[0], itend, false);
+        utils::ReadIntFromBytes(magicn2, itbeg + offsets[1], itend, false);
 
         size_t smdloffset = 0;
         size_t swdloffset = 0;
 
         //Check that the swdl and smdl containers are in the right order, or adapt if they're inverted
-        if( magicn1 == SWDL_MagicNumber && magicn2 == SMDL_MagicNumber )
+        if (magicn1 == SWDL_MagicNumber && magicn2 == SMDL_MagicNumber)
         {
             //If in this order
-            swdloffset = offsets[0]; 
+            swdloffset = offsets[0];
             smdloffset = offsets[1];
         }
-        else if( magicn2 == SWDL_MagicNumber && magicn1 == SMDL_MagicNumber )
+        else if (magicn2 == SWDL_MagicNumber && magicn1 == SMDL_MagicNumber)
         {
             //If in inverted order
             swdloffset = offsets[1];
             smdloffset = offsets[0];
 
-            if( utils::LibWide().isLogOn() )
-                clog << "<!>- SWDL and SMDL containers were inverted in the bgm container \"" <<filepath <<"\" !\n";
+            if (utils::LibWide().isLogOn() && !filepath.empty())
+                clog << "<!>- SWDL and SMDL containers were inverted in the bgm container \"" << filepath << "\" !\n";
         }
         else
         {
@@ -141,29 +129,39 @@ namespace DSE
             //throw runtime_error( "ReadBgmContainer(): Bgm container doesn't contain" );
             sstrerror << "ReadBgmContainer(): Bgm container has unexpected content!";
 
-            if( magicn2 == SMDL_MagicNumber )
+            if (magicn2 == SMDL_MagicNumber)
                 sstrerror << " SMDL header present! ";
             else
                 sstrerror << " SMDL header missing! ";
 
-            if( magicn1 == SWDL_MagicNumber )
+            if (magicn1 == SWDL_MagicNumber)
                 sstrerror << "SWDL header present! ";
             else
                 sstrerror << "SWDL header missing! ";
 
-            if( magicn2 == SEDL_MagicNumber )
+            if (magicn2 == SEDL_MagicNumber)
                 sstrerror << "Found unexpected SEDL header! " << "Bgm container is unexpected sound effect container!";
             else
-                sstrerror << "Found unknown header magic number: " <<showbase <<hex <<magicn2 <<dec <<noshowbase << "!\n";
-            throw runtime_error( sstrerror.str() );
+                sstrerror << "Found unknown header magic number: " << showbase << hex << magicn2 << dec << noshowbase << "!\n";
+            throw runtime_error(sstrerror.str());
         }
 
-        auto itbegswdl = fdata.begin() + swdloffset;
-        auto itendswdl = fdata.begin() + smdloffset;
+        auto itbegswdl = itbeg + swdloffset;
+        auto itendswdl = itbeg + smdloffset;
         auto itbegsmdl = itendswdl;
-        auto itendsmdl = fdata.begin() + hdr.subheaderptr;
+        auto itendsmdl = itbeg + hdr.subheaderptr;
 
-        return move( make_pair( move(ParseSWDL( itbegswdl, itendswdl )), move(ParseSMDL( itbegsmdl, itendsmdl )) ) );               
+        return move(make_pair(move(ParseSWDL(itbegswdl, itendswdl)), move(ParseSMDL(itbegsmdl, itendsmdl))));
+    }
+
+    /*
+        ReadBgmContainer
+            Read the bgm container's content into a preset bank and a musicsequence.
+    */
+    std::pair<PresetBank, MusicSequence> ReadBgmContainer( const std::string & filepath )
+    {
+        vector<uint8_t> fdata(utils::io::ReadFileToByteVector(filepath));
+        return ReadBgmContainer(fdata.begin(), fdata.end(), filepath);
     }
 
     /*

@@ -87,7 +87,7 @@ namespace utils
             and specified type.
     *********************************************************************************************/
     template<class _OutSmplTy, class _init, class _backinsit>
-        inline void RawPCM16Parser( _init itbegraw, _init itendraw, _backinsit itdest )
+        void RawPCM16Parser2BackIns( _init itbegraw, _init itendraw, _backinsit itdest )
     {
         for(; itbegraw != itendraw; ++itdest )
             (*itdest) = utils::ReadIntFromBytes<_OutSmplTy>(itbegraw, itendraw); //Iterator is incremented
@@ -105,19 +105,15 @@ namespace utils
         }
         out.reserve(len/2);
 
-        RawPCM16Parser<_OutSmplTy>( itbegraw, itendraw, std::back_inserter(out) );
-
-        //while( itbegraw != itendraw )
-        //    out.push_back( utils::ReadIntFromBytes<_OutSmplTy>( itbegraw ) ); //Iterator is incremented
-
-        return std::move(out);
+        RawPCM16Parser2BackIns<_OutSmplTy>( itbegraw, itendraw, std::back_inserter(out) );
+        return out;
     }
 
     //Vector variant
     template<class _OutSmplTy>
-        inline std::vector<_OutSmplTy> RawPCM16Parser( const std::vector<uint8_t> & raw )
+        std::vector<_OutSmplTy> RawVector2PCM16Parser( const std::vector<uint8_t> & raw )
     {
-        return std::move(RawPCM16Parser<_OutSmplTy>(raw.begin(), raw.end()));
+        return RawPCM16Parser<_OutSmplTy>(raw.begin(), raw.end());
     }
 
     /*********************************************************************************************
@@ -126,7 +122,7 @@ namespace utils
             and specified type.
     *********************************************************************************************/
     template<class _OutSmplTy, class _init, class _backinsit>
-        inline void RawPCM8Parser( _init itbegraw, _init itendraw, _backinsit itdest )
+        void RawPCM8Parser( _init itbegraw, _init itendraw, _backinsit itdest )
     {
         for(; itbegraw != itendraw; ++itbegraw, ++itdest )
             (*itdest) = static_cast<_OutSmplTy>(*itbegraw);
@@ -140,19 +136,30 @@ namespace utils
         const auto len = std::distance( itbegraw, itendraw );
         out.reserve(len*2);
         RawPCM8Parser<_OutSmplTy>( itbegraw, itendraw, std::back_inserter(out) );
-        //for(; itbegraw != itendraw; ++itbegraw )
-        //    out.push_back( static_cast<_OutSmplTy>(*itbegraw) );
-
-        return std::move(out);
+        return out;
     }
 
     //Vector variant
     template<class _OutSmplTy>
-        inline std::vector<_OutSmplTy> RawPCM8Parser( const std::vector<uint8_t> & raw )
+        std::vector<_OutSmplTy> RawPCM8Parser( const std::vector<uint8_t> & raw )
     {
-        return std::move( RawPCM8Parser<_OutSmplTy>( raw.begin(), raw.end() ) );
+        return RawPCM8Parser<_OutSmplTy>( raw.begin(), raw.end() );
     }
 
+    /*
+        PCM8RawBytesToPCM16Vec
+            Take a vector of raw pcm8 samples, and put them into a pcm16 vector!
+            Do extra processing to handle sample sign compared to the conversion from raw uint8.
+    */
+    std::vector<int16_t> PCM8RawBytesToPCM16Vec(const std::vector<uint8_t>* praw);
+    std::vector<uint8_t> PCM16VecToRawBytes(const std::vector<int16_t>* vec);
+
+    /*
+    RawBytesToPCM16Vec
+        Take a vector of 16 bits signed pcm samples as raw bytes, and put them into a vector of
+        signed 16 bits integers!
+    */
+    std::vector<int16_t> RawBytesToPCM16Vec(const std::vector<uint8_t>* praw);
 };
 
 #endif

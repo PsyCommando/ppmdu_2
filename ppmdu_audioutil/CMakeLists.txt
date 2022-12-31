@@ -27,6 +27,7 @@ list(APPEND audioutil_HEADER
     "../ppmdu_2/include/types/content_type_analyser.hpp"
     "../ppmdu_2/include/types/contentid_generator.hpp"
 
+    "../ppmdu_2/include/utils/audio_utilities.hpp"
     "../ppmdu_2/include/utils/cmdline_util.hpp"
     "../ppmdu_2/include/utils/cmdline_util_runner.hpp"
     "../ppmdu_2/include/utils/gbyteutils.hpp"
@@ -56,6 +57,7 @@ list(APPEND audioutil_HEADER
     "../ppmdu_2/include/dse/dse_conversion_info.hpp"
     "../ppmdu_2/include/dse/dse_interpreter.hpp"
     "../ppmdu_2/include/dse/dse_sequence.hpp"
+    "../ppmdu_2/include/dse/dse_to_sf2.hpp"
     "../ppmdu_2/include/dse/dse_to_xml.hpp"
     "../ppmdu_2/include/dse/sadl.hpp"
 
@@ -85,6 +87,7 @@ list(APPEND audioutil_SRC
     "../ppmdu_2/src/types/content_type_analyser.cpp"
     "../ppmdu_2/src/types/contentid_generator.cpp"
 
+    "../ppmdu_2/src/utils/audio_utilities.cpp"
     "../ppmdu_2/src/utils/cmdline_util.cpp"
     "../ppmdu_2/src/utils/gbyteutils.cpp"
     "../ppmdu_2/src/utils/gfileio.cpp"
@@ -107,9 +110,11 @@ list(APPEND audioutil_SRC
     "../ppmdu_2/src/dse/dse_conversion_info.cpp"
     "../ppmdu_2/src/dse/dse_interpreter.cpp"
     "../ppmdu_2/src/dse/dse_interpreter_events.cpp"
+    "../ppmdu_2/src/dse/dse_loader.cpp"
     "../ppmdu_2/src/dse/dse_prgmbank_xml_io.cpp"
     "../ppmdu_2/src/dse/dse_sequence.cpp"
     "../ppmdu_2/src/dse/sample_processor.cpp"
+    "../ppmdu_2/src/dse/dse_to_sf2.cpp"
 
     "../ppmdu_2/src/ext_fmts/adpcm.cpp"
     "../ppmdu_2/src/ext_fmts/midi_fmtrule.cpp"
@@ -127,7 +132,13 @@ list(APPEND audioutil_SRC
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
-add_executable(audioutil ${audioutil_SRC} "src/audioutil.cpp" ${audioutil_HEADER} "src/audioutil.hpp" )
+add_executable(
+    audioutil ${audioutil_SRC} 
+    "src/audioutil.cpp" 
+    "src/audioutil_export.cpp" 
+    "src/audioutil_import.cpp" 
+    ${audioutil_HEADER} 
+    "src/audioutil.hpp" )
 set(audioutil_VERSION 0.39.0)
 
 add_compile_definitions(USE_PPMDU_CONTENT_TYPE_ANALYSER)

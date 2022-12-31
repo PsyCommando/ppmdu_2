@@ -301,9 +301,9 @@ namespace DSE
         SetTempo        = 0xA4, //Sets the tempo of the track in BPM.
         SetTempo2       = 0xA5, //Also sets the tempo of the track in BPM.
 
-        SetSwdlAndBank  = 0xA8, //Set both the swdl id and the bank id. First param is swdl, second is bank.
-        SetSwdl         = 0xA9, //Set that first unknown value from the track's header.
-        SetBank         = 0xAA, //Set that second unknown value from the track's header.
+        SetBank         = 0xA8, //Set both bytes of the bank id.
+        SetBankHighByte = 0xA9, //Sets bank id's high byte.
+        SetBankLowByte  = 0xAA, //Set bank id's low byte.
         SkipNextByte    = 0xAB, //Skip processing the next byte!
         SetPreset       = 0xAC, //Sets the instrument preset to use
 

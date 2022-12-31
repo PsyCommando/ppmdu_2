@@ -13,9 +13,116 @@ All wrongs reversed, no crappyrights :P
 #include <utils/cmdline_util.hpp>
 #include <string>
 #include <vector>
+#include <set>
 
 namespace audioutil
 {
+    const std::string OPTION_SwdlPathSym = "swdlpath";
+    const std::string OPTION_SmdlPathSym = "smdlpath";
+    const std::string OPTION_MkCvInfo    = "makecvinfo";
+    const std::string OPTION_BgmCntPath  = "bgmcntpath";
+    const std::string OPTION_BgmBlobPath = "blobpath";
+    const std::string OPTION_PMD2        = "pmd2";
+
+    /// <summary>
+    /// Whether we're importing something or exporting something
+    /// </summary>
+    enum struct eIEMode
+    {
+        Invalid,
+        Import, //To DSE
+        Export, //From DSE
+    };
+
+    /// <summary>
+    /// The type of file exported for music sequences
+    /// </summary>
+    enum struct eExportSequenceFormat
+    {
+        None,
+        Midi_GS, //For now only midi supported
+    };
+
+    /// <summary>
+    /// The type of files exported for the samples.
+    /// </summary>
+    enum struct eExportSamplesFormat
+    {
+        None,
+        XML, //XML + samples
+        SF2, //Single Soundfont
+        SF2_multiple, //Single sf2 per track
+    };
+
+    /// <summary>
+    /// Contains data on what we're actually importing/exporting
+    /// </summary>
+    struct importExportTarget
+    {
+        //For single file/dir op
+        std::set<std::string> paths; //Input path(s), the directory or file we want to operate on
+        std::string outpath;        //If there is a specific one, the directory or file we want to put our result into
+
+        //For batch op:
+        std::string masterSwdlPath; //If there is one, the master swdl
+        std::string swdlDirPath;    //If there is one, the directory containing all the individual songs swdls
+        std::string sedlDirPath;    //If there is one, the directory containing all the individual songs sedls
+        std::string smdlDirPath;    //If there is one, the directory containing all the individual songs smdls
+
+        //PMD2 only
+        std::string pmd2SwdDirPath; //Path to the swd dir
+        std::string pmd2MeDirPath; //Path to the ME smdl + swdls
+        std::string pmd2SystemDirPath; //Path to the system sedl + swdls
+
+        inline bool hasDseSystemPaths()const noexcept
+        {
+            return !masterSwdlPath.empty() || !swdlDirPath.empty() || !sedlDirPath.empty() || !smdlDirPath.empty() || !pmd2SwdDirPath.empty() || !pmd2MeDirPath.empty() || !pmd2SystemDirPath.empty();
+        }
+    };
+
+    /// <summary>
+    /// The mode of operation for the program
+    /// </summary>
+    enum struct eOpMode
+    {
+        Invalid,
+
+        MakeCvInfo,   //Outputs a blank Cvinfo file for all the swdl loaded !
+        ListSWDLPrgm, //Outputs a list of the all the programs contained in the specified swdl/swdl dir and samples they uses
+
+        //ExportSWDLBank, //Export the main bank, and takes the presets of all the swd files accompanying each smd files in the same folder to build a soundfont!
+        //ExportSWDL,     //Export a SWDL file to a folder. The folder contains the wav, and anything else is turned into XML
+        //ExportSMDL,     //Export a SMDL file as a midi
+        //ExportSEDL,     //Export the SEDL as a midi and some XML
+
+        //ExportBatchPairsAndBank,//Export a batch of SMDL files, along with their SWDL, and a main bank !
+        //ExportBatchPairs,//Export a batch of SMDL files, along with their SWDL !
+        //ExportBatchSMDL, //Export a batch of SMDL files only !
+        //ExportBatchSWDL, //Export a batch of SWDL files only !
+
+        //ExportPMD2,     //Export the entire content of the PMD2's "SOUND" folder
+
+        //BuildSWDL,      //Build a SWDL from a folder. Must contain XML info file. If no preset data present builds a simple wav bank.(samples are imported in the slot corresponding to their file name)
+        //BuildSMDL,      //Build a SMDL from a midi file and a similarly named XML file. XML file used to remap instruments from GM to the game's format, and to set the 2 unknown variables.
+        //BuildSEDL,      //Build SEDL from a folder a midi file and XML.
+
+        //BatchListSWDLPrgm,   //Outputs a list of the all the programs contained in the specified swdls and samples they uses
+        //ListSWDLPrgm,   //Outputs a list of the all the programs contained in the specified swdl and samples they uses
+        //MakeCvInfo,     //Outputs a blank Cvinfo file for all the swdl loaded !
+    };
+
+    //const unsigned int  OpFlag_MatchBlobName = 0b0000'0000'0000'0001;
+    //const unsigned int  OpFlag_SampleBake    = 0b0000'0000'0000'0010;
+    //const unsigned int  OpFlag_SampleToPCM16 = 0b0000'0000'0000'0100;
+    //const unsigned int  OpFlag_NoFx          = 0b0000'0000'0000'1000;
+    //const unsigned int  OpFlag_SampleIdAsHex = 0b0000'0000'0001'0000; //Use hexadecimal sample ids
+    //const unsigned int  OpFlag_MakeCVInfo    = 0b0000'0000'0010'0000;
+    //const unsigned int  OpFlag_ListPresets   = 0b0000'0000'0100'0000;
+    //const unsigned int  OpFlag_LogVerbose    = 0b0000'0000'1000'0000;
+
+    /// <summary>
+    /// Main class for running the program
+    /// </summary>
     class CAudioUtil : public utils::cmdl::CommandLineUtility
     {
     public:
@@ -53,56 +160,72 @@ namespace audioutil
                                     size_t                                        nblefttoparse );
 
         //Parsing Options
-        bool ParseOptionGeneralMidi( const std::vector<std::string> & optdata ); //Export to general midi format
-        bool ParseOptionForceLoops ( const std::vector<std::string> & optdata ); //Loop a track and omit loop markers
-        bool ParseOptionPMD2       ( const std::vector<std::string> & optdata ); //Export the content of the PMD2 "SOUND" directory
+        bool ParseOptionExport(const std::vector<std::string>& optdata);
+        bool ParseOptionImport(const std::vector<std::string>& optdata);
 
-        bool ParseOptionPathToCvInfo( const std::vector<std::string> & optdata ); //Set the path to the cvinfo file to use
+       // bool ParseOptionMBAT       ( const std::vector<std::string> & optdata ); //Export Master Bank And Tracks using the specified folder.
 
-        bool ParseOptionMBAT       ( const std::vector<std::string> & optdata ); //Export Master Bank And Tracks using the specified folder.
-        bool ParseOptionLog        ( const std::vector<std::string> & optdata ); //Redirects clog to the file specified
-        bool ParseOptionVerbose    ( const std::vector<std::string> & optdata ); //Write more info to the log file!
-
+        //target directory info
+        bool ParseOptionPMD2(const std::vector<std::string>& optdata); //Target the content of the PMD2 "SOUND" directory
         bool ParseOptionMBank      ( const std::vector<std::string> & optdata );
         bool ParseOptionSWDLPath   ( const std::vector<std::string> & optdata );
         bool ParseOptionSMDLPath   ( const std::vector<std::string> & optdata );
 
-        bool ParseOptionListPresets( const std::vector<std::string> & optdata );
-        bool ParseOptionUseHexNumbers( const std::vector<std::string> & optdata );
+        //Special input types
+        bool ParseOptionBGMCntPath(const std::vector<std::string>& optdata);
+        bool ParseOptionBlobPath(const std::vector<std::string>& optdata);
+        bool ParseOptionBlobMatchByName(const std::vector<std::string>& optdata);
 
+        //Output type
         bool ParseOptionOutputSF2  ( const std::vector<std::string> & optdata );
         bool ParseOptionOutputXML  ( const std::vector<std::string> & optdata );
+        bool ParseOptionForceMidi(const std::vector<std::string>& optdata);
 
+        //Processing options
         bool ParseOptionSampleBake( const std::vector<std::string> & optdata );
+        bool ParseOptionConvertSamplesToPCM16(const std::vector<std::string>& optdata); 
+        bool ParseOptionNoFX( const std::vector<std::string> & optdata ); //Ignore all applied LFO, vibrato, pitch bend, etc..
+        bool ParseOptionGeneralMidi(const std::vector<std::string>& optdata); //Import/Export from/to general midi format
+        bool ParseOptionForceLoops(const std::vector<std::string>& optdata); //loop exported midi tracks the given amount of times, and omit loop markers
+        bool ParseOptionUseHexNumbers(const std::vector<std::string>& optdata); //Numbers exported samples by hexadecimal numbers instead of decimal
 
-        bool ParseOptionNoFX( const std::vector<std::string> & optdata );
+        //CVInfo stuff
+        bool ParseOptionMakeCvinfo(const std::vector<std::string>& optdata);
+        bool ParseOptionPathToCvInfo(const std::vector<std::string>& optdata); //Set the path to the cvinfo file to use
 
-        bool ParseOptionMakeCvinfo( const std::vector<std::string> & optdata );
-
-        bool ParseOptionBGMCntPath( const std::vector<std::string> & optdata );
-
-        bool ParseOptionForceMidi( const std::vector<std::string> & optdata );
-
-        bool ParseOptionBlobPath( const std::vector<std::string> & optdata );
-
-        bool ParseOptionNoConvertSamples( const std::vector<std::string> & optdata );
-
-        bool ParseOptionMatchByName(const std::vector<std::string> & optdata);
+        //Logging options
+        bool ParseOptionLog(const std::vector<std::string>& optdata); //Redirects clog to the file specified
+        bool ParseOptionVerbose(const std::vector<std::string>& optdata); //Write more info to the log file!
+        bool ParseOptionListPresets(const std::vector<std::string>& optdata);
 
         //Execution
         void DetermineOperation();
+
+        /// <summary>
+        /// Loads all the specified DSE paths if they were defined.
+        /// </summary>
+        /// <returns></returns>
+        int LoadFromArgPaths();
+
         int  Execute           ();
+        int ExecuteExport(importExportTarget& exportpaths, eExportSequenceFormat seqfmt, eExportSamplesFormat smplfmt);
+        void ExportAFile(const std::string& path, eExportSequenceFormat seqfmt, eExportSamplesFormat smplfmt);
+        int ExecuteImport();
         int  GatherArgs        ( int argc, const char * argv[] );
 
+        //Returns whether we had any system path defined
+        bool CheckAndUpdateDseSystemPaths();
+
+
         //Exec methods
-        //int ExportSWDLBank();
-        int ExportSWDL();
-        int ExportSMDL();
-        int ExportSEDL();
+        int ExportSWDL(const std::string& path, const std::vector<uint8_t>& fdata);
+        int ExportSMDL(const std::string& path, const std::vector<uint8_t>& fdata);
+        int ExportSEDL(const std::string& path, const std::vector<uint8_t>& fdata);
 
         int ExportBatchPairsAndBank();
         int ExportBatchPairs();
 
+        int ImportPMD2Audio();
         int ExportPMD2Audio(); //Export completely the content of a PMD2 ROM's "SOUND" directory
 
         int ExportBatchSWDL();
@@ -113,13 +236,6 @@ namespace audioutil
         int BuildSWDL();
         int BuildSMDL();
         int BuildSEDL();
-
-        //Utility
-        /*
-            DoExportLoader
-                Will export the content of the batch loader according to the output type selected by the user.
-        */
-        void DoExportLoader( DSE::BatchAudioLoader & bal, const std::string & outputpath );
 
         //Constants
         static const std::string                                 Exe_Name;
@@ -132,42 +248,6 @@ namespace audioutil
         static const std::vector<utils::cmdl::optionparsing_t>   Options_List;
         static const int                                         MaxNbLoops;
 
-        enum struct eOpMode
-        {
-            Invalid,
-
-            ExportSWDLBank, //Export the main bank, and takes the presets of all the swd files accompanying each smd files in the same folder to build a soundfont!
-            ExportSWDL,     //Export a SWDL file to a folder. The folder contains the wav, and anything else is turned into XML
-            ExportSMDL,     //Export a SMDL file as a midi
-            ExportSEDL,     //Export the SEDL as a midi and some XML
-
-            ExportBatchPairsAndBank,//Export a batch of SMDL files, along with their SWDL, and a main bank !
-            ExportBatchPairs,//Export a batch of SMDL files, along with their SWDL !
-            ExportBatchSMDL, //Export a batch of SMDL files only !
-            ExportBatchSWDL, //Export a batch of SWDL files only !
-
-            ExportPMD2,     //Export the entire content of the PMD2's "SOUND" folder
-
-            BuildSWDL,      //Build a SWDL from a folder. Must contain XML info file. If no preset data present builds a simple wav bank.(samples are imported in the slot corresponding to their file name)
-            BuildSMDL,      //Build a SMDL from a midi file and a similarly named XML file. XML file used to remap instruments from GM to the game's format, and to set the 2 unknown variables.
-            BuildSEDL,      //Build SEDL from a folder a midi file and XML.
-
-            BatchListSWDLPrgm,   //Outputs a list of the all the programs contained in the specified swdls and samples they uses
-            ListSWDLPrgm,   //Outputs a list of the all the programs contained in the specified swdl and samples they uses
-            MakeCvInfo,     //Outputs a blank Cvinfo file for all the swdl loaded !
-        };
-
-        //Types of output
-        enum struct eOutputType
-        {
-            XML,        // For exporting before editing tracks and their samples/instrument data
-            SF2,        // For exporting a Sounfont
-            DLS,        // For possible DLS support in the future
-            MIDI_Only,  // For exporting only MIDIs
-        };
-
-        //Default filenames names
-
         //Variables
         std::string m_inputPath;        //This is the input path that was parsed 
         std::string m_outputPath;       //This is the output path that was parsed
@@ -175,7 +255,7 @@ namespace audioutil
         eOpMode     m_operationMode;    //This holds what the program should do
         bool        m_bGM;              //Whether we export to general midi compatible format or not
         int         m_nbloops;          //The amount of times to loop a track, 0 if should use loop markers instead
-        bool        m_isPMD2;           //Whether we should treat the input path as the PMD2 ROM's root data folder
+        //bool        m_isPMD2;           //Whether we should treat the input path as the PMD2 ROM's root data folder
         bool        m_isListPresets;    //Whether the list preset mode was activated !
         bool        m_useHexaNumbers;   //Whether applicable exported filenames will contain hexadecimal numbers or decimal
         bool        m_bBakeSamples;     //Whether each preset's split should have a sample baked for it.
@@ -183,23 +263,25 @@ namespace audioutil
         bool        m_bMakeCvinfo;      //Whether we should export a blank cvinfo file!
         bool        m_bConvertSamples;  //Whether the samples should be converted to pcm16 when exporting
         bool        m_bmatchbyname;     //Whether the containers inside a blob should be matched by internal name or simply matched by order in the blob.
-        
-        //bool        m_bForceMidiExp;    //Whether the user is forcing MIDI export.
 
-        std::string m_mbankpath;
-        std::string m_swdlpath;
-        std::string m_smdlpath;
-        std::string m_bgmcntpath;
-        std::string m_bgmcntext;
-        std::vector<std::string> m_bgmblobpath;
+        //Export type selection
+        eExportSequenceFormat m_seqExportFmt;
+        eExportSamplesFormat  m_smplsExportFmt;
 
-        eOutputType m_outtype;
+        importExportTarget  m_targetPaths; //When changing this make sure to update CheckAndUpdateDseSystemPaths()
+        eIEMode             m_iemode;
+        std::string         m_pmd2root;
+        std::string         m_mbankpath;
+        std::string         m_swdlpath;
+        std::string         m_smdlpath;
+        std::string         m_sedlpath;
+        std::string         m_bgmcntpath;
+        std::string         m_bgmcntext;
+        std::vector<std::string>        m_bgmblobpath;
+        utils::cmdl::RAIIClogRedirect   m_redirectClog;
 
-        utils::cmdl::RAIIClogRedirect m_redirectClog;
+        DSE::DSELoader m_loader;
     };
-
-
-
 };
 
 #endif 

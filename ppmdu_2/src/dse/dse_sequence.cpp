@@ -77,16 +77,16 @@ namespace DSE
         { eTrkEventCodes::SetTempo,         eTrkEventCodes::Invalid, 1, "SetTempo" },
 
         //0xA5 - SetTempo2
-        { eTrkEventCodes::SetTempo2,         eTrkEventCodes::Invalid, 1, "SetTempo2" },
+        { eTrkEventCodes::SetTempo2,        eTrkEventCodes::Invalid, 1, "SetTempo2" },
 
-        //0xA8 - SetSwdlAndBank
-        { eTrkEventCodes::SetSwdlAndBank,   eTrkEventCodes::Invalid, 2, "SetSwdlAndBank" },
+        //0xA8 - SetBank
+        { eTrkEventCodes::SetBank,          eTrkEventCodes::Invalid, 2, "SetBank" },
 
-        //0xA9 - SetSwdl
-        { eTrkEventCodes::SetSwdl,          eTrkEventCodes::Invalid, 1, "SetSwdl" },
+        //0xA9 - SetBankHighByte
+        { eTrkEventCodes::SetBankHighByte,  eTrkEventCodes::Invalid, 1, "SetBankHighByte" },
 
-        //0xAA - SetBank
-        { eTrkEventCodes::SetBank,          eTrkEventCodes::Invalid, 1, "SetBank" },
+        //0xAA - SetBankLowByte
+        { eTrkEventCodes::SetBankLowByte,   eTrkEventCodes::Invalid, 1, "SetBankLowByte" },
 
         //0xAB - SkipNextByte
         { eTrkEventCodes::SkipNextByte,     eTrkEventCodes::Invalid, 1, "SkipNextByte" },

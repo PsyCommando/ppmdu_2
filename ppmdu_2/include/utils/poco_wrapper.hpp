@@ -8,6 +8,7 @@ Description: A wrapper to avoid including POCO for doing some common file operat
 */
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace utils
 {
@@ -110,6 +111,14 @@ namespace utils
     */
     std::string MakeAbsolutePath( const std::string & relp, const std::string & absbasep );
     std::string MakeAbsolutePath( const std::string & relp );
+
+    /// <summary>
+    /// Process all files in a given directory by applying "operation" on the file path and file counter.
+    /// </summary>
+    /// <param name="dir"></param>
+    /// <param name="fext"></param>
+    /// <param name="operation"></param>
+    void ProcessAllFileWithExtension(const std::string& dir, const std::string& fext, std::function<void(const std::string& /*file path*/, size_t /*file counter*/, size_t /*total files*/)>&& operation);
 };
 
 #endif

@@ -29,7 +29,7 @@ namespace DSE
     {{
         { eDSESmplFmt::pcm8,      1, 4,  8, 1 },
         { eDSESmplFmt::pcm16,     1, 2, 16, 2 },
-        { eDSESmplFmt::ima_adpcm, 9, 8,  4, 1 },
+        { eDSESmplFmt::ima_adpcm4, 9, 8,  4, 1 },
         //Idk if there are any other formats.
     }};
 
@@ -69,8 +69,8 @@ namespace DSE
         this->unk18           =  other.unk18;
         this->flen            =  other.flen;
         this->version         =  other.version;
-        this->unk1            =  other.unk1;
-        this->unk2            =  other.unk2;
+        this->bankid_low      =  other.unk1;
+        this->bankid_high     =  other.unk2;
         this->unk3            =  other.unk3;
         this->unk4            =  other.unk4;
         this->year            =  other.year;
@@ -97,8 +97,8 @@ namespace DSE
         this->unk18           = other.unk18;
         this->flen            = other.flen;
         this->version         = other.version;
-        this->unk1            = other.unk1;
-        this->unk2            = other.unk2;
+        this->bankid_low      = other.bankid_low;
+        this->bankid_high     = other.bankid_high;
         this->unk3            = other.unk3;
         this->unk4            = other.unk4;
         this->year            = other.year;
@@ -131,8 +131,8 @@ namespace DSE
         hdr.unk18           = 0;
         hdr.flen            = flen;
         hdr.version         = SWDL_Header_v402::DefVersion;
-        hdr.unk1            = unk1;
-        hdr.unk2            = unk2;
+        hdr.unk1            = bankid_low;
+        hdr.unk2            = bankid_high;
         hdr.unk3            = unk3;
         hdr.unk4            = unk4;
         hdr.year            = year;
@@ -165,8 +165,8 @@ namespace DSE
         hdr.unk18           = 0;
         hdr.flen            = flen;
         hdr.version         = SWDL_Header_v415::DefVersion;
-        hdr.unk1            = unk1;
-        hdr.unk2            = unk2;
+        hdr.bankid_low      = bankid_low;
+        hdr.bankid_high     = bankid_high;
         hdr.unk3            = unk3;
         hdr.unk4            = unk4;
         hdr.year            = year;
@@ -1860,7 +1860,7 @@ namespace DSE
                 if( m_hdr.pcmdlen != 0 && (m_hdr.pcmdlen & 0xFFFF0000) != SWDL_PCMDSpecialSize )
                 {
                     //Grab the info on every samples
-                    vector<SampleBank::smpldata_t> smpldat(ParseWaviChunk_v415());
+                    vector<SampleBank::SampleBlock> smpldat(ParseWaviChunk_v415());
                     auto psmpls = ParseSamples(smpldat);
 
                     if( utils::LibWide().isLogOn() )
@@ -1880,7 +1880,7 @@ namespace DSE
             {
                 auto pinst  = ParsePrograms<ProgramInfo_v402>();
                 //Grab the info on every samples
-                vector<SampleBank::smpldata_t> smpldat(ParseWaviChunk_v402());
+                vector<SampleBank::SampleBlock> smpldat(ParseWaviChunk_v402());
                 auto psmpls = ParseSamples(smpldat);
 
                 if( utils::LibWide().isLogOn() )
@@ -1914,8 +1914,8 @@ namespace DSE
         void ParseMeta()
         {
             m_meta.fname = string( m_hdr.fname.data() );
-            m_meta.unk1               = m_hdr.unk1;
-            m_meta.unk2               = m_hdr.unk2;
+            m_meta.bankid_coarse      = m_hdr.bankid_low;
+            m_meta.bankid_fine        = m_hdr.bankid_high;
             m_meta.createtime.year    = m_hdr.year;
             m_meta.createtime.month   = m_hdr.month;
             m_meta.createtime.day     = m_hdr.day;
@@ -2022,7 +2022,7 @@ namespace DSE
             return move(keygroups);
         }
 
-        std::unique_ptr<SampleBank> ParseSamples( vector<SampleBank::smpldata_t> & smpldat )
+        std::unique_ptr<SampleBank> ParseSamples( vector<SampleBank::SampleBlock> & smpldat )
         {
             //Find the PCMD chunk
             auto itpcmd = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::pcmd );
@@ -2050,7 +2050,7 @@ namespace DSE
             return std::unique_ptr<SampleBank>( new SampleBank( move(smpldat) ) );
         }
 
-        vector<SampleBank::smpldata_t> ParseWaviChunk_v415()
+        vector<SampleBank::SampleBlock> ParseWaviChunk_v415()
         {
             auto itwavi = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::wavi );
 
@@ -2061,7 +2061,7 @@ namespace DSE
             itwavi = wavihdr.ReadFromContainer( itwavi, m_itend ); //Move iterator past the header
 
             //Create the vector with the nb of slots mentioned in the header
-            vector<SampleBank::smpldata_t> waviptrs( m_hdr.nbwavislots );
+            vector<SampleBank::SampleBlock> waviptrs( m_hdr.nbwavislots );
 
             if( utils::LibWide().isLogOn() )
             {
@@ -2087,9 +2087,9 @@ namespace DSE
                             clog << "PCM8";
                         else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::pcm16) )
                             clog << "PCM16";
-                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm) )
+                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm4) )
                             clog << "IMA ADPCM4";
-                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::psg) )
+                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm3) )
                             clog << "PSG?";
                         else
                             clog << "UNKNOWN FORMAT( 0x" <<hex <<winf.smplfmt <<dec << " )";
@@ -2103,7 +2103,7 @@ namespace DSE
             return waviptrs;
         }
 
-        vector<SampleBank::smpldata_t> ParseWaviChunk_v402()
+        vector<SampleBank::SampleBlock> ParseWaviChunk_v402()
         {
             auto itwavi = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::wavi );
 
@@ -2114,7 +2114,7 @@ namespace DSE
             itwavi = wavihdr.ReadFromContainer( itwavi, m_itend ); //Move iterator past the header
 
             //Create the vector with the nb of slots mentioned in the header
-            vector<SampleBank::smpldata_t> waviptrs( m_hdr.nbwavislots );
+            vector<SampleBank::SampleBlock> waviptrs( m_hdr.nbwavislots );
 
             if( utils::LibWide().isLogOn() )
             {
@@ -2160,17 +2160,7 @@ namespace DSE
                     if( utils::LibWide().isLogOn() )
                     {
                         clog <<"\t* Sample #" <<cntslot <<", " <<winf.smplrate <<" Hz, ";
-                        if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::pcm8) )
-                            clog << "PCM8";
-                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::pcm16) )
-                            clog << "PCM16";
-                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm) )
-                            clog << "IMA ADPCM4";
-                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::psg) )
-                            clog << "PSG?";
-                        else
-                            clog << "UNKNOWN FORMAT( 0x" <<hex <<winf.smplfmt <<dec << " )";
-                        clog << "\n";
+                        clog << DseSmplFmtToString(static_cast<eDSESmplFmt>(winf.smplfmt)) << "\n";
                     }
                     ablock.pinfo_.reset( new WavInfo(winf) );
                 }
@@ -2227,7 +2217,7 @@ namespace DSE
 
             hassmpldata = !std::all_of( ptrsbnk->begin(), 
                                         ptrsbnk->end(), 
-                                        []( const SampleBank::smpldata_t & entry )->bool 
+                                        []( const SampleBank::SampleBlock& entry )->bool
                                         { return entry.pdata_ == nullptr; } );
 
             sampleOffsets.resize( ptrsbnk->NbSlots(), 0 );
@@ -2292,25 +2282,25 @@ namespace DSE
             if( m_version == eDSEVersion::V415 )
             {
                 SWDL_Header_v415 hdr;
-                hdr.unk18    = 0; //Always null
-                hdr.flen     = filelen;
-                hdr.version  = SWDL_Header_v415::DefVersion; 
-                hdr.unk1     = m_src.metadata().unk1;
-                hdr.unk2     = m_src.metadata().unk2;
-                hdr.unk3     = 0; //Always null
-                hdr.unk4     = 0; //Always null
-                hdr.year     = m_src.metadata().createtime.year;
-                hdr.month    = m_src.metadata().createtime.month;
-                hdr.day      = m_src.metadata().createtime.day;
-                hdr.hour     = m_src.metadata().createtime.hour;
-                hdr.minute   = m_src.metadata().createtime.minute;
-                hdr.second   = m_src.metadata().createtime.second;
-                hdr.centisec = m_src.metadata().createtime.centsec;
+                hdr.unk18       = 0; //Always null
+                hdr.flen        = filelen;
+                hdr.version     = SWDL_Header_v415::DefVersion; 
+                hdr.bankid_low  = m_src.metadata().bankid_coarse;
+                hdr.bankid_high = m_src.metadata().bankid_fine;
+                hdr.unk3        = 0; //Always null
+                hdr.unk4        = 0; //Always null
+                hdr.year        = m_src.metadata().createtime.year;
+                hdr.month       = m_src.metadata().createtime.month;
+                hdr.day         = m_src.metadata().createtime.day;
+                hdr.hour        = m_src.metadata().createtime.hour;
+                hdr.minute      = m_src.metadata().createtime.minute;
+                hdr.second      = m_src.metadata().createtime.second;
+                hdr.centisec    = m_src.metadata().createtime.centsec;
                 std::copy( begin(m_src.metadata().fname), end(m_src.metadata().fname), begin(hdr.fname) );
-                hdr.unk10    = SWDL_Header_v415::DefUnk10;
-                hdr.unk11    = 0; //Always null
-                hdr.unk12    = 0; //Always null
-                hdr.unk13    = SWDL_Header_v415::DefUnk13;
+                hdr.unk10       = SWDL_Header_v415::DefUnk10;
+                hdr.unk11       = 0; //Always null
+                hdr.unk12       = 0; //Always null
+                hdr.unk13       = SWDL_Header_v415::DefUnk13;
                 if( pcmdatalen != 0 )
                     hdr.pcmdlen = pcmdatalen;
                 else
@@ -2341,8 +2331,8 @@ namespace DSE
                 hdr.unk18    = 0; //Always null
                 hdr.flen     = filelen;
                 hdr.version  = SWDL_Header_v402::DefVersion; 
-                hdr.unk1     = m_src.metadata().unk1;
-                hdr.unk2     = m_src.metadata().unk2;
+                hdr.unk1     = m_src.metadata().bankid_coarse;
+                hdr.unk2     = m_src.metadata().bankid_fine;
                 hdr.unk3     = 0; //Always null
                 hdr.unk4     = 0; //Always null
                 hdr.year     = m_src.metadata().createtime.year;

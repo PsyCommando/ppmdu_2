@@ -13,6 +13,7 @@ Description: Several container objects for holding the content of loaded DSE fil
 #include <string>
 #include <memory>
 #include <future>
+#include <set>
 
 //# TODO: Move implementation into CPP !!
 
@@ -34,41 +35,79 @@ namespace DSE
             wavinfoptr_t pinfo_;
             smpl_t       pdata_;
 
-            inline bool isnull() { return (pinfo_ == nullptr) && (pdata_ == nullptr); }
+            inline bool isnull()const { return (pinfo_ == nullptr) && (pdata_ == nullptr); }
 
-            SampleBlock(){}
-            SampleBlock(const SampleBlock&)             = delete;
-            SampleBlock & operator=(const SampleBlock&) = delete;
+            SampleBlock()noexcept {}
+            SampleBlock(smpl_t && smpl, wavinfoptr_t && wavi)noexcept
+                :pinfo_(std::forward<wavinfoptr_t>(wavi)), pdata_(std::forward<smpl_t>(smpl))
+            {}
 
-            SampleBlock( SampleBlock && other )
+            SampleBlock(const SampleBlock& other)noexcept
+            {
+                operator=(other);
+            }
+
+            SampleBlock& operator=(const SampleBlock& other)noexcept
+            {
+                if(other.pdata_)
+                    pdata_ = smpl_t(new std::vector<uint8_t>(*other.pdata_));
+                if (other.pinfo_)
+                    pinfo_ = wavinfoptr_t(new DSE::WavInfo(*other.pinfo_));
+                return *this;
+            }
+
+            SampleBlock( SampleBlock && other )noexcept
             {
                 pinfo_.reset( other.pinfo_.release() );
                 pdata_.reset( other.pdata_.release() );
             }
 
-            SampleBlock & operator=( SampleBlock && other )
+            SampleBlock & operator=( SampleBlock && other )noexcept
             {
                 pinfo_.reset( other.pinfo_.release() );
                 pdata_.reset( other.pdata_.release() );
                 return *this;
             }
-        };
-        typedef SampleBlock smpldata_t;
-        typedef std::vector<smpldata_t>::iterator       iterator;
-        typedef std::vector<smpldata_t>::const_iterator const_iterator;
 
-        SampleBank( std::vector<smpldata_t> && smpls )
-            :m_SampleData(std::move(smpls)) //MSVC is too derp to use the correct constructor..
+            SampleBlock merge(const SampleBlock& other)const
+            {
+                smpl_t newsmpl;
+                wavinfoptr_t newwavi;
+                if (!other.isnull())
+                {
+                    if (other.pdata_)
+                        newsmpl = smpl_t(new std::vector<uint8_t>(*(other.pdata_)));
+                    if (other.pinfo_)
+                        newwavi = wavinfoptr_t(new DSE::WavInfo(*(other.pinfo_)));
+                }
+                if (!isnull())
+                {
+                    if (!newsmpl && pdata_)
+                        newsmpl = smpl_t(new std::vector<uint8_t>(*pdata_));
+                    if (!newwavi && pinfo_)
+                        newwavi = wavinfoptr_t(new DSE::WavInfo(*pinfo_));
+                }
+                return SampleBlock(std::move(newsmpl), std::move(newwavi));
+            }
+        };
+        typedef std::vector<SampleBlock>::iterator       iterator;
+        typedef std::vector<SampleBlock>::const_iterator const_iterator;
+
+        SampleBank()
         {}
 
-        SampleBank( SampleBank && mv )
+        SampleBank( std::vector<SampleBlock> && smpls )noexcept
+            :m_SampleData(std::forward<std::vector<SampleBlock>>(smpls))
+        {}
+
+        SampleBank( SampleBank && mv )noexcept
         {
-            m_SampleData = std::move( (mv.m_SampleData) );
+            m_SampleData = std::move(mv.m_SampleData);
         }
 
-        SampleBank & operator=( SampleBank && mv )
+        SampleBank & operator=( SampleBank && mv )noexcept
         {
-            m_SampleData = std::move( (mv.m_SampleData) );
+            m_SampleData = std::move(mv.m_SampleData);
             return *this;
         }
 
@@ -87,19 +126,61 @@ namespace DSE
         inline const_iterator begin()const{ return m_SampleData.begin(); }
         inline iterator       end()       { return m_SampleData.end();   }
         inline const_iterator end()const  { return m_SampleData.end();   }
-        inline size_t         size()const { return NbSlots(); }
+        inline sampleid_t     size()const { return NbSlots(); }
+
+        SampleBank merge(const SampleBank& other)const 
+        {
+            SampleBank sbnk;
+            const sampleid_t maxsmpls = std::max(m_SampleData.size(), other.m_SampleData.size());
+            sbnk.m_SampleData.resize(maxsmpls);
+
+            for (sampleid_t cntsmpls = 0; cntsmpls < maxsmpls; ++cntsmpls)
+            {
+                SampleBlock newblk;
+
+                if (cntsmpls < other.m_SampleData.size() && cntsmpls < m_SampleData.size())
+                    newblk = m_SampleData[cntsmpls].merge(other.m_SampleData[cntsmpls]);
+                else if (cntsmpls < other.m_SampleData.size() && !(other.m_SampleData[cntsmpls].isnull()))
+                {
+                    newblk = other.m_SampleData[cntsmpls];
+                }
+                else if (cntsmpls < m_SampleData.size() && !(m_SampleData[cntsmpls].isnull()))
+                {
+                    newblk = m_SampleData[cntsmpls];
+                }
+                sbnk.m_SampleData[cntsmpls] = std::move(newblk);
+            }
+            return sbnk;
+        }
 
     public:
         //Info
 
         //Nb of sample slots with or without data
-        inline size_t                       NbSlots()const     { return m_SampleData.size(); } 
+        inline sampleid_t                   NbSlots()const     { return m_SampleData.size(); } 
 
         //Access
-        bool                                IsInfoPresent      ( unsigned int index )const { return sampleInfo(index) != nullptr; }
-        bool                                IsDataPresent      ( unsigned int index )const { return sample(index)     != nullptr; }
+        bool                                IsInfoPresent      (sampleid_t index )const { return sampleInfo(index) != nullptr; }
+        bool                                IsDataPresent      (sampleid_t index )const { return sample(index)     != nullptr; }
 
-        inline DSE::WavInfo               * sampleInfo         ( unsigned int index )      
+        inline DSE::SampleBank::SampleBlock* sampleBlock(sampleid_t index)
+        {
+            if (m_SampleData.size() > index)
+                return &(m_SampleData[index]);
+            else
+                return nullptr;
+        }
+
+        inline const DSE::SampleBank::SampleBlock* sampleBlock(sampleid_t index)const
+        {
+            if (m_SampleData.size() > index)
+                return &(m_SampleData[index]);
+            else
+                return nullptr;
+        }
+
+
+        inline DSE::WavInfo* sampleInfo(sampleid_t index)
         { 
             if( m_SampleData.size() > index )
                 return m_SampleData[index].pinfo_.get(); 
@@ -107,7 +188,7 @@ namespace DSE
                 return nullptr;
         }
 
-        inline DSE::WavInfo const         * sampleInfo         ( unsigned int index )const 
+        inline const DSE::WavInfo * sampleInfo(sampleid_t index)const
         { 
             if( m_SampleData.size() > index )
                 return m_SampleData[index].pinfo_.get(); 
@@ -116,7 +197,7 @@ namespace DSE
         }
 
 
-        inline std::vector<uint8_t>       * sample             ( unsigned int index )      
+        inline std::vector<uint8_t>* sample(sampleid_t index)
         { 
             if( m_SampleData.size() > index )
                 return m_SampleData[index].pdata_.get(); 
@@ -124,7 +205,7 @@ namespace DSE
                 return nullptr;
         }
 
-        inline const std::vector<uint8_t> * sample             ( unsigned int index )const 
+        inline const std::vector<uint8_t> * sample(sampleid_t index)const
         { 
             if( m_SampleData.size() > index )
                 return m_SampleData[index].pdata_.get(); 
@@ -132,7 +213,7 @@ namespace DSE
                 return nullptr;
         }
 
-        void setSampleData( unsigned int index, std::vector<uint8_t> && data) 
+        void setSampleData(sampleid_t index, std::vector<uint8_t> && data)
         {
             if(m_SampleData.size() <= index)
                 m_SampleData.resize(index + 1); //Make sure we're big enough
@@ -141,8 +222,8 @@ namespace DSE
                 m_SampleData[index].pdata_.reset(new std::vector<uint8_t>(data));
         }
 
-        inline std::vector<uint8_t>       * operator[]( unsigned int index )      { return sample(index); }
-        inline const std::vector<uint8_t> * operator[]( unsigned int index )const { return sample(index); }
+        inline std::vector<uint8_t>       * operator[](sampleid_t index)      { return sample(index); }
+        inline const std::vector<uint8_t> * operator[](sampleid_t index)const { return sample(index); }
 
     private:
 
@@ -151,7 +232,7 @@ namespace DSE
         {
             m_SampleData.resize( other.m_SampleData.size() );
 
-            for( size_t i = 0; i < other.m_SampleData.size(); ++i  )
+            for(sampleid_t i = 0; i < other.m_SampleData.size(); ++i  )
             {
                 if( other.m_SampleData[i].pdata_ != nullptr )
                     m_SampleData[i].pdata_.reset( new std::vector<uint8_t>( *(other.m_SampleData[i].pdata_) ) ); //Copy each objects and make a pointer
@@ -162,7 +243,7 @@ namespace DSE
         }
 
     private:
-        std::vector<smpldata_t> m_SampleData;
+        std::vector<SampleBlock> m_SampleData;
     };
 
     /*****************************************************************************************
@@ -233,15 +314,20 @@ namespace DSE
     public:
         typedef std::unique_ptr<DSE::ProgramInfo> ptrprg_t;
 
+        ProgramBank()
+        {}
+
+        ~ProgramBank()
+        {}
+
         ProgramBank( std::vector<ptrprg_t> && prgminf, std::vector<DSE::KeyGroup> && kgrp )
-            :m_prgminfoslots(std::move(prgminf)),  //MSVC is too derp to use the right constructor..
+            :m_prgminfoslots(std::forward<std::vector<ptrprg_t>>(prgminf)),
              m_Groups(kgrp)
         {}
 
         ProgramBank( ProgramBank && mv )
         {
-            m_prgminfoslots = std::move(mv.m_prgminfoslots);
-            m_Groups        = std::move(mv.m_Groups);
+            operator=(std::forward<ProgramBank>(mv));
         }
 
         ProgramBank & operator=( ProgramBank&& mv )
@@ -249,6 +335,62 @@ namespace DSE
             m_prgminfoslots = std::move(mv.m_prgminfoslots);
             m_Groups        = std::move(mv.m_Groups);
             return *this;
+        }
+
+        ProgramBank(const ProgramBank& other)
+        {
+            operator=(other);
+        }
+
+        ProgramBank& operator=(const ProgramBank& other)
+        {
+            m_prgminfoslots.reserve(other.m_prgminfoslots.size());
+            for (const ptrprg_t& ptr : other.m_prgminfoslots)
+            {
+                ptrprg_t newp;
+                //The program ptrs may be null
+                if (ptr)
+                    newp = ptrprg_t(new DSE::ProgramInfo(*ptr)); 
+                m_prgminfoslots.push_back(std::move(newp));
+            }
+            m_Groups = other.m_Groups;
+            return *this;
+        }
+
+        ProgramBank merge(const ProgramBank& other)const
+        {
+            ProgramBank pbank;
+            const size_t maxprgm = std::max(other.m_prgminfoslots.size(), m_prgminfoslots.size());
+            pbank.m_prgminfoslots.resize(maxprgm);
+
+            for (size_t i = 0; i < maxprgm; ++i)
+            {
+                ptrprg_t newp;
+                if (i < other.m_prgminfoslots.size() && other.m_prgminfoslots[i])
+                {
+                    newp = ptrprg_t(new DSE::ProgramInfo(*(other.m_prgminfoslots[i])));
+                }
+                else if (i < m_prgminfoslots.size() && m_prgminfoslots[i])
+                {
+                    newp = ptrprg_t(new DSE::ProgramInfo(*(m_prgminfoslots[i])));
+                }
+                pbank.m_prgminfoslots[i] = ptrprg_t(newp.release());
+            }
+
+            const size_t maxkgrp = std::max(other.m_Groups.size(), m_Groups.size());
+            pbank.m_Groups.GetVector().resize(maxkgrp);
+            for (size_t cntkgrp = 0; cntkgrp < maxkgrp; ++cntkgrp)
+            {
+                KeyGroup grp;
+                if (cntkgrp < other.m_Groups.size())
+                    grp = other.m_Groups[cntkgrp];
+                else if (cntkgrp < m_Groups.size())
+                    grp = m_Groups[cntkgrp];
+                else
+                    continue;
+                pbank.m_Groups[cntkgrp] = grp;
+            }
+            return pbank;
         }
 
         ptrprg_t                          & operator[]( size_t index )         { return m_prgminfoslots[index]; }
@@ -262,12 +404,7 @@ namespace DSE
 
     private:
         std::vector<ptrprg_t>       m_prgminfoslots;
-        //std::vector<DSE::KeyGroup>  m_Groups;
         KeyGroupList                m_Groups;
-
-        //Can't copy
-        ProgramBank( const ProgramBank& );
-        ProgramBank & operator=( const ProgramBank& );
     };
 
     /*****************************************************************************************
@@ -302,17 +439,39 @@ namespace DSE
 
         PresetBank( PresetBank && mv )
         {
-            m_pPrgbnk = std::move( mv.m_pPrgbnk );
-            m_pSamples = std::move( mv.m_pSamples );
-            m_meta     = std::move( mv.m_meta     );
+            operator=(std::forward<PresetBank>(mv));
         }
 
         PresetBank & operator=( PresetBank && mv )
         {
-            m_pPrgbnk = std::move( mv.m_pPrgbnk );
+            m_pPrgbnk  = std::move( mv.m_pPrgbnk  );
             m_pSamples = std::move( mv.m_pSamples );
             m_meta     = std::move( mv.m_meta     );
             return *this;
+        }
+
+        PresetBank merge(const PresetBank& other)const
+        {
+            PresetBank pbank;
+            pbank.metadata(m_meta);
+
+            //Merge, copy, or not the program bank
+            if(m_pPrgbnk && other.m_pPrgbnk)
+                pbank.prgmbank(std::unique_ptr<ProgramBank>(new ProgramBank(m_pPrgbnk->merge(*other.m_pPrgbnk))));
+            else if(m_pPrgbnk)
+                pbank.prgmbank(std::unique_ptr<ProgramBank>(new ProgramBank(*m_pPrgbnk)));
+            else if (other.m_pPrgbnk)
+                pbank.prgmbank(std::unique_ptr<ProgramBank>(new ProgramBank(*other.m_pPrgbnk)));
+
+            //Merge, copy or not the samples
+            if (m_pSamples && other.m_pSamples)
+                pbank.smplbank(std::unique_ptr<SampleBank>(new SampleBank(m_pSamples->merge(*other.m_pSamples))));
+            else if(m_pSamples)
+                pbank.smplbank(std::unique_ptr<SampleBank>(new SampleBank(*m_pSamples)));
+            else if(other.m_pSamples)
+                pbank.smplbank(std::unique_ptr<SampleBank>(new SampleBank(*other.m_pSamples)));
+
+            return pbank;
         }
 
 
@@ -341,7 +500,7 @@ namespace DSE
         PresetBank& operator=( const PresetBank& );
 
         DSE::DSE_MetaDataSWDL m_meta;
-        ptrprg_t             m_pPrgbnk;  //A program bank may not be shared by many
+        ptrprg_t              m_pPrgbnk;  //A program bank may not be shared by many
         ptrsmpl_t             m_pSamples; //A sample bank may be shared by many
     };
 
@@ -382,6 +541,8 @@ namespace DSE
         */
         std::vector<DSE::TrkEvent>       & getEvents()      { return m_events; }
         const std::vector<DSE::TrkEvent> & getEvents()const { return m_events; }
+        void setEvents(const std::vector<DSE::TrkEvent> & events) { m_events = events; }
+        void setEvents(std::vector<DSE::TrkEvent>&&       events) { m_events = events; }
 
         /*
             Get or set the MIDI channel that was assigned to this track.
@@ -402,10 +563,26 @@ namespace DSE
     class MusicSequence
     {
     public:
+        MusicSequence()
+        {}
+
+        MusicSequence(std::vector< MusicTrack >&& tracks, PresetBank* presets = nullptr)
+                    :m_tracks(tracks), m_pPresetBank(presets)
+        {}
+
+        MusicSequence(std::vector< MusicTrack >&& tracks, DSE::seqinfo_table&& sinfo, PresetBank* presets = nullptr)
+            :m_tracks(tracks), m_pPresetBank(presets), m_seqinfo(sinfo)
+        {}
+
+        MusicSequence(std::vector< MusicTrack >&& tracks, DSE::DSE_MetaDataSMDL&& meta)
+            :m_meta(meta), m_tracks(tracks)
+        {}
+
         MusicSequence( std::vector< MusicTrack > && tracks, 
                        DSE::DSE_MetaDataSMDL     && meta,
+                       DSE::seqinfo_table &&        sinfo,
                        PresetBank                 * presets = nullptr )
-            :m_meta(meta), m_tracks(tracks), m_pPresetBank(presets)
+            :m_meta(meta), m_tracks(tracks), m_pPresetBank(presets), m_seqinfo(sinfo)
         {}
 
         PresetBank * presetbnk()                                             { return m_pPresetBank; }
@@ -416,6 +593,11 @@ namespace DSE
         void                      metadata( const DSE::DSE_MetaDataSMDL & data ) { m_meta = data; }
         void                      metadata( DSE::DSE_MetaDataSMDL && data )      { m_meta = data; }
 
+        DSE::seqinfo_table&       seqinfo()                                { return m_seqinfo; }
+        const DSE::seqinfo_table& seqinfo()const                           { return m_seqinfo; }
+        void                      seqinfo(const DSE::seqinfo_table& sinfo) { m_seqinfo = sinfo; }
+        void                      seqinfo(DSE::seqinfo_table&       sinfo) { m_seqinfo = sinfo; }
+
         size_t                             getNbTracks()const                { return m_tracks.size(); }
 
         MusicTrack      & track( size_t index )             { return m_tracks[index]; }
@@ -423,9 +605,6 @@ namespace DSE
 
         MusicTrack      & operator[]( size_t index )        { return m_tracks[index]; }
         const MusicTrack & operator[]( size_t index )const   { return m_tracks[index]; }
-
-        //Print the entire content of the music sequence
-        std::string tostr()const;
 
         //Print statistics on the music sequence
         std::string printinfo()const;
@@ -442,9 +621,225 @@ namespace DSE
 
     private:
         DSE::DSE_MetaDataSMDL    m_meta;
+        DSE::seqinfo_table       m_seqinfo;
         std::vector<MusicTrack>  m_tracks;
-        PresetBank             * m_pPresetBank;
+        PresetBank             * m_pPresetBank; //Maybe should be a shared ptr? //#REMOVEME: This is redundant
     };
+
+    /*****************************************************************************************
+    *****************************************************************************************/
+    struct McrlChunkContents
+    {
+        struct mcrlentry
+        {
+            uint16_t    unk12 = 0;
+            std::string unkstr;
+
+            template<class _init> _init Read(_init itbeg, _init itend)
+            {
+                _init itentrybeg = itbeg;
+                unk12 = utils::ReadIntFromBytes<uint16_t>(itbeg, itend);
+                if (unk12 == 0xFFFF)
+                {
+                    //If the entry is 0xFFFF there's nothing to parse
+                    return itbeg;
+                }
+
+                uint16_t entrylen = utils::ReadIntFromBytes<uint16_t>(itbeg, itend);
+                _init itendstr = std::next(itentrybeg, entrylen);
+                unkstr = std::string(itbeg, itendstr);
+                return itbeg;
+            }
+
+            template<class _outit> _outit Write(_outit itout)
+            {
+                itout = utils::WriteIntToBytes(unk12, itout);
+                if (unk12 == 0xFFFF)
+                    return itout; //Nothing else to do in this case
+
+                uint16_t totallen = (sizeof(uint16_t) * 2) + unkstr.length();
+                totallen += (totallen % 2); //Add to the count a padding byte if neccessary to align us on 2 bytes
+                itout = utils::WriteIntToBytes(totallen, itout); //Put the computed entry length
+
+                //Next put the string
+                itout = utils::WriteStrToByteContainer(itout, unkstr);
+
+                //And the padding
+                utils::AppendPaddingBytes(itout, unkstr.length(), 2); //Since the string is the only thing that changes in size, use it to calc padding
+                return itout;
+            }
+        };
+
+        void AddEntry(mcrlentry && entry)
+        {
+            mcrldata.push_back(entry);
+        }
+
+        void AddEntry(mcrlentry entry)
+        {
+            mcrldata.push_back(std::move(entry));
+        }
+
+        inline bool empty()const {return mcrldata.empty();}
+
+        std::vector<mcrlentry> mcrldata;
+    };
+
+    /*****************************************************************************************
+    *****************************************************************************************/
+    struct BnklChunkContents
+    {
+        struct bnklentry
+        {
+            uint16_t unk17 = 0;
+            std::vector<uint16_t> bankids;
+
+            template<class _init> _init Read(_init itbeg, _init itend)
+            {
+                bankids.resize(0);
+                _init itentrybeg = itbeg;
+                uint16_t nbbankids = utils::ReadIntFromBytes<uint16_t>(itbeg, itend);
+                unk17 = utils::ReadIntFromBytes<uint16_t>(itbeg, itend);
+
+                for (int cntbank = 0; cntbank < nbbankids; ++cntbank)
+                    bankids.push_back(utils::ReadIntFromBytes<uint16_t>(itbeg, itend));
+                return itbeg;
+            }
+
+            template<class _outit> _outit Write(_outit itout)
+            {
+                itout = utils::WriteIntToBytes(static_cast<uint16_t>(bankids.size()), itout);
+                itout = utils::WriteIntToBytes(unk17, itout);
+                for (uint16_t bankid : bankids)
+                    itout = utils::WriteIntToBytes(bankid, itout);
+                return itout;
+            }
+        };
+
+        void AddEntry(bnklentry&& entry)
+        {
+            bnkldata.push_back(entry);
+        }
+
+        void AddEntry(bnklentry entry)
+        {
+            bnkldata.push_back(std::move(entry));
+        }
+
+        inline bool empty()const { return bnkldata.empty(); }
+
+        std::vector<bnklentry> bnkldata;
+    };
+
+    /*****************************************************************************************
+    *****************************************************************************************/
+    /// <summary>
+    /// Stores the contents of a SEDL file
+    /// </summary>
+    class SoundEffectSequences
+    {
+    public:
+        SoundEffectSequences()
+        {}
+
+        SoundEffectSequences(std::vector<MusicSequence>&& sequences, DSE::DSE_MetaDataSEDL&& meta)
+            :m_meta(meta), m_sequences(sequences)
+        {}
+
+        SoundEffectSequences(std::vector<MusicSequence> && sequences, McrlChunkContents && mcrl, BnklChunkContents && bnkl, DSE::DSE_MetaDataSEDL && meta)
+            :m_meta(meta), m_sequences(sequences), m_mcrl(mcrl), m_bnkl(bnkl)
+        {}
+
+
+
+        DSE::DSE_MetaDataSEDL       m_meta;
+        std::vector<MusicSequence>  m_sequences;
+        McrlChunkContents           m_mcrl;
+        BnklChunkContents           m_bnkl;
+    };
+
+
+    /*****************************************************************************************
+    *****************************************************************************************/
+    /// <summary>
+    /// Wrapper around a large set of PresetBanks to allow much more easily indexing and accessing its contents.
+    /// </summary>
+    class PresetDatabase
+    {
+    public:
+        using sampledata_t = std::vector<uint8_t>;
+
+        //Wrapper for adding new banks to the loader so we can set them up properly
+        DSE::PresetBank& AddBank(DSE::PresetBank&& bnk);
+
+        PresetDatabase();
+
+    public:
+        //Helpers
+        //Retrieve the last overriden sample data for the given sample and bank
+        sampledata_t* getSampleForBank(sampleid_t smplid, bankid_t bnkid);
+
+        //Retrieve the last overriden sample info for the given sample and bank
+        DSE::WavInfo* getSampleInfoForBank(sampleid_t smplid, bankid_t bnkid);
+
+        //Retrieve the sample block for a given sample id
+        SampleBank::SampleBlock* getSampleBlockFor(sampleid_t smplid, bankid_t bnkid);
+
+        inline const SampleBank::SampleBlock* getSampleBlockFor(sampleid_t smplid, bankid_t bnkid)const
+        {
+            return const_cast<PresetDatabase*>(this)->getSampleBlockFor(smplid, bnkid);
+        }
+
+        inline const DSE::WavInfo* getSampleInfoForBank(sampleid_t smplid, bankid_t bnkid)const
+        {
+            return const_cast<PresetDatabase*>(this)->getSampleInfoForBank(smplid, bnkid);
+        }
+
+        inline const sampledata_t* getSampleForBank(sampleid_t smplid, bankid_t bnkid)const
+        {
+            return const_cast<PresetDatabase*>(this)->getSampleForBank(smplid, bnkid);
+        }
+
+        inline sampleid_t getNbSampleBlocks()const
+        {
+            return m_nbSampleBlocks;
+        }
+
+    public:
+        //Std access stuff
+        typedef std::map<bankid_t, PresetBank>::iterator       iterator;
+        typedef std::map<bankid_t, PresetBank>::const_iterator const_iterator;
+
+        inline size_t size()const { return m_banks.size(); }
+        inline bool empty()const { return m_banks.empty(); }
+
+        inline iterator begin() { return m_banks.begin(); }
+        inline const_iterator begin()const { return m_banks.begin(); }
+
+        inline iterator end() { return m_banks.end(); }
+        inline const_iterator end()const { return m_banks.end(); }
+
+        inline PresetBank& operator[](size_t index) { return m_banks.at(index); }
+        inline const PresetBank& operator[](size_t index)const { return m_banks.at(index); }
+
+        inline iterator find(bankid_t bankid) { return m_banks.find(bankid); }
+        inline const_iterator find(bankid_t bankid)const { return m_banks.find(bankid); }
+
+        inline PresetBank& at(bankid_t bankid) { return m_banks.at(bankid); }
+        inline const PresetBank& at(bankid_t bankid)const { return m_banks.at(bankid); }
+    
+    private:
+        //Handles merging or deciding which bank is kept when 2 with the same ids are found!
+        PresetBank HandleBankConflict(bankid_t conflictid, const PresetBank& incoming, const PresetBank& existing);
+
+    private:
+        std::map<bankid_t, PresetBank>                                    m_banks;          //Map of all our banks by bank id
+        std::map<sampleid_t, std::map<bankid_t, SampleBank::SampleBlock>> m_sampleMap;      //Allow us to grab the latest overriden sample entry by id and bank id.
+        std::map<presetid_t, std::set<bankid_t>>                          m_preset2banks;   //List what loaded banks actually define a given preset
+        std::map<sampleid_t, std::set<bankid_t>>                          m_sample2banks;   //List in what banks a given sample id is defined
+        sampleid_t                                                        m_nbSampleBlocks; //The Maximum number of sample blocks contained in a bank
+    };
+
 };
 
 #endif

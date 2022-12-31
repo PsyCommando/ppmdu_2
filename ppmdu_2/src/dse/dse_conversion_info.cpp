@@ -407,8 +407,8 @@ namespace DSE
     }
 
 
-    void SMDLConvInfoDB::AddConversionInfo( const std::string & name, SMDLPresetConversionInfo && info )
+    void SMDLConvInfoDB::AddConversionInfo( const std::string & name, SMDLPresetConversionInfo info )
     {
-        m_convdata.insert( move( make_pair( name, move(info) ) ) );
+        m_convdata.insert(make_pair( name, move(info) ) );
     }
 };

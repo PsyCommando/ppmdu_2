@@ -66,8 +66,8 @@ namespace DSE
         bankselMSB.SetTime(time);
         bankselLSB.SetTime(time);
 
-        bankselMSB.SetControlChange( channel, C_GM_BANK,         static_cast<unsigned char>(bank & 0x7F) );
-        bankselLSB.SetControlChange( channel, MIDI_CC32_BankLSB, static_cast<unsigned char>( (bank >> 8) & 0x7F ) );
+        bankselMSB.SetControlChange( channel, C_GM_BANK,         static_cast<unsigned char>(bank & 0xFF) );
+        bankselLSB.SetControlChange( channel, MIDI_CC32_BankLSB, static_cast<unsigned char>( (bank >> 8) & 0xFF ) );
         outtrack.PutEvent(bankselMSB);
         outtrack.PutEvent(bankselLSB);
     }
@@ -270,8 +270,8 @@ namespace DSE
             else
             {
                 //No need to translate anything
-                state.hasinvalidbank = false;
-                state.curbank_       =  0;
+                //state.hasinvalidbank = false;
+                //state.curbank_       =  0;
                 state.curprgm_       = originalprgm; //Set preset as-is
                 state.origdseprgm_   = originalprgm;
                 state.curmaxpoly_    = -1;
@@ -309,25 +309,22 @@ namespace DSE
                              jdksmidi::MIDITimedBigMessage & mess,
                              jdksmidi::MIDITrack           & outtrack)
         {
-#if 1
-            HandleUnsupported(ev, trkno, state, mess, outtrack); //#TODO: Properly support those!
-#else
             using namespace jdksmidi;
             const DSE::eTrkEventCodes code = static_cast<DSE::eTrkEventCodes>(ev.evcode);
 
-            if (code == eTrkEventCodes::SetSwdlAndBank)
+            if (code == eTrkEventCodes::SetBank)
             {
-                assert(false); //#TODO: Implement this
+                state.curbank_ = (static_cast<bankid_t>(ev.params[0]) | static_cast<bankid_t>(ev.params[1]) << 8);
             }
-            else if (code == eTrkEventCodes::SetSwdl)
+            else if (code == eTrkEventCodes::SetBankHighByte)
             {
-                assert(false); //#TODO: Implement this
+                state.curbank_ = (state.curbank_ & 0x00FFui16) | (static_cast<bankid_t>(ev.params[0]) << 8);
             }
-            else if (code == eTrkEventCodes::SetBank)
+            else if (code == eTrkEventCodes::SetBankLowByte)
             {
-                assert(false); //#TODO: Implement this
+                state.curbank_ = (state.curbank_ & 0xFF00ui16) | (static_cast<bankid_t>(ev.params[0]));
             }
-#endif
+            AddBankChangeMessage(outtrack, m_seq[trkno].GetMidiChannel(), state.ticks_, state.curbank_);
         }
 
         /***********************************************************************************
@@ -675,9 +672,9 @@ namespace DSE
                         HandleSetPreset(ev, trkno, trkchan, state, mess, outtrack);
                         break;
                     }
-                    case eTrkEventCodes::SetSwdlAndBank:
-                    case eTrkEventCodes::SetSwdl:
                     case eTrkEventCodes::SetBank:
+                    case eTrkEventCodes::SetBankHighByte:
+                    case eTrkEventCodes::SetBankLowByte:
                     {
                         mess.SetTime(state.ticks_);
                         HandleSoundBank(ev, trkno, trkchan, state, mess, outtrack);
@@ -1678,7 +1675,7 @@ namespace DSE
 
             //!#TODO: Flush empty tracks?
 
-            return std::move( MusicSequence( std::move(tracks), std::move(dseMeta) ) );
+            return MusicSequence( std::move(tracks), std::move(dseMeta) );
         }
 
         /****************************************************************************************
@@ -2112,17 +2109,17 @@ namespace DSE
 
                         //If we have a 0xAA or 0xA9 event, write their value to the meta-data, as those are track-wide 90% of the time
                         //!#TODO: Allow the user to input the value of those events/meta-data entries manually!
-                        if( dsev.evcode == static_cast<uint8_t>(eTrkEventCodes::SetSwdl) && 
+                        if( dsev.evcode == static_cast<uint8_t>(eTrkEventCodes::SetBankHighByte) && 
                             dsev.params.size() == 1 && 
-                            dsemeta.unk1 == 0 )
+                            dsemeta.bankid_coarse == 0 )
                         {
-                            dsemeta.unk1 = dsev.params.front();
+                            dsemeta.bankid_coarse = dsev.params.front();
                         }
                         else if( dsev.evcode == static_cast<uint8_t>(eTrkEventCodes::SetBank) && 
                                  dsev.params.size() == 1 && 
-                                 dsemeta.unk2 == 0 )
+                                 dsemeta.bankid_fine == 0 )
                         {
-                            dsemeta.unk2 = dsev.params.front();
+                            dsemeta.bankid_fine = dsev.params.front();
                         }
 
                         //Insert parsed event

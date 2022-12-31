@@ -364,8 +364,8 @@ namespace DSE
             meta.createtime.second  = m_hdr.second;
             meta.createtime.centsec = m_hdr.centisec;
             meta.fname              = string( m_hdr.fname.data());
-            meta.unk1               = m_hdr.unk1;
-            meta.unk2               = m_hdr.unk2;
+            meta.bankid_coarse      = m_hdr.bankid_low;
+            meta.bankid_fine        = m_hdr.bankid_high;
             meta.tpqn               = m_song.tpqn;
             meta.origversion        = intToDseVer( m_hdr.version );
             return move(meta);
@@ -536,25 +536,25 @@ namespace DSE
         {
             //Header
             SMDL_Header smdhdr; 
-            smdhdr.unk7     = 0;
-            smdhdr.flen     = filelen;
-            smdhdr.version  = DseVerToInt(m_version);
-            smdhdr.unk1     = m_src.metadata().unk1;
-            smdhdr.unk2     = m_src.metadata().unk2;
-            smdhdr.unk3     = 0;
-            smdhdr.unk4     = 0;
-            smdhdr.year     = m_src.metadata().createtime.year;
-            smdhdr.month    = m_src.metadata().createtime.month;
-            smdhdr.day      = m_src.metadata().createtime.day;
-            smdhdr.hour     = m_src.metadata().createtime.hour;
-            smdhdr.minute   = m_src.metadata().createtime.minute;
-            smdhdr.second   = m_src.metadata().createtime.second;
-            smdhdr.centisec = m_src.metadata().createtime.centsec;
+            smdhdr.unk7        = 0;
+            smdhdr.flen        = filelen;
+            smdhdr.version     = DseVerToInt(m_version);
+            smdhdr.bankid_low  = m_src.metadata().bankid_coarse;
+            smdhdr.bankid_high = m_src.metadata().bankid_fine;
+            smdhdr.unk3        = 0;
+            smdhdr.unk4        = 0;
+            smdhdr.year        = m_src.metadata().createtime.year;
+            smdhdr.month       = m_src.metadata().createtime.month;
+            smdhdr.day         = m_src.metadata().createtime.day;
+            smdhdr.hour        = m_src.metadata().createtime.hour;
+            smdhdr.minute      = m_src.metadata().createtime.minute;
+            smdhdr.second      = m_src.metadata().createtime.second;
+            smdhdr.centisec    = m_src.metadata().createtime.centsec;
             std::copy_n( begin(m_src.metadata().fname), smdhdr.fname.size(), begin(smdhdr.fname) );
-            smdhdr.unk5     = SMDL_Header::DefUnk5;
-            smdhdr.unk6     = SMDL_Header::DefUnk6;
-            smdhdr.unk8     = SMDL_Header::DefUnk8;
-            smdhdr.unk9     = SMDL_Header::DefUnk9;
+            smdhdr.unk5        = SMDL_Header::DefUnk5;
+            smdhdr.unk6        = SMDL_Header::DefUnk6;
+            smdhdr.unk8        = SMDL_Header::DefUnk8;
+            smdhdr.unk9        = SMDL_Header::DefUnk9;
             smdhdr.WriteToContainer( itout ); //The correct magic number for SMDL is forced on write, whatever the value in smdhdr.magicn is.
 
             //Song Chunk
@@ -618,12 +618,12 @@ namespace DSE
                  << "Parsing SMDL " <<file << "\n"
                  << "================================================================================\n";
         }
-        return std::move( SMDL_Parser<>( utils::io::ReadFileToByteVector(file) )); //Apparently it being an implicit move isn't enough for MSVC..
+        return SMDL_Parser<>( utils::io::ReadFileToByteVector(file) );
     }
 
     MusicSequence ParseSMDL( std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend )
     {
-        return std::move( SMDL_Parser<>( itbeg, itend ));
+        return SMDL_Parser<>( itbeg, itend );
     }
 
     void WriteSMDL( const std::string & file, const MusicSequence & seq )
@@ -720,8 +720,8 @@ std::ostream& operator<<(std::ostream& os, const DSE::SMDL_Header& hdr)
         << "\tFile lenght  : " << hdr.flen << " bytes\n"
         << hex << uppercase
         << "\tVersion      : " << hdr.version << "\n"
-        << "\tUnk1         : " << static_cast<short>(hdr.unk1) << "\n"
-        << "\tUnk2         : " << static_cast<short>(hdr.unk2) << "\n"
+        << "\tBank ID Low  : " << static_cast<short>(hdr.bankid_low) << "\n"
+        << "\tBank ID High : " << static_cast<short>(hdr.bankid_high) << "\n"
         << "\tUnk3         : " << hdr.unk3 << "\n"
         << "\tUnk4         : " << hdr.unk4 << "\n"
         << dec << nouppercase

@@ -31,6 +31,7 @@ namespace DSE
             Read the bgm container's content into a preset bank and a musicsequence.
     */
     std::pair<PresetBank, MusicSequence> ReadBgmContainer( const std::string & filepath );
+    std::pair<PresetBank, MusicSequence> ReadBgmContainer(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend, std::string filepath = {});
 
     /*
         WriteBgmContainer

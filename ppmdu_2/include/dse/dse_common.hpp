@@ -26,6 +26,7 @@ namespace DSE
     typedef uint16_t dsepresetid_t;
     typedef uint16_t bankid_t;
     typedef uint8_t  presetid_t;
+    typedef uint16_t sampleid_t;
     typedef uint8_t  midinote_t;
 
     const bankid_t      InvalidBankID      = std::numeric_limits<bankid_t>::max();
@@ -72,6 +73,12 @@ namespace DSE
     const int16_t      DSERootKey            = 60;           //By default the root key for dse sequences is assumed to be 60 the MIDI standard's middle C, AKA C4
     const int8_t       DSEDefaultCoarseTune  = -7;           //The default coarse tune value for splits and samples.
 
+    /*
+        The size of the ADPCM preamble in int32, the unit the NDS uses to store the loop positions
+        Mainly here to make things more readable.
+    */
+    extern const int SizeADPCMPreambleWords;
+
     extern const std::array<eDSEChunks,     NB_DSEChunks>      DSEChunksList;    //Array containing all chunks labels
     extern const std::array<eDSEContainers, NB_DSEContainers>  DSEContainerList; //Array containing all the DSE container's magic number.
 
@@ -80,11 +87,11 @@ namespace DSE
     //
     enum struct eDSESmplFmt : uint16_t 
     {
-        invalid   = std::numeric_limits<int16_t>::max(),
-        pcm8      = 0x000,
-        pcm16     = 0x100,
-        ima_adpcm = 0x200,
-        psg       = 0x300, //Probably not PSG! (its probably adpcm3)
+        invalid    = std::numeric_limits<int16_t>::max(),
+        pcm8       = 0x000,
+        pcm16      = 0x100,
+        ima_adpcm4 = 0x200,
+        ima_adpcm3 = 0x300,
     };
 
     inline eDSESmplFmt IntToDSESmplFmt( uint16_t val )
@@ -93,14 +100,31 @@ namespace DSE
             return eDSESmplFmt::pcm8;
         else if( val == static_cast<uint16_t>(eDSESmplFmt::pcm16) )
             return eDSESmplFmt::pcm16;
-        else if( val == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm) )
-            return eDSESmplFmt::ima_adpcm;
-        else if( val == static_cast<uint16_t>(eDSESmplFmt::psg) )
-            return eDSESmplFmt::psg;
+        else if( val == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm4) )
+            return eDSESmplFmt::ima_adpcm4;
+        else if( val == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm3) )
+            return eDSESmplFmt::ima_adpcm3;
         else
             return eDSESmplFmt::invalid;
     }
 
+    inline std::string DseSmplFmtToString(eDSESmplFmt fmt)
+    {
+        switch (fmt)
+        {
+        case eDSESmplFmt::pcm8:
+            return "PCM8";
+        case eDSESmplFmt::pcm16:
+            return "PCM16";
+        case eDSESmplFmt::ima_adpcm4:
+            return "IMA ADPCM4";
+        case eDSESmplFmt::ima_adpcm3:
+            return "IMA ADPCM3";
+        };
+        std::array<char, 48> tmpchr{0};
+        snprintf(tmpchr.data(), tmpchr.size(), "Invalid (0x%x)\0", static_cast<uint16_t>(fmt));
+        return { tmpchr.data() };
+    }
 
     // -------------------------------
     // ------- DSE Version IDs -------
@@ -272,7 +296,7 @@ namespace DSE
         uint32_t param2 = 0;
         uint32_t datlen = 0;
 
-        static unsigned int size      ()      { return Size; } //Get the size of the structure in bytes
+        static unsigned int size      ()      { return 16; } //Get the size of the structure in bytes
         bool                hasLength ()const { return (datlen != SpecialChunkLen); } //Returns whether this chunk has a valid data length
         eDSEChunks          GetChunkID()const { return IntToChunkID( label ); } //Returns the enum value representing this chunk's identity, judging from the label
 
@@ -325,7 +349,7 @@ namespace DSE
     */
     struct WavInfo
     {
-        uint16_t    id         = 0;
+        sampleid_t  id         = 0;
         int8_t      ftune      = 0; 
         int8_t      ctune      = 0;
         uint8_t     rootkey    = 0;
@@ -492,7 +516,7 @@ namespace DSE
         int8_t      hivel     = 0; //0x9
         int8_t      lovel2    = 0; //0xA
         int8_t      hivel2    = 0; //0xB
-        uint16_t    smplid    = 0; //0x12
+        sampleid_t  smplid    = 0; //0x12
         int8_t      ftune     = 0; //0x14
         int8_t      ctune     = 0; //0x15
         int8_t      rootkey   = 0; //0x16
@@ -526,11 +550,80 @@ namespace DSE
     };
 
 
+    /// <summary>
+    /// Table before a group of trk chunks belonging to the same sequence.
+    /// Used in both SEDL and SMDL.
+    /// </summary>
+    struct seqinfo_table
+    {
+        uint16_t unk30   = 0; //usually 0x0001
+        uint16_t ptrtrk  = 0; //Position of the first track from the start of the seqinfo table
+        uint16_t unk16   = 0; //Usually 0xFF01
+        uint8_t  nbtrks  = 0; //Nb of track chunks in the sequence.
+        uint8_t  nbchans = 0; //Possibly number of midi/output tracks.
+        uint8_t  unk19   = 0; //Usually 0x00
+        uint8_t  unk20   = 0; //Usually 0x00
+        uint8_t  unk21   = 0; //Usually 0x00
+        uint8_t  unk22   = 0; //Usually 0x0F
+        uint32_t unk23   = 0; //usually 4 bytes of 0xFF
+        uint16_t unk24   = 0; //Usually 0x0000
+        uint16_t unk25   = 0; //Usually 0x4000
+        uint16_t unk26   = 0; //Usually 0x4000
+        uint16_t unk27   = 0; //Usually 0x0040
+        uint16_t unk28   = 0; //Usually 0x0400 also seen 0x0200
+        uint8_t  unk29   = 0; //Usually 0x00
+        uint8_t  unk31   = 0; //0x0E or 0x08
+        uint32_t unk12   = 0; //So far 0xFFFFFF00
 
+        template<class _outit>
+        _outit WriteToContainer(_outit itwriteto)const
+        {
+            itwriteto = utils::WriteIntToBytes(unk30,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(ptrtrk,  itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk16,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(nbtrks,  itwriteto);
+            itwriteto = utils::WriteIntToBytes(nbchans, itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk19,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk20,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk21,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk22,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk23,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk24,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk25,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk26,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk27,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk28,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk29,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk31,   itwriteto);
+            itwriteto = utils::WriteIntToBytes(unk12,   itwriteto);
 
+            return itwriteto;
+        }
 
-
-
+        template<class _init>
+        _init ReadFromContainer(_init itReadfrom, _init itPastEnd)
+        {
+            unk30   = utils::ReadIntFromBytes<decltype(unk30)>  (itReadfrom, itPastEnd);
+            ptrtrk  = utils::ReadIntFromBytes<decltype(ptrtrk)> (itReadfrom, itPastEnd);
+            unk16   = utils::ReadIntFromBytes<decltype(unk16)>  (itReadfrom, itPastEnd);
+            nbtrks  = utils::ReadIntFromBytes<decltype(nbtrks)> (itReadfrom, itPastEnd);
+            nbchans = utils::ReadIntFromBytes<decltype(nbchans)>(itReadfrom, itPastEnd);
+            unk19   = utils::ReadIntFromBytes<decltype(unk19)>  (itReadfrom, itPastEnd);
+            unk20   = utils::ReadIntFromBytes<decltype(unk20)>  (itReadfrom, itPastEnd);
+            unk21   = utils::ReadIntFromBytes<decltype(unk21)>  (itReadfrom, itPastEnd);
+            unk22   = utils::ReadIntFromBytes<decltype(unk22)>  (itReadfrom, itPastEnd);
+            unk23   = utils::ReadIntFromBytes<decltype(unk23)>  (itReadfrom, itPastEnd);
+            unk24   = utils::ReadIntFromBytes<decltype(unk24)>  (itReadfrom, itPastEnd);
+            unk25   = utils::ReadIntFromBytes<decltype(unk25)>  (itReadfrom, itPastEnd);
+            unk26   = utils::ReadIntFromBytes<decltype(unk26)>  (itReadfrom, itPastEnd);
+            unk27   = utils::ReadIntFromBytes<decltype(unk27)>  (itReadfrom, itPastEnd);
+            unk28   = utils::ReadIntFromBytes<decltype(unk28)>  (itReadfrom, itPastEnd);
+            unk29   = utils::ReadIntFromBytes<decltype(unk29)>  (itReadfrom, itPastEnd);
+            unk31   = utils::ReadIntFromBytes<decltype(unk31)>  (itReadfrom, itPastEnd);
+            unk12   = utils::ReadIntFromBytes<decltype(unk12)>  (itReadfrom, itPastEnd);
+            return itReadfrom;
+        }
+    };
 
 //  DSEMetaData
     /************************************************************************
@@ -540,15 +633,27 @@ namespace DSE
     struct DSE_MetaData
     {
         DSE_MetaData()
-            :unk1(0),unk2(0),createtime(), origversion(eDSEVersion::VDef)
+            :bankid_coarse(0), bankid_fine(0),createtime(), origversion(eDSEVersion::VDef)
         {}
 
-        uint8_t     unk1;       //Some kind of ID
-        uint8_t     unk2;       //Some kind of volume value maybe
-        std::string fname;      //Internal filename
-        DateTime    createtime; //Time this was created on
-        std::string origfname;  //The original filename, in the game's filesystem if applicable
+        uint8_t     bankid_coarse; //The low byte of the bank id
+        uint8_t     bankid_fine;   //The high byte of the bank id
+        std::string fname;         //Internal filename
+        DateTime    createtime;    //Time this was created on
+        std::string origfname;     //The original filename, in the game's filesystem if applicable
         eDSEVersion origversion;
+
+        bankid_t get_bank_id()const
+        {
+            bankid_t out = bankid_coarse | (bankid_fine << 8);
+            return out;
+        }
+
+        void set_bank_id(bankid_t bankid)
+        {
+            bankid_coarse = static_cast<uint8_t>(bankid & 0xFF);
+            bankid_fine   = static_cast<uint8_t>((bankid >> 8) & 0xFF);
+        }
     };
 
     /************************************************************************
@@ -570,7 +675,6 @@ namespace DSE
 
     /************************************************************************
         DSE_MetaDataSWDL
-            
     ************************************************************************/
     struct DSE_MetaDataSWDL : public DSE_MetaData
     {
@@ -581,6 +685,24 @@ namespace DSE
         uint16_t nbwavislots;
         uint16_t nbprgislots;
         uint16_t unk17;
+    };
+
+    /************************************************************************
+        DSE_MetaDataSEDL
+    ************************************************************************/
+    struct SEDL_Header;
+    struct DSE_MetaDataSEDL : public DSE_MetaData
+    {
+        DSE_MetaDataSEDL()
+            :DSE_MetaData(), unk5(0), unk6(0), unk7(0), unk8(0)
+        {}
+
+        void setFromHeader(const DSE::SEDL_Header& hdr);
+
+        uint16_t unk5;
+        uint16_t unk6;
+        uint16_t unk7;
+        uint16_t unk8;
     };
 
 //====================================================================================================
@@ -849,5 +971,6 @@ std::ostream& operator<<(std::ostream& strm, const DSE::eDSEContainers cnty);
 std::ostream& operator<<(std::ostream& os,   const DSE::DateTime&      obj);
 std::ostream& operator<<(std::ostream& strm, const DSE::KeyGroup&      other);
 std::ostream& operator<<(std::ostream& strm, const DSE::ProgramInfo&   other);
+std::ostream& operator<<(std::ostream& strm, const DSE::WavInfo&       other);
 
 #endif

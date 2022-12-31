@@ -33,8 +33,8 @@ namespace DSE
 
         //Attributes
         const string ATTR_DSE_Version  = "dse_version"s;
-        const string ATTR_DSE_Unk1     = "dse_unk1"s;
-        const string ATTR_DSE_Unk2     = "dse_unk2"s;
+        const string ATTR_DSE_BankLow  = "dse_bankLow"s;
+        const string ATTR_DSE_BankHigh = "dse_bankHigh"s;
         const string ATTR_DSE_Unk17    = "dse_unk17"s;
 
         //Common
@@ -136,7 +136,7 @@ public:
     {
         vector< unique_ptr<ProgramInfo> > prgmbank;
         vector<KeyGroup>                  kgrp;
-        vector<SampleBank::smpldata_t>    sampledata;
+        vector<SampleBank::SampleBlock>   sampledata;
         DSE_MetaDataSWDL                  meta;
         try
         {
@@ -189,9 +189,9 @@ public:
         }
 
         return move( PresetBank( move(meta),
-                                 move(unique_ptr<ProgramBank>(new ProgramBank(move(prgmbank), 
-                                                                              move(kgrp)))),
-                                 move(unique_ptr<SampleBank>(new SampleBank(move(sampledata)))) 
+                                 unique_ptr<ProgramBank>(new ProgramBank(move(prgmbank), 
+                                                                              move(kgrp))),
+                                 unique_ptr<SampleBank>(new SampleBank(move(sampledata))) 
                                  ) );
     }
 
@@ -203,14 +203,14 @@ private:
         //Check version info and etc..
         xml_node      rootnode = doc.child(ROOT_Programs.c_str());
         xml_attribute dsever   = rootnode.attribute(ATTR_DSE_Version.c_str());
-        xml_attribute unk1     = rootnode.attribute(ATTR_DSE_Unk1.c_str());
-        xml_attribute unk2     = rootnode.attribute(ATTR_DSE_Unk2.c_str());
+        xml_attribute banklow  = rootnode.attribute(ATTR_DSE_BankLow.c_str());
+        xml_attribute bankhigh = rootnode.attribute(ATTR_DSE_BankHigh.c_str());
         xml_attribute unk17    = rootnode.attribute(ATTR_DSE_Unk17.c_str());
 
         meta.origversion = DSE::intToDseVer(utils::parseHexaValToValue<uint16_t>(dsever.value()));
-        utils::parseHexaValToValue(unk1.value(),  meta.unk1);
-        utils::parseHexaValToValue(unk2.value(),  meta.unk2);
-        utils::parseHexaValToValue(unk17.value(), meta.unk17);
+        utils::parseHexaValToValue(banklow.value(),  meta.bankid_coarse);
+        utils::parseHexaValToValue(bankhigh.value(), meta.bankid_fine);
+        utils::parseHexaValToValue(unk17.value(),    meta.unk17);
         
         //Parse programs
         for (auto curnode : rootnode.children(NODE_Program.c_str()))
@@ -337,7 +337,7 @@ private:
     }
 
 
-    void ParseSampleInfos( vector<SampleBank::smpldata_t> & sampledata, xml_document& doc)
+    void ParseSampleInfos( vector<SampleBank::SampleBlock> & sampledata, xml_document& doc)
     {
         using namespace PrgmXML;
         //Check version info and etc..
@@ -351,10 +351,10 @@ private:
             sampledata.push_back(ParseASample(node));
     }
 
-    SampleBank::smpldata_t ParseASample(xml_node samplenode)
+    SampleBank::SampleBlock ParseASample(xml_node samplenode)
     {
         using namespace PrgmXML;
-        SampleBank::smpldata_t smpl;
+        SampleBank::SampleBlock smpl;
         SampleBank::wavinfoptr_t wavinf(new WavInfo);
         
         for (auto node : samplenode.children())
@@ -511,10 +511,10 @@ private:
         xml_node      prgmsnode = doc.append_child( ROOT_Programs.c_str() );
         auto          ptrprgms  = m_presbnk.prgmbank().lock(); 
 
-        AppendAttribute(prgmsnode, ATTR_DSE_Version, DseVerToInt(m_presbnk.metadata().origversion));
-        AppendAttribute(prgmsnode, ATTR_DSE_Unk1,    m_presbnk.metadata().unk1);
-        AppendAttribute(prgmsnode, ATTR_DSE_Unk2,    m_presbnk.metadata().unk2);
-        AppendAttribute(prgmsnode, ATTR_DSE_Unk17,   m_presbnk.metadata().unk17);
+        AppendAttribute(prgmsnode, ATTR_DSE_Version,  DseVerToInt(m_presbnk.metadata().origversion));
+        AppendAttribute(prgmsnode, ATTR_DSE_BankLow,  m_presbnk.metadata().bankid_coarse);
+        AppendAttribute(prgmsnode, ATTR_DSE_BankHigh, m_presbnk.metadata().bankid_fine);
+        AppendAttribute(prgmsnode, ATTR_DSE_Unk17,    m_presbnk.metadata().unk17);
 
         if( ptrprgms != nullptr )
         {
@@ -741,15 +741,19 @@ private:
             WriteNodeWithValue( infonode, PROP_LoopBeg,     winfo.loopbeg * 2 );
             WriteNodeWithValue( infonode, PROP_LoopLen,     winfo.looplen * 2 );
         }
-        else if( winfo.smplfmt == eDSESmplFmt::ima_adpcm )
+        else if( winfo.smplfmt == eDSESmplFmt::ima_adpcm4 )
         {
             WriteNodeWithValue( infonode, PROP_LoopBeg,     (winfo.loopbeg * 4) + ::audio::IMA_ADPCM_PreambleLen );
             WriteNodeWithValue( infonode, PROP_LoopLen,     (winfo.looplen * 4) + ::audio::IMA_ADPCM_PreambleLen );
         }
-        else
+        else if(winfo.smplfmt == eDSESmplFmt::pcm16)
         {
             WriteNodeWithValue( infonode, PROP_LoopBeg,     winfo.loopbeg );
             WriteNodeWithValue( infonode, PROP_LoopLen,     winfo.looplen );
+        }
+        else
+        {
+            throw std::runtime_error("Bad sample format!");
         }
 
         WriteCommentNode( infonode, "Volume Envelope" );

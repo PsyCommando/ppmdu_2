@@ -55,8 +55,8 @@ namespace DSE
         uint32_t unk7            = 0;
         uint32_t flen            = 0;
         uint16_t version         = 0;
-        uint8_t  unk1            = 0;
-        uint8_t  unk2            = 0;
+        uint8_t  bankid_low      = 0;
+        uint8_t  bankid_high     = 0;
         uint32_t unk3            = 0;
         uint32_t unk4            = 0;
 
@@ -86,8 +86,8 @@ namespace DSE
             itwriteto = utils::WriteIntToBytes   ( unk7,             itwriteto );
             itwriteto = utils::WriteIntToBytes   ( flen,             itwriteto );
             itwriteto = utils::WriteIntToBytes   ( version,          itwriteto );
-            itwriteto = utils::WriteIntToBytes   ( unk1,             itwriteto );
-            itwriteto = utils::WriteIntToBytes   ( unk2,             itwriteto );
+            itwriteto = utils::WriteIntToBytes   ( bankid_low,       itwriteto );
+            itwriteto = utils::WriteIntToBytes   ( bankid_high,      itwriteto );
             itwriteto = utils::WriteIntToBytes   ( unk3,             itwriteto );
             itwriteto = utils::WriteIntToBytes   ( unk4,             itwriteto );
 
@@ -121,8 +121,8 @@ namespace DSE
             itReadfrom = utils::ReadIntFromBytes( unk7,     itReadfrom, itend );
             itReadfrom = utils::ReadIntFromBytes( flen,     itReadfrom, itend );
             itReadfrom = utils::ReadIntFromBytes( version,  itReadfrom, itend );
-            itReadfrom = utils::ReadIntFromBytes( unk1,     itReadfrom, itend );
-            itReadfrom = utils::ReadIntFromBytes( unk2,     itReadfrom, itend );
+            itReadfrom = utils::ReadIntFromBytes( bankid_low,  itReadfrom, itend );
+            itReadfrom = utils::ReadIntFromBytes( bankid_high, itReadfrom, itend );
             itReadfrom = utils::ReadIntFromBytes( unk3,     itReadfrom, itend );
             itReadfrom = utils::ReadIntFromBytes( unk4,     itReadfrom, itend );
 
