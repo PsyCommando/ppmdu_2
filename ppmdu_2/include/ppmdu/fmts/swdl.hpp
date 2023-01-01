@@ -512,4 +512,8 @@ namespace DSE
 
 };
 
+std::ostream& operator<<(std::ostream& os, const DSE::SWDL_HeaderData& hdr);
+std::ostream& operator<<(std::ostream& os, const DSE::SWDL_Header_v415& hdr);
+std::ostream& operator<<(std::ostream& os, const DSE::SWDL_Header_v402& hdr);
+
 #endif

@@ -1904,11 +1904,7 @@ namespace DSE
             m_hdr = ReadSwdlHeader( m_itbeg, m_itend );
 
             if( utils::LibWide().isLogOn() )
-                clog << "\tDSE Version: 0x" <<hex <<uppercase <<m_hdr.version <<dec <<nouppercase <<"\n";
-            if( utils::LibWide().isVerboseOn() )
-            {
-                clog <<"#TODO verbose\n";
-            }
+                clog << m_hdr;
         }
 
         void ParseMeta()
@@ -2826,6 +2822,93 @@ namespace DSE
     }
 
 };
+
+std::ostream& operator<<(std::ostream& os, const DSE::SWDL_HeaderData& hdr)
+{
+    os << "\t-- SWDL Header --\n"
+        << showbase
+        << hex << uppercase
+        << "\tunk18        : " << hdr.unk18 << "\n"
+        << dec << nouppercase
+        << "\tFile lenght  : " << hdr.flen << " bytes\n"
+        << hex << uppercase
+        << "\tVersion      : " << hdr.version << "\n"
+        << "\tBank ID Low  : " << static_cast<short>(hdr.bankid_low) << "\n"
+        << "\tBank ID High : " << static_cast<short>(hdr.bankid_high) << "\n"
+        << "\tUnk3         : " << hdr.unk3 << "\n"
+        << "\tUnk4         : " << hdr.unk4 << "\n"
+        << dec << nouppercase
+        << "\tYear         : " << hdr.year << "\n"
+        << "\tMonth        : " << static_cast<short>(hdr.month) << "\n"
+        << "\tDay          : " << static_cast<short>(hdr.day) << "\n"
+        << "\tHour         : " << static_cast<short>(hdr.hour) << "\n"
+        << "\tMinute       : " << static_cast<short>(hdr.minute) << "\n"
+        << "\tSecond       : " << static_cast<short>(hdr.second) << "\n"
+        << "\tCentisec     : " << static_cast<short>(hdr.centisec) << "\n"
+        << "\tFile Name    : " << string(begin(hdr.fname), end(hdr.fname)) << "\n"
+        << hex << uppercase
+        << "\tpcmdlen      : " << hdr.pcmdlen << "\n"
+        << "\tUnk14        : " << hdr.unk14 << "\n"
+        << "\tnbwavislots  : " << hdr.nbwavislots << "\n"
+        << "\tnbprgislots  : " << hdr.nbprgislots << "\n"
+        << "\tUnk17        : " << hdr.unk17 << "\n"
+        << "\twavilen      : " << hdr.wavilen << "\n"
+        << dec << nouppercase
+        << noshowbase
+        << "\n"
+        ;
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const DSE::SWDL_Header_v415& hdr)
+{
+    os << "\t-- SWDL Header --\n"
+        << showbase
+        << hex << uppercase
+        << "\tmagicn       : " << hdr.magicn << "\n"
+        << "\tunk18        : " << hdr.unk18 << "\n"
+        << dec << nouppercase
+        << "\tFile lenght  : " << hdr.flen << " bytes\n"
+        << hex << uppercase
+        << "\tVersion      : " << hdr.version << "\n"
+        << "\tBank ID Low  : " << static_cast<short>(hdr.bankid_low) << "\n"
+        << "\tBank ID High : " << static_cast<short>(hdr.bankid_high) << "\n"
+        << "\tUnk3         : " << hdr.unk3 << "\n"
+        << "\tUnk4         : " << hdr.unk4 << "\n"
+        << dec << nouppercase
+        << "\tYear         : " << hdr.year << "\n"
+        << "\tMonth        : " << static_cast<short>(hdr.month) << "\n"
+        << "\tDay          : " << static_cast<short>(hdr.day) << "\n"
+        << "\tHour         : " << static_cast<short>(hdr.hour) << "\n"
+        << "\tMinute       : " << static_cast<short>(hdr.minute) << "\n"
+        << "\tSecond       : " << static_cast<short>(hdr.second) << "\n"
+        << "\tCentisec     : " << static_cast<short>(hdr.centisec) << "\n"
+        << "\tFile Name    : " << string(begin(hdr.fname), end(hdr.fname)) << "\n"
+        << hex << uppercase
+        << "\tUnk10        : " << hdr.unk10 << "\n"
+        << "\tUnk11        : " << hdr.unk11 << "\n"
+        << "\tUnk12        : " << hdr.unk12 << "\n"
+        << "\tUnk13        : " << hdr.unk13 << "\n"
+        << "\tpcmdlen      : " << hdr.pcmdlen <<"\n"
+        << "\tUnk14        : " << hdr.unk14 << "\n"
+        << "\tnbwavislots  : " << hdr.nbwavislots << "\n"
+        << "\tnbprgislots  : " << hdr.nbprgislots << "\n"
+        << "\tUnk17        : " << hdr.unk17 << "\n"
+        << "\twavilen      : " << hdr.wavilen << "\n"
+        << dec << nouppercase
+        << noshowbase
+        << "\n"
+        ;
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const DSE::SWDL_Header_v402& hdr)
+{
+    assert(false);
+    return os;
+}
+
+
 
 #ifdef USE_PPMDU_CONTENT_TYPE_ANALYSER
     #include <types/content_type_analyser.hpp>
