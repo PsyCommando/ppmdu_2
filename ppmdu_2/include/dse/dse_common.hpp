@@ -847,7 +847,7 @@ namespace DSE
                     possiblematches.push_back(itfound->second);
             }
 
-            return std::move( possiblematches );
+            return possiblematches;
         }
 
     private:
@@ -882,7 +882,7 @@ namespace DSE
         while( beg != end ) 
         {
             //check if we possibly are at the beginning of a chunk, looking for its highest byte.
-            std::vector<eDSEChunks> possibleid = std::move( DSE_ChunkIDLookup::Find( *beg ) ); 
+            std::vector<eDSEChunks> possibleid = DSE_ChunkIDLookup::Find( *beg ); 
             size_t             skipsize = 4; //Default byte skip size on each loop (The NDS makes 4 bytes aligned reads)
 
             //Check all found results

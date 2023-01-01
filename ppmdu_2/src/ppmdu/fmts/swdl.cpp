@@ -2019,7 +2019,7 @@ namespace DSE
             if( utils::LibWide().isLogOn() )
                 clog << endl;
 
-            return move(keygroups);
+            return keygroups;
         }
 
         std::unique_ptr<SampleBank> ParseSamples( vector<SampleBank::SampleBlock> & smpldat )
@@ -2738,13 +2738,13 @@ namespace DSE
                  <<"Parsing SWDL \"" <<filename <<"\"\n"
                  <<"--------------------------------------------------------------------------\n";
         }
-        return std::move( SWDLParser<>( utils::io::ReadFileToByteVector( filename ) ).Parse() );
+        return SWDLParser<>( utils::io::ReadFileToByteVector( filename ) ).Parse();
     }
 
     PresetBank ParseSWDL( std::vector<uint8_t>::const_iterator itbeg, 
                           std::vector<uint8_t>::const_iterator itend )
     {
-        return std::move( SWDLParser<>( itbeg, itend ).Parse() );
+        return SWDLParser<>( itbeg, itend ).Parse();
     }
 
     SWDL_HeaderData ReadSwdlHeader( std::vector<uint8_t>::const_iterator itbeg, 
@@ -2777,7 +2777,7 @@ namespace DSE
         else
             throw std::runtime_error("ReadSwdlHeader() : Not a SWDL file!");
 
-        return move(hdrdata);
+        return hdrdata;
     }
 
     SWDL_HeaderData ReadSwdlHeader( const std::string & filename )
@@ -2812,7 +2812,7 @@ namespace DSE
         else
             throw std::runtime_error("ReadSwdlHeader() : Not a SWDL file!");
 
-        return move(hdrdata);
+        return hdrdata;
     }
 
     void WriteSWDL( const std::string & filename, const PresetBank & audiodata )
@@ -2844,7 +2844,7 @@ namespace DSE
         class swdl_rule : public IContentHandlingRule
         {
         public:
-            swdl_rule(){}
+            swdl_rule():m_myID(0){}
             ~swdl_rule(){}
 
             //Returns the value from the content type enum to represent what this container contains!

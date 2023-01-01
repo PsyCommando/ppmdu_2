@@ -368,7 +368,7 @@ namespace DSE
             meta.bankid_fine        = m_hdr.bankid_high;
             meta.tpqn               = m_song.tpqn;
             meta.origversion        = intToDseVer( m_hdr.version );
-            return move(meta);
+            return meta;
         }
 
         std::vector<MusicTrack> ParseAllTracks()
@@ -405,7 +405,7 @@ namespace DSE
                 throw std::runtime_error( sstr.str() );
             }
 
-            return std::move(tracks);
+            return tracks;
         }
 
         MusicTrack ParseTrack()
@@ -425,7 +425,7 @@ namespace DSE
             mtrk.SetMidiChannel( parsed.second.chanid );
             mtrk.getEvents() = std::move(parsed.first);
 
-            return std::move(mtrk);
+            return mtrk;
         }
 
     private:
@@ -765,7 +765,7 @@ std::ostream& operator<<(std::ostream& os, const DSE::SMDL_Header& hdr)
         class smdl_rule : public IContentHandlingRule
         {
         public:
-            smdl_rule(){}
+            smdl_rule():m_myID(0){}
             ~smdl_rule(){}
 
             //Returns the value from the content type enum to represent what this container contains!
