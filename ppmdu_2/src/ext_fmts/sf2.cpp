@@ -767,10 +767,15 @@ namespace sf2
             riff::ChunkHeader isngchnk;
             isngchnk.chunk_id = static_cast<uint32_t>( eSF2Tags::isng );
 
-            if( m_out.tellp() % 2 != 0 )
-                isngchnk.length = SF_DefIsng.size() + 2; //For the extra padding 0 byte
+            const size_t isngStringLen = SF_DefIsng.size() + 1;
+            bool   extraPad = false;
+            if (((static_cast<std::streamoff>(m_out.tellp()) + isngStringLen) % 2 )!= 0)
+            {
+                isngchnk.length = isngStringLen + 1; //For the extra padding 0 byte
+                extraPad = true;
+            }
             else
-                isngchnk.length = SF_DefIsng.size() + 1;
+                isngchnk.length = isngStringLen;
 
             //Write the chunk header
             isngchnk.Write( itout );
@@ -782,7 +787,7 @@ namespace sf2
             m_out.put(0);
             
             //Add extra Zero if ends on non-even byte count
-            if( m_out.tellp() % 2 != 0 )
+            if(extraPad)
                 m_out.put(0);
         }
 
@@ -791,11 +796,16 @@ namespace sf2
             auto              itout = ostreambuf_iterator<char>(m_out);
             riff::ChunkHeader INAMchnk;
             INAMchnk.chunk_id = static_cast<uint32_t>( eSF2Tags::INAM );
-
-            if( m_out.tellp() % 2 != 0 )
-                INAMchnk.length = m_sf.GetName().size() + 2; //For the extra padding 0 byte
+            
+            const size_t nameStringLen = m_sf.GetName().size() + 1;
+            bool   extraPad = false;
+            if (((static_cast<std::streamoff>(m_out.tellp()) + nameStringLen) % 2) != 0)
+            {
+                INAMchnk.length = nameStringLen + 1; //For the extra padding 0 byte
+                extraPad = true;
+            }
             else
-                INAMchnk.length = m_sf.GetName().size() + 1;
+                INAMchnk.length = nameStringLen;
 
             //Write the chunk header
             INAMchnk.Write( itout );
@@ -807,7 +817,7 @@ namespace sf2
             m_out.put(0);
             
             //Add extra Zero if ends on non-even byte count
-            if( m_out.tellp() % 2 != 0 )
+            if(extraPad)
                 m_out.put(0);
         }
 
@@ -860,9 +870,9 @@ namespace sf2
             for( const auto & smpl : m_sf.GetSamples() )
             {
                 //Write down position
-                std::streampos smplstart  = GetCurTotalNbByWritten();
-                auto           loadedsmpl = std::move( smpl.Data() );   //Never trust MSVC with move constructors and static type abstraction
-                auto           loopbounds = smpl.GetLoopBounds();
+                std::streampos      smplstart  = GetCurTotalNbByWritten();
+                const pcm16ssmpls_t loadedsmpl(smpl.Data());
+                auto                loopbounds = smpl.GetLoopBounds();
 
 
                 if( loopbounds.second > loadedsmpl.size() )
@@ -1460,7 +1470,7 @@ namespace sf2
     */
     Sample::operator std::vector<pcm16s_t>()const
     {
-        return std::move(Data());
+        return Data();
     }
 
     /*
@@ -1475,9 +1485,9 @@ namespace sf2
             return m_pcmdata;
         }
         else if( m_pcmdata.empty() )
-            return std::move( m_loadfun() );
+            return m_loadfun();
         else
-            return std::move( m_pcmdata );
+            return m_pcmdata;
     }
 
     void Sample::SetLoopBounds( smplcount_t beg, smplcount_t end )
