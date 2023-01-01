@@ -498,14 +498,30 @@ namespace DSE
             std::vector<uint8_t>* smpldata = blk->pdata_.get();
             std::vector<int16_t>        pcmout;
             DSESampleConvertionInfo     cursmplcv;
+            std::vector<int16_t>::const_iterator itsamplebeg;
+            std::vector<int16_t>::const_iterator itsampleend;
 
-            //Convert the sample to pcm16 for the soundfont
-            ConvertDSESample(
-                static_cast<uint16_t>(wavi->smplfmt),
-                wavi->loopbeg,
-                *smpldata,
-                cursmplcv,
-                pcmout);
+            //Check if we cached that sample already
+            if(_processed_samples_cache.contains(cntsmslot))
+            {
+                const std::pair<DSESampleConvertionInfo, std::vector<int16_t>> & found = _processed_samples_cache.at(cntsmslot);
+                cursmplcv = found.first;
+                itsamplebeg = found.second.begin();
+                itsampleend = found.second.end();
+            }
+            else
+            {
+                //Convert the sample to pcm16 for the soundfont
+                ConvertDSESample(
+                    static_cast<uint16_t>(wavi->smplfmt),
+                    wavi->loopbeg,
+                    *smpldata,
+                    cursmplcv,
+                    pcmout);
+                _processed_samples_cache.insert(make_pair(cntsmslot, make_pair(cursmplcv, pcmout)));
+                itsamplebeg = pcmout.begin();
+                itsampleend = pcmout.end();
+            }
 
             //Do extra processing if neccessary
             if (_bakeSamples)
@@ -519,8 +535,8 @@ namespace DSE
                 cntsmslot,
                 _sf.AddSample(
                     Sample(
-                        pcmout.begin(),
-                        pcmout.end(),
+                        itsamplebeg,
+                        itsampleend,
                         smplname,
                         (wavi->smplloop != 0) ? cursmplcv.loopbeg_ : 0,
                         (wavi->smplloop != 0) ? cursmplcv.loopend_ : 0,

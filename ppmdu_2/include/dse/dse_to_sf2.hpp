@@ -87,6 +87,7 @@ namespace DSE
         std::map<sampleid_t, size_t>  _smplIdToSf2SmplId;
         DSE::SMDLPresetConversionInfo _convertionInfo;
         DSE::ProcessedPresets         _bakedPresets;
+        std::map<sampleid_t, std::pair<DSESampleConvertionInfo, std::vector<int16_t>>> _processed_samples_cache; //Cache of samples already converted
 
         std::string _curPairName;    //The name of the swd + smdl/sedl set we're currently processing
         //sampleid_t _nbSampleSlots;     //The nb of sample slots for the preset bank currently being processed
