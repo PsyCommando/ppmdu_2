@@ -1,8 +1,8 @@
 #include <dse/bgm_container.hpp>
 #include <ppmdu/fmts/sir0.hpp>
-#include <ppmdu/fmts/smdl.hpp>
-#include <ppmdu/fmts/swdl.hpp>
-#include <ppmdu/fmts/sedl.hpp>
+#include <dse/fmts/smdl.hpp>
+#include <dse/fmts/swdl.hpp>
+#include <dse/fmts/sedl.hpp>
 #include <sstream>
 #include <fstream>
 #include <array>

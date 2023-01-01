@@ -46,30 +46,37 @@ list(APPEND audioutil_HEADER
     "../ppmdu_2/include/utils/uuid_gen_wrapper.hpp"
     "../ppmdu_2/include/utils/whereami_wrapper.hpp"
 
-
-
     #DSE Stuff
+    "../ppmdu_2/include/dse/containers/dse_bnkl.hpp"
+    "../ppmdu_2/include/dse/containers/dse_keygroup_list.hpp"
+    "../ppmdu_2/include/dse/containers/dse_mcrl.hpp"
+    "../ppmdu_2/include/dse/containers/dse_music_sequence.hpp"
+    "../ppmdu_2/include/dse/containers/dse_music_track.hpp"
+    "../ppmdu_2/include/dse/containers/dse_preset_bank.hpp"
+    "../ppmdu_2/include/dse/containers/dse_preset_db.hpp"
+    "../ppmdu_2/include/dse/containers/dse_program_bank.hpp"
+    "../ppmdu_2/include/dse/containers/dse_sample_bank.hpp"
+    "../ppmdu_2/include/dse/containers/dse_se_sequence.hpp"
+
+    "../ppmdu_2/include/dse/fmts/sadl.hpp"
+    "../ppmdu_2/include/dse/fmts/sedl.hpp"
+    "../ppmdu_2/include/dse/fmts/smdl.hpp"
+    "../ppmdu_2/include/dse/fmts/swdl.hpp"
+
     "../ppmdu_2/include/dse/bgm_blob.hpp"
-    "../ppmdu_2/include/dse/bgm_container.hpp"
     "../ppmdu_2/include/dse/dse_common.hpp"
-    "../ppmdu_2/include/dse/dse_containers.hpp"
     "../ppmdu_2/include/dse/dse_conversion.hpp"
     "../ppmdu_2/include/dse/dse_conversion_info.hpp"
     "../ppmdu_2/include/dse/dse_interpreter.hpp"
     "../ppmdu_2/include/dse/dse_sequence.hpp"
     "../ppmdu_2/include/dse/dse_to_sf2.hpp"
     "../ppmdu_2/include/dse/dse_to_xml.hpp"
-    "../ppmdu_2/include/dse/sadl.hpp"
 
     "../ppmdu_2/include/ext_fmts/adpcm.hpp"
     "../ppmdu_2/include/ext_fmts/midi_fmtrule.hpp"
     "../ppmdu_2/include/ext_fmts/riff.hpp"
     "../ppmdu_2/include/ext_fmts/sf2.hpp"
     "../ppmdu_2/include/ext_fmts/wav_io.hpp"
-
-    "../ppmdu_2/include/ppmdu/fmts/sedl.hpp"
-    "../ppmdu_2/include/ppmdu/fmts/smdl.hpp"
-    "../ppmdu_2/include/ppmdu/fmts/swdl.hpp"
 )
 
 ###########################################################
@@ -103,9 +110,15 @@ list(APPEND audioutil_SRC
     "../ppmdu_2/src/utils/whereami_wrapper.cpp"
 
     #DSE Stuff
+    "../ppmdu_2/src/dse/containers/dse_preset_db.cpp"
+    "../ppmdu_2/src/dse/containers/dse_music_sequence.cpp"
+
+    "../ppmdu_2/src/dse/fmts/sedl.cpp"
+    "../ppmdu_2/src/dse/fmts/smdl.cpp"
+    "../ppmdu_2/src/dse/fmts/swdl.cpp"
+
 	"../ppmdu_2/src/dse/bgm_container.cpp"
     "../ppmdu_2/src/dse/dse_common.cpp"
-    "../ppmdu_2/src/dse/dse_containers.cpp"
     "../ppmdu_2/src/dse/dse_conversion.cpp"
     "../ppmdu_2/src/dse/dse_conversion_info.cpp"
     "../ppmdu_2/src/dse/dse_interpreter.cpp"
@@ -119,10 +132,6 @@ list(APPEND audioutil_SRC
     "../ppmdu_2/src/ext_fmts/adpcm.cpp"
     "../ppmdu_2/src/ext_fmts/midi_fmtrule.cpp"
     "../ppmdu_2/src/ext_fmts/sf2.cpp"
-
-    "../ppmdu_2/src/ppmdu/fmts/sedl.cpp"
-    "../ppmdu_2/src/ppmdu/fmts/smdl.cpp"
-    "../ppmdu_2/src/ppmdu/fmts/swdl.cpp"
 )
 
 ###########################################################

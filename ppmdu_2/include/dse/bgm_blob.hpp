@@ -13,7 +13,6 @@ Description:
 #include <iostream>
 #include <iomanip>
 #include <dse/dse_common.hpp>
-#include <dse/dse_containers.hpp>
 
 namespace DSE
 {

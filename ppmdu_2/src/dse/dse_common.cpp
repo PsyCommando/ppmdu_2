@@ -1,7 +1,7 @@
 #include <dse/dse_common.hpp>
 
-#include <ppmdu/fmts/smdl.hpp> //#TODO #MOVEME
-#include <ppmdu/fmts/sedl.hpp>
+#include <dse/fmts/smdl.hpp> //#TODO #MOVEME
+#include <dse/fmts/sedl.hpp>
 #include <ext_fmts/adpcm.hpp>
 
 #include <sstream>

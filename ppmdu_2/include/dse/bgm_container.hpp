@@ -7,7 +7,8 @@ psycommando@gmail.com
 Description: This is meant to handle smdl and swdl files packed together as a pair into a SIR0 container!
 */
 #include <ppmdu/fmts/sir0.hpp>
-#include <dse/dse_containers.hpp>
+#include <dse/containers/dse_music_sequence.hpp>
+#include <dse/containers/dse_preset_bank.hpp>
 #include <string>
 #include <utility>
 

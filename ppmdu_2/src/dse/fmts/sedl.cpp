@@ -1,4 +1,4 @@
-#include <ppmdu/fmts/sedl.hpp>
+#include <dse/fmts/sedl.hpp>
 
 #include <fstream>
 using namespace std;

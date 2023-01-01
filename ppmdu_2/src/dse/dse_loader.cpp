@@ -1,13 +1,15 @@
 #include <dse/dse_conversion.hpp>
 #include <dse/dse_interpreter.hpp>
-#include <dse/dse_containers.hpp>
+#include <dse/containers/dse_preset_db.hpp>
+#include <dse/containers/dse_music_sequence.hpp>
+#include <dse/containers/dse_se_sequence.hpp>
 #include <dse/bgm_blob.hpp>
 #include <dse/bgm_container.hpp>
 #include <dse/dse_to_sf2.hpp>
 
-#include <ppmdu/fmts/swdl.hpp>
-#include <ppmdu/fmts/smdl.hpp>
-#include <ppmdu/fmts/sedl.hpp>
+#include <dse/fmts/swdl.hpp>
+#include <dse/fmts/smdl.hpp>
+#include <dse/fmts/sedl.hpp>
 
 #include <ext_fmts/sf2.hpp>
 #include <ext_fmts/adpcm.hpp>

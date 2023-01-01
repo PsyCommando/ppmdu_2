@@ -2,7 +2,9 @@
 #include <dse/dse_common.hpp>
 #include <dse/dse_sequence.hpp>
 #include <dse/dse_interpreter.hpp>
-#include <dse/dse_containers.hpp>
+#include <dse/containers/dse_music_sequence.hpp>
+#include <dse/containers/dse_preset_bank.hpp>
+#include <dse/containers/dse_se_sequence.hpp>
 #include <dse/dse_to_sf2.hpp>
 
 #include <utils/library_wide.hpp>
@@ -10,9 +12,9 @@
 #include <utils/poco_wrapper.hpp>
 #include <utils/parse_utils.hpp>
 
-#include <ppmdu/fmts/sedl.hpp>
-#include <ppmdu/fmts/smdl.hpp>
-#include <ppmdu/fmts/swdl.hpp>
+#include <dse/fmts/sedl.hpp>
+#include <dse/fmts/smdl.hpp>
+#include <dse/fmts/swdl.hpp>
 
 #include <dse/bgm_container.hpp>
 #include <dse/bgm_blob.hpp>

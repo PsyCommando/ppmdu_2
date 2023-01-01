@@ -11,8 +11,11 @@ All wrongs reversed, no crappyrights :P
 */
 #include <dse/dse_common.hpp>
 #include <dse/dse_sequence.hpp>
-#include <dse/dse_containers.hpp>
 #include <dse/dse_conversion_info.hpp>
+#include <dse/containers/dse_music_sequence.hpp>
+#include <dse/containers/dse_preset_db.hpp>
+#include <dse/containers/dse_se_sequence.hpp>
+
 #include <cstdint>
 #include <vector>
 #include <string>

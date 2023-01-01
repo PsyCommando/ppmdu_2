@@ -6,12 +6,11 @@
 #include <types/content_type_analyser.hpp>
 #include <ppmdu/pmd2/pmd2_filetypes.hpp>
 #include <utils/library_wide.hpp>
-#include <ppmdu/fmts/swdl.hpp>
 #include <dse/dse_conversion_info.hpp>
 #include <dse/dse_interpreter.hpp>
-#include <ppmdu/fmts/smdl.hpp>
-#include <ppmdu/fmts/swdl.hpp>
-#include <ppmdu/fmts/sedl.hpp>
+#include <dse/fmts/smdl.hpp>
+#include <dse/fmts/swdl.hpp>
+#include <dse/fmts/sedl.hpp>
 #include <dse/bgm_container.hpp>
 #include <ext_fmts/midi_fmtrule.hpp>
 

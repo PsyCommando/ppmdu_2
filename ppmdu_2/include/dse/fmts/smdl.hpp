@@ -13,7 +13,7 @@ All wrongs reversed, no crappyrights :P
 
 */
 #include <dse/dse_common.hpp>
-#include <dse/dse_containers.hpp>
+#include <dse/containers/dse_music_sequence.hpp>
 
 #ifdef USE_PPMDU_CONTENT_TYPE_ANALYSER
     #include <types/content_type_analyser.hpp>

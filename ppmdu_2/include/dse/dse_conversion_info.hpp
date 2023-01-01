@@ -8,7 +8,7 @@ Description: Conversion info data used while converting SMDL files into MIDIs.
              
 */
 #include <dse/dse_common.hpp>
-#include <dse/dse_containers.hpp>
+
 #include <string>
 #include <vector>
 #include <map>

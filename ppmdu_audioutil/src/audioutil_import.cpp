@@ -4,7 +4,7 @@
 */
 #include "audioutil.hpp"
 
-#include <ppmdu/fmts/smdl.hpp>
+#include <dse/fmts/smdl.hpp>
 #include <dse/dse_interpreter.hpp>
 
 #include <iostream>

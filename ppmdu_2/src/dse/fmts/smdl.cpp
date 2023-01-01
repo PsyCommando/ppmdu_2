@@ -1,6 +1,5 @@
-#include <ppmdu/fmts/smdl.hpp>
+#include <dse/fmts/smdl.hpp>
 #include <dse/dse_sequence.hpp>
-#include <dse/dse_containers.hpp>
 #include <utils/library_wide.hpp>
 #include <iostream>
 #include <iomanip>
