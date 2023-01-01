@@ -633,15 +633,16 @@ namespace DSE
     struct DSE_MetaData
     {
         DSE_MetaData()
-            :bankid_coarse(0), bankid_fine(0),createtime(), origversion(eDSEVersion::VDef)
+            :bankid_coarse(0), bankid_fine(0),createtime(), origversion(eDSEVersion::VDef), origloadorder(0)
         {}
 
         uint8_t     bankid_coarse; //The low byte of the bank id
         uint8_t     bankid_fine;   //The high byte of the bank id
         std::string fname;         //Internal filename
         DateTime    createtime;    //Time this was created on
-        std::string origfname;     //The original filename, in the game's filesystem if applicable
+        std::string origfname;     //The original filename, in the file system. If there was one. Differs from the internal name. Used to match pairs names during export.
         eDSEVersion origversion;
+        size_t      origloadorder; //The order the pair this file is part of was loaded! Used for matching pair names during export.
 
         bankid_t get_bank_id()const
         {
@@ -653,6 +654,15 @@ namespace DSE
         {
             bankid_coarse = static_cast<uint8_t>(bankid & 0xFF);
             bankid_fine   = static_cast<uint8_t>((bankid >> 8) & 0xFF);
+        }
+
+        //Returns the part before the file extension for the original file name
+        std::string get_original_file_name_no_ext()const
+        {
+            size_t befext = origfname.find_last_of('.');
+            if (befext != std::string::npos && (befext != 0)) //Don't remove if the filename starts with .
+                return std::string(origfname.c_str(), origfname.c_str() + befext);
+            return origfname;
         }
     };
 

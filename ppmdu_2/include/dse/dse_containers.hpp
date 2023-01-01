@@ -750,7 +750,8 @@ namespace DSE
             :m_meta(meta), m_sequences(sequences), m_mcrl(mcrl), m_bnkl(bnkl)
         {}
 
-
+        inline DSE::DSE_MetaDataSEDL& metadata() { return m_meta; }
+        inline const DSE::DSE_MetaDataSEDL& metadata()const { return m_meta; }
 
         DSE::DSE_MetaDataSEDL       m_meta;
         std::vector<MusicSequence>  m_sequences;
@@ -768,6 +769,7 @@ namespace DSE
     {
     public:
         using sampledata_t = std::vector<uint8_t>;
+        using bankname_t = std::string;
 
         //Wrapper for adding new banks to the loader so we can set them up properly
         DSE::PresetBank& AddBank(DSE::PresetBank&& bnk);
@@ -777,25 +779,25 @@ namespace DSE
     public:
         //Helpers
         //Retrieve the last overriden sample data for the given sample and bank
-        sampledata_t* getSampleForBank(sampleid_t smplid, bankid_t bnkid);
+        sampledata_t* getSampleForBank(sampleid_t smplid, const bankname_t& bnkid);
 
         //Retrieve the last overriden sample info for the given sample and bank
-        DSE::WavInfo* getSampleInfoForBank(sampleid_t smplid, bankid_t bnkid);
+        DSE::WavInfo* getSampleInfoForBank(sampleid_t smplid, const bankname_t& bnkid);
 
         //Retrieve the sample block for a given sample id
-        SampleBank::SampleBlock* getSampleBlockFor(sampleid_t smplid, bankid_t bnkid);
+        SampleBank::SampleBlock* getSampleBlockFor(sampleid_t smplid, const bankname_t& bnkid);
 
-        inline const SampleBank::SampleBlock* getSampleBlockFor(sampleid_t smplid, bankid_t bnkid)const
+        inline const SampleBank::SampleBlock* getSampleBlockFor(sampleid_t smplid, const bankname_t& bnkid)const
         {
             return const_cast<PresetDatabase*>(this)->getSampleBlockFor(smplid, bnkid);
         }
 
-        inline const DSE::WavInfo* getSampleInfoForBank(sampleid_t smplid, bankid_t bnkid)const
+        inline const DSE::WavInfo* getSampleInfoForBank(sampleid_t smplid, const bankname_t& bnkid)const
         {
             return const_cast<PresetDatabase*>(this)->getSampleInfoForBank(smplid, bnkid);
         }
 
-        inline const sampledata_t* getSampleForBank(sampleid_t smplid, bankid_t bnkid)const
+        inline const sampledata_t* getSampleForBank(sampleid_t smplid, const bankname_t& bnkid)const
         {
             return const_cast<PresetDatabase*>(this)->getSampleForBank(smplid, bnkid);
         }
@@ -807,11 +809,12 @@ namespace DSE
 
     public:
         //Std access stuff
-        typedef std::map<bankid_t, PresetBank>::iterator       iterator;
-        typedef std::map<bankid_t, PresetBank>::const_iterator const_iterator;
+        typedef std::unordered_map<bankname_t, PresetBank>::iterator       iterator;
+        typedef std::unordered_map<bankname_t, PresetBank>::const_iterator const_iterator;
 
         inline size_t size()const { return m_banks.size(); }
         inline bool empty()const { return m_banks.empty(); }
+        inline bool contains(const bankname_t bankid)const { return m_banks.contains(bankid); }
 
         inline iterator begin() { return m_banks.begin(); }
         inline const_iterator begin()const { return m_banks.begin(); }
@@ -819,25 +822,21 @@ namespace DSE
         inline iterator end() { return m_banks.end(); }
         inline const_iterator end()const { return m_banks.end(); }
 
-        inline PresetBank& operator[](size_t index) { return m_banks.at(index); }
-        inline const PresetBank& operator[](size_t index)const { return m_banks.at(index); }
+        inline PresetBank& operator[](const bankname_t& index) { return m_banks.at(index); }
+        inline const PresetBank& operator[](const bankname_t& index)const { return m_banks.at(index); }
 
-        inline iterator find(bankid_t bankid) { return m_banks.find(bankid); }
-        inline const_iterator find(bankid_t bankid)const { return m_banks.find(bankid); }
+        inline iterator find(const bankname_t& bankid) { return m_banks.find(bankid); }
+        inline const_iterator find(const bankname_t& bankid)const { return m_banks.find(bankid); }
 
-        inline PresetBank& at(bankid_t bankid) { return m_banks.at(bankid); }
-        inline const PresetBank& at(bankid_t bankid)const { return m_banks.at(bankid); }
+        inline PresetBank& at(const bankname_t& bankid) { return m_banks.at(bankid); }
+        inline const PresetBank& at(const bankname_t& bankid)const { return m_banks.at(bankid); }
     
     private:
-        //Handles merging or deciding which bank is kept when 2 with the same ids are found!
-        PresetBank HandleBankConflict(bankid_t conflictid, const PresetBank& incoming, const PresetBank& existing);
-
-    private:
-        std::map<bankid_t, PresetBank>                                    m_banks;          //Map of all our banks by bank id
-        std::map<sampleid_t, std::map<bankid_t, SampleBank::SampleBlock>> m_sampleMap;      //Allow us to grab the latest overriden sample entry by id and bank id.
-        std::map<presetid_t, std::set<bankid_t>>                          m_preset2banks;   //List what loaded banks actually define a given preset
-        std::map<sampleid_t, std::set<bankid_t>>                          m_sample2banks;   //List in what banks a given sample id is defined
-        sampleid_t                                                        m_nbSampleBlocks; //The Maximum number of sample blocks contained in a bank
+        std::unordered_map<std::string, PresetBank>                         m_banks;          //Map of all our banks by a string id, either the original filename, or something else in the case where there's no filename
+        std::map<sampleid_t, std::map<bankname_t, SampleBank::SampleBlock>> m_sampleMap;      //Allow us to grab the latest overriden sample entry by id and bank id.
+        std::map<presetid_t, std::set<bankname_t>>                          m_preset2banks;   //List what loaded banks actually define a given preset
+        std::map<sampleid_t, std::set<bankname_t>>                          m_sample2banks;   //List in what banks a given sample id is defined
+        sampleid_t                                                          m_nbSampleBlocks; //The Maximum number of sample blocks contained throughout all banks
     };
 
 };

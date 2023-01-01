@@ -38,11 +38,13 @@ namespace DSE
         using presetid_t = uint8_t;
         
         //Loaded stuff
-        DSE::PresetDatabase                       m_bankdb;
-        std::vector<DSE::MusicSequence>           m_mseqs;
-        std::vector<DSE::SoundEffectSequences>    m_eseqs;
-        std::map<std::string, bankid_t>           m_loadedPaths; //Keeps track of loaded filenames, so we don't load something twice
+        DSE::PresetDatabase                                        m_bankdb;
+        std::unordered_map<std::string, DSE::MusicSequence>        m_mseqs;
+        std::unordered_map<std::string, DSE::SoundEffectSequences> m_eseqs;
 
+        //Pair Ordering
+        size_t                        m_pairCnt;
+        std::map<std::string, size_t> m_loadedPairOrdering;
 
         //Wrapper for adding new banks to the loader so we can set them up properly
         DSE::PresetBank& AddBank(DSE::PresetBank && bnk) 
@@ -52,18 +54,40 @@ namespace DSE
 
         DSE::MusicSequence& AddMusicSeq(DSE::MusicSequence&& seq) 
         {
-            m_mseqs.push_back(std::forward<DSE::MusicSequence>(seq));
-            return m_mseqs.back();
+            auto res = m_mseqs.insert(std::make_pair(seq.metadata().get_original_file_name_no_ext(), std::forward<DSE::MusicSequence>(seq)));
+            return (res.first)->second;
         }
 
         DSE::SoundEffectSequences& AddSoundEffectSeq(DSE::SoundEffectSequences&& seq) 
         {
-            m_eseqs.push_back(std::forward<DSE::SoundEffectSequences>(seq));
-            return m_eseqs.back();
+            auto res = m_eseqs.insert(std::make_pair(seq.m_meta.get_original_file_name_no_ext(), std::forward<DSE::SoundEffectSequences>(seq)));
+            return (res.first)->second;
+        }
+
+        size_t GetOrSetLoadOrder(const std::string& pairname)
+        {
+            if (pairname.empty())
+                assert(false);
+            size_t order = 0;
+
+            if (!m_loadedPairOrdering.contains(pairname))
+            {
+                //Assign new order
+                order  = m_pairCnt;
+                m_loadedPairOrdering.insert(make_pair(pairname, m_pairCnt));
+                ++m_pairCnt;
+            }
+            else
+            {
+                //Assign existing order
+                order = m_loadedPairOrdering.at(pairname);
+            }
+            return order;
         }
 
     public:
         DSELoaderImpl()
+            :m_pairCnt(0)
         {}
 
         ~DSELoaderImpl()
@@ -71,31 +95,36 @@ namespace DSE
 
         DSE::PresetBank & LoadSWDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend, std::string origfilename = {})
         {
-            if (!origfilename.empty() && m_loadedPaths.contains(origfilename)) //Prevents loading several times the same bank file
-                return m_bankdb.at(m_loadedPaths.at(origfilename));
+            const std::string filenameonly = Poco::Path(origfilename).getBaseName();
+            if (!origfilename.empty() && m_bankdb.contains(filenameonly)) //Prevents loading several times the same bank file
+                return m_bankdb.at(filenameonly);
 
             PresetBank bnk(DSE::ParseSWDL(itbeg, itend));
-            if (!origfilename.empty())
-            {
-                bnk.metadata().origfname = origfilename;
-                m_loadedPaths.insert(std::make_pair(origfilename, bnk.metadata().get_bank_id()));
-            }
+            bnk.metadata().origfname = origfilename; //Make sure the original filename is preserved
+
+            //Assign load order depending if we loaded another part of the given pair or not
+            bnk.metadata().origloadorder = GetOrSetLoadOrder(bnk.metadata().get_original_file_name_no_ext());
+            
             return AddBank(std::move(bnk));
         }
 
         DSE::MusicSequence& LoadSMDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend, std::string origfilename = {})
         {
             MusicSequence seq(DSE::ParseSMDL(itbeg, itend));
-            if (!origfilename.empty())
-                seq.metadata().origfname = origfilename;
+            seq.metadata().origfname = origfilename;
+
+            //Assign load order depending if we loaded another part of the given pair or not
+            seq.metadata().origloadorder = GetOrSetLoadOrder(seq.metadata().get_original_file_name_no_ext());
             return AddMusicSeq(std::move(seq));
         }
 
         DSE::SoundEffectSequences& LoadSEDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend, std::string origfilename = {})
         {
             SoundEffectSequences seq(DSE::ParseSEDL(itbeg, itend));
-            if (!origfilename.empty())
-                seq.m_meta.origfname = origfilename;
+            seq.metadata().origfname = origfilename;
+
+            //Assign load order depending if we loaded another part of the given pair or not
+            seq.metadata().origloadorder = GetOrSetLoadOrder(seq.metadata().get_original_file_name_no_ext());
             return AddSoundEffectSeq(std::move(seq));
         }
 
@@ -220,7 +249,7 @@ namespace DSE
                 //Make a soundfont for the current Bank
                 const DSE::PresetBank& bnk      = entry.second;
                 
-                const Poco::Path  curfpath = Poco::Path(fpath).append(std::to_string(cnt) + "_" + bnk.metadata().fname).makeFile().setExtension("sf2");
+                const Poco::Path  curfpath = Poco::Path(fpath).append(std::to_string(bnk.metadata().origloadorder) + "_" + bnk.metadata().fname).makeFile().setExtension("sf2");
                 const std::string curfname = Poco::Path::transcode(curfpath.getFileName());
                 if (!bnk.prgmbank().lock())
                 {
@@ -255,7 +284,7 @@ namespace DSE
             for (const auto & bnk : m_bankdb)
             {
                 Poco::Path fpath(destpath);
-                fpath.append(std::to_string(bnk.second.metadata().get_bank_id()) + "_" + bnk.second.metadata().fname);
+                fpath.append(std::to_string(bnk.second.metadata().origloadorder) + "_" + bnk.second.metadata().fname);
 
                 if (!utils::DoCreateDirectory(fpath.toString()))
                 {
@@ -269,23 +298,24 @@ namespace DSE
 
         void ExportMIDIs(const std::string& destdirpath, sequenceProcessingOptions options)
         {
-            for (size_t i = 0; i < m_mseqs.size(); ++i)
+            for (const auto & entry : m_mseqs)
             {
+                const MusicSequence& seq = entry.second;
                 Poco::Path fpath(destdirpath);
-                fpath.append(std::to_string(i) + "_" + m_mseqs[i].metadata().fname).makeFile().setExtension("mid");
+                fpath.append(std::to_string(seq.metadata().origloadorder) + "_" + seq.metadata().fname).makeFile().setExtension("mid");
 
                 cout << "<*>- Currently exporting smd to " << fpath.toString() << "\n";
                 if (utils::LibWide().isLogOn())
                     clog << "<*>- Currently exporting smd to " << fpath.toString() << "\n";
                 
                 //Lookup cvinfo with the original filename from the game filesystem!
-                auto foundinfo = getCvInfForSequence(options.cvinfo, m_mseqs[i].metadata().origfname);
+                auto foundinfo = getCvInfForSequence(options.cvinfo, seq.metadata().origfname);
                 if (foundinfo.has_value())
                 {
                     if (utils::LibWide().isLogOn())
                         clog << "<*>- Got conversion info for this track! MIDI will be remapped accordingly!\n";
                     DSE::SequenceToMidi(fpath.toString(),
-                        m_mseqs[i],
+                        seq,
                         foundinfo.value(),
                         options.nbloops,
                         DSE::eMIDIMode::GS);  //This will disable the drum channel, since we don't need it at all!
@@ -295,7 +325,7 @@ namespace DSE
                     if (utils::LibWide().isLogOn())
                         clog << "<!>- Couldn't find a conversion info entry for this SMDL! Falling back to converting as-is..\n";
                     DSE::SequenceToMidi(fpath.toString(),
-                        m_mseqs[i],
+                        seq,
                         options.nbloops,
                         DSE::eMIDIMode::GS);  //This will disable the drum channel, since we don't need it at all!
                 }
@@ -303,13 +333,6 @@ namespace DSE
         }
 
     private:
-
-        //Unused??
-        const DSE::PresetBank* getBank(bankid_t bankid)const
-        {
-            auto itfound = m_bankdb.find(bankid);
-            return (itfound != m_bankdb.end())? &(itfound->second) : nullptr;
-        }
 
         std::optional<SMDLPresetConversionInfo> getCvInfForSequence(const std::optional<DSE::SMDLConvInfoDB>& cvinf, const std::string& origfname)
         {
@@ -355,7 +378,7 @@ namespace DSE
         else if (fpath.isFile())
         {
             const std::vector<uint8_t> fdata = utils::io::ReadFileToByteVector(path);
-            LoadSWDL(fdata.begin(), fdata.end(), Poco::Path(path).getFileName());
+            LoadSWDL(fdata.begin(), fdata.end(), Poco::Path::transcode(Poco::Path(path).getFileName()));
         }
     }
     void DSELoader::LoadSWDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend, std::string origfilename)
@@ -382,7 +405,7 @@ namespace DSE
         else if (fpath.isFile())
         {
             const std::vector<uint8_t> fdata = utils::io::ReadFileToByteVector(path);
-            LoadSMDL(fdata.begin(), fdata.end());
+            LoadSMDL(fdata.begin(), fdata.end(), Poco::Path::transcode(Poco::Path(path).getFileName()));
         }
 
     }
@@ -410,7 +433,7 @@ namespace DSE
         else if (fpath.isFile())
         {
             const std::vector<uint8_t> fdata = utils::io::ReadFileToByteVector(path);
-            LoadSEDL(fdata.begin(), fdata.end());
+            LoadSEDL(fdata.begin(), fdata.end(), Poco::Path::transcode(Poco::Path(path).getFileName()));
         }
 
     }

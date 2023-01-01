@@ -270,85 +270,6 @@ namespace DSE
         AddSampleToSoundfont
     ***************************************************************************************/
 
-    [[deprecated]]
-    void AddSampleToSoundfont(sampleid_t cntsmslot, const DSE::PresetDatabase& presdb, bankid_t bankid, std::map<uint16_t, size_t>& swdsmplofftosf, sf2::SoundFont& sf)
-    {
-        using namespace sf2;
-        using namespace ::audio;
-
-        const SampleBank::SampleBlock * optfound = presdb.getSampleBlockFor(cntsmslot, bankid);
-        if (optfound)
-        {
-            const DSE::WavInfo& cursminf = *optfound->pinfo_;
-            Sample::loadfun_t   loadfun;
-            Sample::smplcount_t smpllen = 0;
-            Sample::smplcount_t loopbeg = 0;
-            Sample::smplcount_t loopend = 0;
-            std::vector<uint8_t>* pdata = optfound->pdata_.get();
-
-            if (cursminf.smplfmt == eDSESmplFmt::ima_adpcm4)
-            {
-                loadfun = std::move(std::bind(::audio::DecodeADPCM_NDS, std::ref(*pdata), 1));
-                smpllen = ::audio::ADPCMSzToPCM16Sz(pdata->size());
-                loopbeg = (cursminf.loopbeg - SizeADPCMPreambleWords) * 8; //loopbeg is counted in int32, for APCM data, so multiply by 8 to get the loop beg as pcm16. Subtract one, because of the preamble.
-                loopend = smpllen;
-            }
-            else if (cursminf.smplfmt == eDSESmplFmt::pcm16)
-            {
-                loadfun = std::move(std::bind(&utils::RawBytesToPCM16Vec, pdata));
-                smpllen = pdata->size() / 2;
-                loopbeg = cursminf.loopbeg * 2; //loopbeg is counted in int32, so multiply by 2 to get the loop beg as pcm16
-                loopend = smpllen;
-            }
-            else if (cursminf.smplfmt == eDSESmplFmt::pcm8)
-            {
-                loadfun = std::move(std::bind(&utils::PCM8RawBytesToPCM16Vec, pdata));
-                smpllen = pdata->size() * 2; //PCM8 -> PCM16
-                loopbeg = cursminf.loopbeg * 4; //loopbeg is counted in int32, for PCM8 data, so multiply by 4 to get the loop beg as pcm16
-                loopend = smpllen;
-            }
-            else if (cursminf.smplfmt == eDSESmplFmt::ima_adpcm3)
-            {
-                //stringstream sstrerr;
-                //sstrerr << "PSG instruments unsuported!";
-                //throw std::runtime_error( sstrerr.str() );
-                clog << "<!>- Warning: AddSampleToSoundfont(): Unsuported type 3 sample added!\n";
-            }
-            else
-            {
-                stringstream sstrerr;
-                sstrerr << "Unknown sample format (0x" << hex << uppercase << static_cast<uint16_t>(cursminf.smplfmt) << nouppercase << dec << ") encountered !";
-                throw std::runtime_error(sstrerr.str());
-            }
-
-#ifdef _DEBUG
-            assert((loopbeg < smpllen || loopend >= smpllen));
-#endif
-
-            Sample sm(std::move(loadfun), smpllen);
-            stringstream sstrname;
-            sstrname << "smpl_0x" << uppercase << hex << cntsmslot;
-            //sm.SetName( "smpl#" + to_string(cntsmslot) );
-            sm.SetName(sstrname.str());
-            sm.SetSampleRate(cursminf.smplrate);
-
-            //#ifdef _DEBUG
-                        //double pcorrect  = 1.0 / 100.0 / 2.5 / lround( static_cast<double>(cursminf.pitchoffst) );
-                        //double remainder = abs(pcorrect) - 127;
-                        //sm.SetPitchCorrection( static_cast<int8_t>(lround(pcorrect)) ); //Pitch correct is 1/250th of a semitone, while the SF2 pitch correction is 1/100th of a semitone
-
-                        //if( remainder > 0)
-                        //    cout <<"########## Sample pitch correct remainder !!!! ####### " <<showbase <<showpoint << remainder <<noshowbase <<noshowpoint <<"\n";
-            //#endif
-
-            sm.SetSampleType(Sample::eSmplTy::monoSample); //#TODO: Mono samples only for now !
-
-            if (cursminf.smplloop != 0)
-                sm.SetLoopBounds(loopbeg, loopend);
-
-            swdsmplofftosf.emplace(cntsmslot, sf.AddSample(std::move(sm)));
-        }
-    }
 
     [[deprecated]]
     void AddSampleToSoundfont(sampleid_t cntsmslot, std::shared_ptr<DSE::SampleBank>& samples, std::map<uint16_t, size_t>& swdsmplofftosf, sf2::SoundFont& sf)
@@ -519,7 +440,6 @@ namespace DSE
         :_db(db), 
         _lfoFxDisabled(blfoFxDisabled), 
         _bakeSamples(bbakeSamples),
-        _curBankId(0),
         _cntExportedPresets(0),
         _cntExportedSplits(0)
     {}
@@ -527,7 +447,7 @@ namespace DSE
     void DSE_SoundFontBuilder::Reset()
     {
         //Setup our instance for a conversion 
-        _curBankId = 0;
+        _curPairName = {};
         _sf = sf2::SoundFont();
         _cntExportedPresets = 0;
         _cntExportedSplits = 0;
@@ -565,11 +485,11 @@ namespace DSE
         for(sampleid_t cntsmslot : usedSamples)
         {
             //Grab the sample and sample info from the last bank that defined them
-            const SampleBank::SampleBlock* blk = _db.getSampleBlockFor(cntsmslot, _curBankId);
+            const SampleBank::SampleBlock* blk = _db.getSampleBlockFor(cntsmslot, _curPairName);
             if (!blk || blk->isnull())
             {
                 if (utils::LibWide().isLogOn())
-                    clog << "WARNING: Sample ID " << cntsmslot <<" is missing for bank id " << _curBankId << "!\n";
+                    clog << "WARNING: Sample ID " << cntsmslot <<" is missing for pair \"" << _curPairName << "\"!\n";
                 continue;
             }
 
@@ -624,13 +544,14 @@ namespace DSE
             if (!prgm) //They may be null
                 continue;
 
-            auto itnewcv = _convertionInfo.AddPresetConvInfo(prgm->id, SMDLPresetConversionInfo::PresetConvData(prgm->id, _curBankId));
+            const bankid_t bankid_replacemeplease = 0;
+            auto itnewcv = _convertionInfo.AddPresetConvInfo(prgm->id, SMDLPresetConversionInfo::PresetConvData(prgm->id, bankid_replacemeplease));
             if (itnewcv == _convertionInfo.end())
                 assert(false); //Fixme
 
             SMDLPresetConversionInfo::PresetConvData& convinf = itnewcv->second;
             const std::string presetname(std::to_string(prgm->id));
-            Preset            newpreset(presetname, convinf.midipres, _curBankId);
+            Preset            newpreset(presetname, convinf.midipres, bankid_replacemeplease);
 
             if (utils::LibWide().isLogOn())
                 clog << "======================\nHandling " << presetname << "\n======================\n";
@@ -677,7 +598,7 @@ namespace DSE
             //## Add other generators below ##
 
             //Fetch Loop Flag
-            auto ptrinf = _db.getSampleInfoForBank(dsesplit.smplid, _curBankId); //Grab the latest overriden sample info
+            auto ptrinf = _db.getSampleInfoForBank(dsesplit.smplid, _curPairName); //Grab the latest overriden sample info
             if (ptrinf != nullptr && ptrinf->smplloop != 0)
                 myzone.SetSmplMode(eSmplMode::loop);
 
@@ -744,7 +665,7 @@ namespace DSE
         //Make sure we have a clean state
         Reset();
         _sf.SetName(sfname);
-        _curBankId     = bnk.metadata().get_bank_id();
+        _curPairName = bnk.metadata().get_original_file_name_no_ext();
 
         //Baking
         //if (_bakeSamples)

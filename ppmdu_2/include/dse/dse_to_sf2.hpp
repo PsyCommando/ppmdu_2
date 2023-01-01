@@ -64,8 +64,6 @@ namespace DSE
         AddSampleToSoundfont
     ***************************************************************************************/
     [[deprecated]]
-    void AddSampleToSoundfont(sampleid_t cntsmslot, std::shared_ptr<DSE::SampleBank>& samples, std::map<uint16_t, size_t>& swdsmplofftosf, sf2::SoundFont& sf);
-    [[deprecated]]
     void AddSampleToSoundfont(sampleid_t cntsmslot, const DSE::PresetDatabase& presdb, bankid_t bankid, std::map<uint16_t, size_t>& swdsmplofftosf, sf2::SoundFont& sf);
 
 
@@ -90,7 +88,7 @@ namespace DSE
         DSE::SMDLPresetConversionInfo _convertionInfo;
         DSE::ProcessedPresets         _bakedPresets;
 
-        bankid_t   _curBankId;         //The bank id of the preset bank currently being processed
+        std::string _curPairName;    //The name of the swd + smdl/sedl set we're currently processing
         //sampleid_t _nbSampleSlots;     //The nb of sample slots for the preset bank currently being processed
         size_t     _cntExportedPresets;
         size_t     _cntExportedSplits;
