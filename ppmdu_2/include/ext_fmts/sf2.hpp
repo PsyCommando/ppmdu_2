@@ -81,22 +81,29 @@ namespace sf2
     ***********************************************************************************/
     inline int32_t SecondsToTimecents( int32_t seconds )
     {
-        return lround( log2(seconds) * 1200.00 );
+        return SecondsToTimecents(static_cast<double>(seconds));
+    }
+
+    inline int32_t SecondsToTimecents(double seconds)
+    {
+        return lround(log2(seconds * 1200.00));
     }
 
     /***********************************************************************************
         MSecsToTimecents
             Convert a duration in milliseconds to a duration in timecents.
     ***********************************************************************************/
-    inline int32_t MSecsToTimecents( int32_t msecs )
+    inline int32_t MSecsToTimecents(int32_t msecs)
     {
+        return SecondsToTimecents(msecs / 1000.00);
+
         //static const double LOG2_VAL = log(2.00);
-        double sec = ( static_cast<double>(msecs) / 1000.00 );
+        //double sec = ( static_cast<double>(msecs) / 1000.00 );
         //!#FIXME: I hate logs... And I hate time cents..
         //!        I can't figure out who has the correct formula to turn msec into timecents..
         //return lround( (sec / LOG2_VAL) /*+ 6.66666*/ );
         //return lround( log(sec) / log( 2.00 ) * 1200.00 );
-        return lround( 1200.00 * log2(sec) );
+        //return lround( 1200.00 * log2(sec) );
     }
 
     inline int32_t MSecsToTimecentsDecay( int32_t msecs )
