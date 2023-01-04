@@ -143,19 +143,6 @@ namespace DSE
     DSEEnvelope::DSEEnvelope()
         :envmulti(0), atkvol(0), attack(0), hold(0), decay(0), sustain(0), decay2(0), release(0)
     {}
-
-    //DSEEnvelope::DSEEnvelope( const SplitEntry & splitentry )
-    //{
-    //    (*this) = splitentry.env;
-    //}
-
-    //DSEEnvelope & DSEEnvelope::operator=( const SplitEntry & splitentry )
-    //{
-    //    (*this) = splitentry.env;
-    //    return *this;
-    //}
-
-
     void DSE_MetaDataSEDL::setFromHeader(const DSE::SEDL_Header& hdr)
     {
         bankid_coarse = hdr.bankid_low;

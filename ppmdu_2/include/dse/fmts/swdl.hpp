@@ -33,10 +33,6 @@ All wrongs reversed, no crappyrights :P
 namespace DSE
 {
 //====================================================================================================
-//  Typedefs
-//====================================================================================================
-
-//====================================================================================================
 //  Constants
 //====================================================================================================
     static const uint32_t SWDL_MagicNumber     = static_cast<uint32_t>(eDSEContainers::swdl);//0x7377646C; //"swdl"
@@ -45,8 +41,6 @@ namespace DSE
 
     static const uint16_t SWDL_Version415      = 0x415;
     static const uint16_t SWDL_Version402      = 0x402;
-
-    static const uint32_t SWDL_VersionOffset   = 0xC; //Offset in all DSE SWDL header where the version is stored.
 
 //====================================================================================================
 // Structs
@@ -389,56 +383,6 @@ namespace DSE
             return itReadfrom;
         }
 
-        //#DEPRECATED
-        
-        template<class _init> [[deprecated]] _init ReadFromContainer(  _init itReadfrom )
-        {
-            magicn      = utils::ReadIntFromBytes<decltype(magicn)>     (itReadfrom, false ); //iterator is incremented
-            unk18       = utils::ReadIntFromBytes<decltype(unk18)>      (itReadfrom);
-            flen        = utils::ReadIntFromBytes<decltype(flen)>       (itReadfrom);
-            version     = utils::ReadIntFromBytes<decltype(version)>    (itReadfrom);
-            bankid_low  = utils::ReadIntFromBytes<decltype(bankid_low)> (itReadfrom);
-            bankid_high = utils::ReadIntFromBytes<decltype(bankid_high)>(itReadfrom);
-            unk3        = utils::ReadIntFromBytes<decltype(unk3)>       (itReadfrom);
-            unk4        = utils::ReadIntFromBytes<decltype(unk4)>       (itReadfrom);
-
-            year        = utils::ReadIntFromBytes<decltype(year)>       (itReadfrom);
-            month       = utils::ReadIntFromBytes<decltype(month)>      (itReadfrom);
-            day         = utils::ReadIntFromBytes<decltype(day)>        (itReadfrom);
-            hour        = utils::ReadIntFromBytes<decltype(hour)>       (itReadfrom);
-            minute      = utils::ReadIntFromBytes<decltype(minute)>     (itReadfrom);
-            second      = utils::ReadIntFromBytes<decltype(second)>     (itReadfrom);
-            centisec    = utils::ReadIntFromBytes<decltype(centisec)>   (itReadfrom);
-
-            itReadfrom  = utils::ReadStrFromByteContainer( itReadfrom, fname.data(), FNameLen );
-
-            unk10       = utils::ReadIntFromBytes<decltype(unk10)>      (itReadfrom);
-            unk11       = utils::ReadIntFromBytes<decltype(unk11)>      (itReadfrom);
-            unk12       = utils::ReadIntFromBytes<decltype(unk12)>      (itReadfrom);
-            unk13       = utils::ReadIntFromBytes<decltype(unk13)>      (itReadfrom);
-            pcmdlen     = utils::ReadIntFromBytes<decltype(pcmdlen)>    (itReadfrom);
-            unk14       = utils::ReadIntFromBytes<decltype(unk14)>      (itReadfrom);
-            nbwavislots = utils::ReadIntFromBytes<decltype(nbwavislots)>(itReadfrom);
-            nbprgislots = utils::ReadIntFromBytes<decltype(nbprgislots)>(itReadfrom);
-            unk17       = utils::ReadIntFromBytes<decltype(unk17)>      (itReadfrom);
-            wavilen     = utils::ReadIntFromBytes<decltype(wavilen)>    (itReadfrom);
-            return itReadfrom;
-        }
-
-
-        /*
-            DoesContainsSamples
-                Returns true if the swdl contains sample data.
-        */
-        bool DoesContainsSamples()const;
-
-        /*
-            IsSampleBankOnly
-                Returns true if the swdl is only a sample bank, without program info.
-        */
-        bool IsSampleBankOnly()const;
-
-
         operator SWDL_HeaderData()
         {
             SWDL_HeaderData smddat;
@@ -494,12 +438,11 @@ namespace DSE
                                     std::vector<uint8_t>::const_iterator itend );
 
 
-
     /*
         GetDSEHeaderLen
             Returns the length of the SWDL header for the version of DSE specified
     */
-    inline size_t GetDSEHeaderLen( eDSEVersion ver )
+    constexpr size_t GetDSEHeaderLen(eDSEVersion ver)
     {
         if(ver == eDSEVersion::V415)
             return SWDL_Header_v415::Size;
@@ -514,6 +457,9 @@ namespace DSE
 
 };
 
+//====================================================================================================
+//Stream Operators
+//====================================================================================================
 std::ostream& operator<<(std::ostream& os, const DSE::SWDL_HeaderData& hdr);
 std::ostream& operator<<(std::ostream& os, const DSE::SWDL_Header_v415& hdr);
 std::ostream& operator<<(std::ostream& os, const DSE::SWDL_Header_v402& hdr);

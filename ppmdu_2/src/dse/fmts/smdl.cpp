@@ -27,17 +27,8 @@ namespace DSE
 //====================================================================================================
 // Constants
 //====================================================================================================
-
-    //Static values of the Parameters for the Trk Chunk
-    //static const uint32_t Trk_Chunk_Param1 = 0x1000000;
-    //static const uint32_t Trk_Chunk_Param2 = 0xFF04;
-    ////Static values of the Parameters for the Eoc Chunk
-    //static const uint32_t Eoc_Chunk_Param1 = Trk_Chunk_Param1;
-    //static const uint32_t Eoc_Chunk_Param2 = Trk_Chunk_Param2;
-
     static const uint32_t EocParam1Default = TrkParam1Default;  //The default value for the parameter 1 value in the eoc chunk header!
     static const uint32_t EocParam2Default = TrkParam2Default;  //The default value for the parameter 2 value in the eoc chunk header!
-
 
 //====================================================================================================
 // Other Definitions
@@ -77,6 +68,7 @@ namespace DSE
         uint32_t unk1    = 0;
         uint32_t unk2    = 0;
         uint32_t unk3    = 0;
+        //#TODO: Update this so the stuff below is moved to its own struct since it's a seqinfo chunk
         uint16_t unk4    = 0;
         uint16_t tpqn    = 0;
         uint16_t unk5    = 0;
@@ -187,6 +179,8 @@ namespace DSE
         uint32_t unk1    = 0;
         uint32_t unk2    = 0;
         uint32_t unk3    = 0;
+
+        //#TODO: Update this so the stuff below is moved to its own struct since it's a seqinfo chunk
         uint16_t unk4    = 0;
         uint16_t tpqn    = 0;
         uint8_t  nbtrks  = 0;

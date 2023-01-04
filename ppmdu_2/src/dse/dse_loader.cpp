@@ -39,6 +39,8 @@ namespace DSE
         friend class DSELoader;
         using presetid_t = uint8_t;
         
+        //#TODO: Should link pairs together instead of loading separately, because handling things possibly being or not in 3 list is really problematic
+
         //Loaded stuff
         DSE::PresetDatabase                                        m_bankdb;
         std::unordered_map<std::string, DSE::MusicSequence>        m_mseqs;

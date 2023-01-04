@@ -25,9 +25,8 @@ All wrongs reversed, no crappyrights :P
 
 namespace DSE
 {
-
 //====================================================================================================
-//  Typedefs / Enums
+//  Constants
 //====================================================================================================
     static const uint32_t SMDL_MagicNumber = static_cast<uint32_t>(eDSEContainers::smdl); //0x736D646C; //"smdl"
 
@@ -110,7 +109,6 @@ namespace DSE
             return itwriteto;
         }
 
-
         /*
             The iterator range must be at least as large as the header, or larger.
         */
@@ -144,66 +142,19 @@ namespace DSE
 
             return itReadfrom;
         }
-
-        //#DEPRECATED: Now using the version above that includes a safety range check.
-        //template<class _init>
-        //    _init ReadFromContainer( _init itReadfrom, _init itPastEnd )
-        //{
-        //    itReadfrom = utils::ReadIntFromBytes( magicn,   itReadfrom, itPastEnd, false ); //false to write as big endian ,iterator is incremented
-        //    itReadfrom = utils::ReadIntFromBytes( unk7,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( flen,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( version,  itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( unk1,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( unk2,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( unk3,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( unk4,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( year,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( month,    itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( day,      itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( hour,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( minute,   itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( second,   itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( centisec, itReadfrom, itPastEnd );
-
-        //    itReadfrom  = utils::ReadStrFromByteContainer( itReadfrom, fname.data(), FNameLen );
-
-        //    itReadfrom = utils::ReadIntFromBytes( unk5,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( unk6,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( unk8,     itReadfrom, itPastEnd );
-        //    itReadfrom = utils::ReadIntFromBytes( unk9,     itReadfrom, itPastEnd );
-
-        //    return itReadfrom;
-        //}
     };
-
-
-
-
-//====================================================================================================
-// Class
-//====================================================================================================
-
-
-
-//====================================================================================================
-// Constants
-//====================================================================================================
-
-
 
 //====================================================================================================
 // Functions
 //====================================================================================================
     MusicSequence ParseSMDL( const std::string & file );
+    MusicSequence ParseSMDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend);
     void          WriteSMDL( const std::string & file, const MusicSequence & seq );
-
-    MusicSequence ParseSMDL( std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend );
-
 };
 
-//
+//====================================================================================================
 //Stream Operators
-//
+//====================================================================================================
 std::ostream& operator<<(std::ostream& os, const DSE::SMDL_Header& hdr);
 
 #endif

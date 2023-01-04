@@ -22,14 +22,18 @@ All wrongs reversed, no crappyrights :P
 
 namespace DSE
 {
-
+//====================================================================================================
+//  Constants
+//====================================================================================================
     static const uint32_t SEDL_MagicNumber = static_cast<uint32_t>(eDSEContainers::sedl);//0x7365646C; //"sedl"
 
+//====================================================================================================
+// Structs
+//====================================================================================================
 
-    /****************************************************************************************
-        SEDL_Header
-            The header of the SEDL file.
-    ****************************************************************************************/
+    /// <summary>
+    /// The header of the SEDL file.
+    /// </summary>
     struct SEDL_Header
     {
         static const uint32_t Size     = 56; //without padding
@@ -202,7 +206,8 @@ namespace DSE
     };
 
     /// <summary>
-    /// 
+    /// Header for the mcrl chunk.
+    /// It's mainly a helper to grab the standard chunk header + the ptr list right after.
     /// </summary>
     struct mcrl_chunk_header
     {
@@ -258,7 +263,8 @@ namespace DSE
     };
 
     /// <summary>
-    /// 
+    /// Header for the bnkl chunk.
+    /// It's mainly a helper to grab the standard chunk header + the ptr list right after.
     /// </summary>
     struct bnkl_chunk_header
     {
@@ -313,8 +319,9 @@ namespace DSE
         }
     };
 
-
-    //
+//====================================================================================================
+// Functions
+//====================================================================================================
     DSE::SoundEffectSequences ParseSEDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend);
     void WriteSEDL(const std::string& path, const DSE::SoundEffectSequences & seq);
 };
