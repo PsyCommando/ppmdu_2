@@ -140,9 +140,6 @@ namespace DSE
 //
 //
 //
-    DSEEnvelope::DSEEnvelope()
-        :envmulti(0), atkvol(0), attack(0), hold(0), decay(0), sustain(0), decay2(0), release(0)
-    {}
     void DSE_MetaDataSEDL::setFromHeader(const DSE::SEDL_Header& hdr)
     {
         bankid_coarse = hdr.bankid_low;
@@ -164,6 +161,7 @@ namespace DSE
         unk7 = hdr.unk7;
         unk8 = hdr.unk8;
     }
+
 };
 
 //==========================================================================================
@@ -183,98 +181,211 @@ std::ostream& operator<<(std::ostream& os, const DSE::DateTime& obj)
 
 std::ostream& operator<<(std::ostream& strm, const DSE::KeyGroup& other)
 {
-    strm << "\t== Keygroup ==\n"
-        << "\tID        : " << other.id << "\n"
-        << "\tPolyphony : " << static_cast<short>(other.poly) << "\n"
-        << "\tPriority  : " << static_cast<short>(other.priority) << "\n"
-        << "\tVc.Low    : " << static_cast<short>(other.vclow) << "\n"
-        << "\tVc.High   : " << static_cast<short>(other.vchigh) << "\n"
-        << "\tunk50     : " << static_cast<short>(other.unk50) << "\n"
-        << "\tunk51     : " << static_cast<short>(other.unk51) << "\n";
-
+    strm<< setfill('0') << setw(2)
+        << other.id 
+        << setfill(' ') << setw(8)
+        << static_cast<short>(other.poly) 
+        << setw(8)
+        << static_cast<short>(other.priority) 
+        << setw(8)
+        << static_cast<short>(other.vclow) 
+        << setw(8)
+        << static_cast<short>(other.vchigh) 
+        << setw(8)
+        << static_cast<short>(other.unk50)    << " " << static_cast<short>(other.unk51)
+        ;
     return strm;
 }
 
 std::ostream& operator<<(std::ostream& strm, const DSE::ProgramInfo& other)
 {
     using namespace DSE;
-    strm << "\t== ProgramInfo ==\n"
-        << "\tID        : " << other.id << "\n"
-        << "\tNbSplits  : " << other.m_splitstbl.size() << "\n"
-        << "\tVol       : " << static_cast<short>(other.prgvol) << "\n"
-        << "\tPan       : " << static_cast<short>(other.prgpan) << "\n"
-        //<< "\tUnk3      : " << other.unk3 <<"\n"
-        << "\tUnk4      : " << static_cast<short>(other.unk4) << "\n"
-        //<< "\tUnk5      : " << static_cast<short>(other.unk5) <<"\n"
-        << "\tnblfos    : " << static_cast<short>(other.m_lfotbl.size()) << "\n"
-        << "\tpadbyte   : " << static_cast<short>(other.padbyte) << "\n"
-        << "\tUnkpoly      : " << static_cast<short>(other.unkpoly) << "\n"
-        //<< "\tUnk8      : " << static_cast<short>(other.unk8) <<"\n"
-        //<< "\tUnk9      : " << static_cast<short>(other.unk9) <<"\n";
+    strm <<"\t" << std::setfill(' ') << "ID" << setw(8) << "Vol" << setw(8) << "Pan" << setw(8) << "Unk4" << setw(8) << "Poly?"
+        << "\n";
+
+    strm<<"\t" << std::setfill('0') << setw(2)
+        << other.id
+        << std::setfill(' ') << setw(8)
+        << static_cast<short>(other.prgvol)
+        << setw(8)
+        << static_cast<short>(other.prgpan)
+        << showbase << hex << setw(8)
+        << static_cast<short>(other.unk4)
+        << noshowbase << dec << setw(8)
+        << static_cast<short>(other.unkpoly)
+        << "\n"
         ;
+
+    strm << "\t-- LFOs --\n"
+        << "\t#" <<setfill(' ') << setw(8)
+        << "Unk34"
+        << setw(8)
+        << "Unk52"
+        << setw(8)
+        << "Dest"
+        << setw(8)
+        << "Shape"
+        << setw(8)
+        << "Rate"
+        << setw(8)
+        << "Unk29"
+        << setw(8)
+        << "Depth"
+        << setw(8)
+        << "Delay"
+        << setw(8)
+        << "Unk32"
+        << setw(8)
+        << "Unk33"
+        << "\n";
 
     //Write the LFOs
     int cntlfo = 0;
     for (const DSE::LFOTblEntry& lfoen : other.m_lfotbl)
     {
-        strm << "\t-- LFO #" << cntlfo << " --\n"
-            << "\tUnk34        : " << static_cast<short>(lfoen.unk34) << "\n"
-            << "\tUnk52        : " << static_cast<short>(lfoen.unk52) << "\n"
-            << "\tDest         : " << static_cast<short>(lfoen.dest) << "\n"
-            << "\tWave Shape   : " << static_cast<short>(lfoen.wshape) << "\n"
-            << "\tRate         : " << lfoen.rate << "\n"
-            << "\tUnk29        : " << lfoen.unk29 << "\n"
-            << "\tDepth        : " << lfoen.depth << "\n"
-            << "\tDelay        : " << lfoen.delay << "\n"
-            << "\tUnk32        : " << lfoen.unk32 << "\n"
-            << "\tUnk33        : " << lfoen.unk33 << "\n";
+        strm<< "\t" 
+            << cntlfo <<setfill(' ') << setw(8)
+            << showbase <<hex
+            << static_cast<short>(lfoen.unk34)
+            << setw(8)
+            << static_cast<short>(lfoen.unk52)
+            << setw(8)
+            << noshowbase << dec
+            << static_cast<short>(lfoen.dest)
+            << setw(8)
+            << static_cast<short>(lfoen.wshape)
+            << setw(8)
+            << lfoen.rate
+            << showbase << hex << setw(8)
+            << lfoen.unk29
+            << noshowbase << dec << setw(8)
+            << setw(8)
+            << lfoen.depth
+            << setw(8)
+            << lfoen.delay
+            << showbase << hex << setw(8)
+            << lfoen.unk32
+            << setw(8)
+            << lfoen.unk33 
+            << noshowbase << dec
+            << "\n"
+            ;
         ++cntlfo;
     }
+
+    strm << "\t-- Splits --\n"
+        << "\t"
+        << setfill(' ') << setw(3)
+        << "ID"
+        << setw(8)
+        << "Unk11" 
+        << setw(8)
+        << "Unk25"
+        << setw(8)
+        << "lowkey"
+        << setw(8)
+        << "hikey"
+        << setw(8)
+        << "lowkey2"
+        << setw(8)
+        << "hikey2"
+        << setw(8)
+        << "lovel"
+        << setw(8)
+        << "hivel"
+        << setw(8)
+        << "lovel2"
+        << setw(8)
+        << "hivel2"
+        << setw(8)
+        << "smplID"
+        << setw(8)
+        << "ftune"
+        << setw(8)
+        << "ctune"
+        << setw(8)
+        << "key"
+        << setw(8)
+        << "ktps"
+        << setw(8)
+        << "vol"
+        << setw(8)
+        << "pan"
+        << setw(8)
+        << "kgrid"
+        << setw(8)
+        << "on"
+        << setw(8)
+        << "mult"
+        << setw(44)
+        << "atkv-atk-dec-sus-hold-dec2-rel"
+        <<"\n"
+        ;
 
     //Write the Splits
     int cntsplits = 0;
     for (const DSE::SplitEntry& split : other.m_splitstbl)
     {
-        strm << "\t-- Split #" << cntlfo << " --\n"
-            //<< "\tUnk10        : " << static_cast<short>(split.unk10)     <<"\n"
-            << "\tID           : " << static_cast<short>(split.id) << "\n"
-            << "\tUnk11        : " << static_cast<short>(split.unk11) << "\n"
-            << "\tUnk25        : " << static_cast<short>(split.unk25) << "\n"
-            << "\tlowkey       : " << static_cast<short>(split.lowkey) << "\n"
-            << "\thikey        : " << static_cast<short>(split.hikey) << "\n"
-            << "\tlowkey2      : " << static_cast<short>(split.lowkey2) << "\n"
-            << "\thikey2       : " << static_cast<short>(split.hikey2) << "\n"
-            << "\tlovel        : " << static_cast<short>(split.lovel) << "\n"
-            << "\thivel        : " << static_cast<short>(split.hivel) << "\n"
-            << "\tlovel2       : " << static_cast<short>(split.lovel2) << "\n"
-            << "\thivel2       : " << static_cast<short>(split.hivel2) << "\n"
-            //<< "\tunk16        : " << split.unk16     <<"\n"
-            //<< "\tunk17        : " << split.unk17     <<"\n"
-            << "\tsmplid       : " << static_cast<short>(split.smplid) << "\n"
-            << "\tftune        : " << static_cast<short>(split.ftune) << "\n"
-            << "\tctune        : " << static_cast<short>(split.ctune) << "\n"
-            << "\trootkey      : " << static_cast<short>(split.rootkey) << "\n"
-            << "\tktps         : " << static_cast<short>(split.ktps) << "\n"
-            << "\tsmplvol      : " << static_cast<short>(split.smplvol) << "\n"
-            << "\tsmplpan      : " << static_cast<short>(split.smplpan) << "\n"
-            << "\tkgrpid       : " << static_cast<short>(split.kgrpid) << "\n"
-            //<< "\tunk22        : " << static_cast<short>(split.unk22)     <<"\n"
-            //<< "\tunk23        : " << split.unk23     <<"\n"
-            //<< "\tunk24        : " << split.unk24     <<"\n"
-            << "\tenvon        : " << static_cast<short>(split.envon) << "\n"
-            << "\tenvmult      : " << static_cast<short>(split.env.envmulti) << "\n"
-            //<< "\tunk37        : " << static_cast<short>(split.env.unk37)     <<"\n"
-            //<< "\tunk38        : " << static_cast<short>(split.env.unk38)     <<"\n"
-            //<< "\tunk39        : " << split.unk39     <<"\n"
-            //<< "\tunk40        : " << split.unk40     <<"\n"
-            << "\tatkvol       : " << static_cast<short>(split.env.atkvol) << "\n"
-            << "\tattack       : " << static_cast<short>(split.env.attack) << "\n"
-            << "\tdecay        : " << static_cast<short>(split.env.decay) << "\n"
-            << "\tsustain      : " << static_cast<short>(split.env.sustain) << "\n"
-            << "\thold         : " << static_cast<short>(split.env.hold) << "\n"
-            << "\tdecay2       : " << static_cast<short>(split.env.decay2) << "\n"
-            << "\trelease      : " << static_cast<short>(split.env.release) << "\n"
-            //<< "\trx           : " << static_cast<short>(split.env.rx)     <<"\n"
+        strm<< "\t"
+            << std::setfill('0') << setw(3)
+            << static_cast<short>(split.id)
+            << std::setfill(' ') << setw(8)
+            << showbase <<hex
+            << static_cast<short>(split.bendrange)
+            << setw(8)
+            << static_cast<short>(split.unk25)
+            << setw(8)
+            << noshowbase << dec
+            << static_cast<short>(split.lowkey)
+            << setw(8) 
+            << static_cast<short>(split.hikey)
+            << setw(8)
+            << static_cast<short>(split.lowkey2)
+            << setw(8)
+            << static_cast<short>(split.hikey2)
+            << setw(8)
+            << static_cast<short>(split.lovel)
+            << setw(8)
+            << static_cast<short>(split.hivel)
+            << setw(8)
+            << static_cast<short>(split.lovel2)
+            << setw(8)
+            << static_cast<short>(split.hivel2)
+            << setw(8)
+            << static_cast<short>(split.smplid)
+            << setw(8)
+            << static_cast<short>(split.ftune)
+            << setw(8)
+            << static_cast<short>(split.ctune)
+            << setw(8)
+            << static_cast<short>(split.rootkey)
+            << setw(8)
+            << static_cast<short>(split.ktps)
+            << setw(8)
+            << static_cast<short>(split.smplvol)
+            << setw(8)
+            << static_cast<short>(split.smplpan)
+            << setw(8)
+            << static_cast<short>(split.kgrpid)
+            << setw(8)
+            << static_cast<short>(split.envon)
+            << setw(8)
+            << static_cast<short>(split.env.envmulti)
+            << setw(8)
+            << static_cast<short>(split.env.atkvol)  << "-"
+            << setw(3)
+            << static_cast<short>(split.env.attack)  << "-"
+            << setw(3)
+            << static_cast<short>(split.env.decay)   << "-"
+            << setw(3)
+            << static_cast<short>(split.env.sustain) << "-"
+            << setw(3)
+            << static_cast<short>(split.env.hold)    << "-"
+            << setw(4)
+            << static_cast<short>(split.env.decay2)  << "-"
+            << setw(4)
+            << static_cast<short>(split.env.release)
+            << "\n"
             ;
         ++cntsplits;
     }
@@ -297,13 +408,13 @@ std::ostream& operator<<(std::ostream& strm, const DSE::WavInfo& other)
          << " kHz, Loop(beg:" << other.loopbeg 
          << ", len:" << other.looplen 
          << "), Env:" << (other.envon ? "On"s : "Off"s)
-         << "(atklvl:" << other.atkvol 
-         << ", atk:" << other.attack 
-         << ", dec:" << other.decay 
-         << ", sus:" << other.sustain 
-         << ",hold:" << other.hold 
-         << ",dec2:" << other.decay2 
-         << ",rel:" << other.release 
+         << "(atklvl:" << other.env.atkvol 
+         << ", atk:" << other.env.attack
+         << ", dec:" << other.env.decay
+         << ", sus:" << other.env.sustain
+         << ",hold:" << other.env.hold
+         << ",dec2:" << other.env.decay2
+         << ",rel:" << other.env.release
          << ")\n"
         ;
     return strm;

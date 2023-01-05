@@ -413,28 +413,28 @@ namespace DSE
         operator WavInfo()
         {
             WavInfo winf;
-            winf.id       = id;
-            winf.ftune    = ftune; 
-            winf.ctune    = ctune;
-            winf.rootkey  = rootkey;
-            winf.ktps     = ktps;
-            winf.vol      = vol;
-            winf.pan      = pan;
-            winf.smplfmt  = IntToDSESmplFmt(smplfmt);
-            winf.smplloop = smplloop != 0;
-            winf.smplrate = smplrate;
-            winf.smplpos  = smplpos;
-            winf.loopbeg  = loopbeg;
-            winf.looplen  = looplen;
-            winf.envon    = envon;
-            winf.envmult  = envmult;
-            winf.atkvol   = atkvol;
-            winf.attack   = attack;
-            winf.decay    = decay;
-            winf.sustain  = sustain;
-            winf.hold     = hold;
-            winf.decay2   = decay2;
-            winf.release  = release;
+            winf.id           = id;
+            winf.ftune        = ftune; 
+            winf.ctune        = ctune;
+            winf.rootkey      = rootkey;
+            winf.ktps         = ktps;
+            winf.vol          = vol;
+            winf.pan          = pan;
+            winf.smplfmt      = IntToDSESmplFmt(smplfmt);
+            winf.smplloop     = smplloop != 0;
+            winf.smplrate     = smplrate;
+            winf.smplpos      = smplpos;
+            winf.loopbeg      = loopbeg;
+            winf.looplen      = looplen;
+            winf.envon        = envon;
+            winf.env.envmulti = envmult;
+            winf.env.atkvol   = atkvol;
+            winf.env.attack   = attack;
+            winf.env.decay    = decay;
+            winf.env.sustain  = sustain;
+            winf.env.hold     = hold;
+            winf.env.decay2   = decay2;
+            winf.env.release  = release;
             return move(winf);
         }
 
@@ -480,18 +480,18 @@ namespace DSE
             looplen    = winf.looplen;
             //Envelope
             envon      = winf.envon;
-            envmult    = winf.envmult;
+            envmult    = winf.env.envmulti;
             unk19      = DefUnk19;
             unk20      = DefUnk20;
             unk21      = DefUnk21;
             unk22      = DefUnk22;
-            atkvol     = winf.atkvol;
-            attack     = winf.attack;
-            decay      = winf.decay;
-            sustain    = winf.sustain;
-            hold       = winf.hold;
-            decay2     = winf.decay2;
-            release    = winf.release;
+            atkvol     = winf.env.atkvol;
+            attack     = winf.env.attack;
+            decay      = winf.env.decay;
+            sustain    = winf.env.sustain;
+            hold       = winf.env.hold;
+            decay2     = winf.env.decay2;
+            release    = winf.env.release;
             unk57      = DefUnk57;
             return *this;
         }
@@ -608,18 +608,18 @@ namespace DSE
             loopbeg    = winf.loopbeg; //Loop start in int32 (based on the resulting PCM16)
             looplen    = winf.looplen; //Length of the sample in int32
             envon      = winf.envon;
-            envmult    = winf.envmult;
+            envmult    = winf.env.envmulti;
             unk19      = DefUnk19;
             unk20      = DefUnk20;
             unk21      = DefUnk21;
             unk22      = DefUnk22;
-            atkvol     = winf.atkvol;
-            attack     = winf.attack;
-            decay      = winf.decay;
-            sustain    = winf.sustain;
-            hold       = winf.hold;
-            decay2     = winf.decay2;
-            release    = winf.release;
+            atkvol     = winf.env.atkvol;
+            attack     = winf.env.attack;
+            decay      = winf.env.decay;
+            sustain    = winf.env.sustain;
+            hold       = winf.env.hold;
+            decay2     = winf.env.decay2;
+            release    = winf.env.release;
             unk57      = DefUnk57;
             entrylen   = SzType2;
         }
@@ -716,28 +716,28 @@ namespace DSE
         operator WavInfo()
         {
             WavInfo winf;
-            winf.id       = id;
-            winf.ftune    = 0;  //There doesn't seem to be any tuning info for samples in v402
-            winf.ctune    = 0;  //There doesn't seem to be any tuning info for samples in v402
-            winf.rootkey  = rootkey;
-            winf.ktps     = ktps;
-            winf.vol      = vol;
-            winf.pan      = pan;
-            winf.smplfmt  = IntToDSESmplFmt(smplfmt);
-            winf.smplloop = smplloop != 0;
-            winf.smplrate = smplrate;
-            winf.smplpos  = smplpos;
-            winf.loopbeg  = loopbeg;
-            winf.looplen  = looplen;
-            winf.envon    = envon;
-            winf.envmult  = envmult;
-            winf.atkvol   = atkvol;
-            winf.attack   = attack;
-            winf.decay    = decay;
-            winf.sustain  = sustain;
-            winf.hold     = hold;
-            winf.decay2   = decay2;
-            winf.release  = release;
+            winf.id           = id;
+            winf.ftune        = 0;  //There doesn't seem to be any tuning info for samples in v402
+            winf.ctune        = 0;  //There doesn't seem to be any tuning info for samples in v402
+            winf.rootkey      = rootkey;
+            winf.ktps         = ktps;
+            winf.vol          = vol;
+            winf.pan          = pan;
+            winf.smplfmt      = IntToDSESmplFmt(smplfmt);
+            winf.smplloop     = smplloop != 0;
+            winf.smplrate     = smplrate;
+            winf.smplpos      = smplpos;
+            winf.loopbeg      = loopbeg;
+            winf.looplen      = looplen;
+            winf.envon        = envon;
+            winf.env.envmulti = envmult;
+            winf.env.atkvol   = atkvol;
+            winf.env.attack   = attack;
+            winf.env.decay    = decay;
+            winf.env.sustain  = sustain;
+            winf.env.hold     = hold;
+            winf.env.decay2   = decay2;
+            winf.env.release  = release;
             return move(winf);
         }
 
@@ -764,18 +764,18 @@ namespace DSE
             loopbeg    = winf.loopbeg;
             looplen    = winf.looplen;
             envon      = winf.envon;
-            envmult    = winf.envmult;
+            envmult    = winf.env.envmulti;
             unk19      = DefUnk19;
             unk20      = DefUnk20;
             unk21      = DefUnk21;
             unk22      = DefUnk22;
-            atkvol     = winf.atkvol;
-            attack     = winf.attack;
-            decay      = winf.decay;
-            sustain    = winf.sustain;
-            hold       = winf.hold;
-            decay2     = winf.decay2;
-            release    = winf.release;
+            atkvol     = winf.env.atkvol;
+            attack     = winf.env.attack;
+            decay      = winf.env.decay;
+            sustain    = winf.env.sustain;
+            hold       = winf.env.hold;
+            decay2     = winf.env.decay2;
+            release    = winf.env.release;
             unk57      = DefUnk57;
             return *this;
         }
@@ -801,8 +801,9 @@ namespace DSE
 
         static uint32_t size() { return SIZE; }
 
-        uint16_t id     ; //0x1
-        uint8_t  unk11  ; //0x2
+        uint8_t  unk;
+        uint8_t  id     ; //0x1
+        uint8_t  bendrange; //0x2
         uint8_t  unk25  ; //0x3
         int8_t   lowkey ; //0x4
         int8_t   hikey  ; //0x5
@@ -843,8 +844,9 @@ namespace DSE
 
         SplitEntry_v415()
         {
+            unk = 0;
             id       = 0;
-            unk11    = 0;
+            bendrange = 0;
             unk25    = 0;
             lowkey   = 0;
             hikey    = 0;
@@ -883,17 +885,17 @@ namespace DSE
             rx       = 0;
         }
 
-        SplitEntry_v415( const SplitEntry & sent )
+        SplitEntry_v415(const SplitEntry& other)
         {
-            this->operator=(sent);
+            this->operator=(other);
         }
-
 
         template<class _outit>
             _outit WriteToContainer( _outit itwriteto )const
         {
+            itwriteto = utils::WriteIntToBytes( unk,      itwriteto);
             itwriteto = utils::WriteIntToBytes( id,       itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk11,    itwriteto );
+            itwriteto = utils::WriteIntToBytes(bendrange,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk25,    itwriteto );
             itwriteto = utils::WriteIntToBytes( lowkey,   itwriteto );
             itwriteto = utils::WriteIntToBytes( hikey,    itwriteto );
@@ -937,8 +939,9 @@ namespace DSE
         template<class _init>
             _init ReadFromContainer( _init itReadfrom, _init itpastend )
         {
+            itReadfrom = utils::ReadIntFromBytes( unk, itReadfrom, itpastend);
             itReadfrom = utils::ReadIntFromBytes( id,       itReadfrom, itpastend );
-            itReadfrom = utils::ReadIntFromBytes( unk11,    itReadfrom, itpastend );
+            itReadfrom = utils::ReadIntFromBytes(bendrange,    itReadfrom, itpastend );
             itReadfrom = utils::ReadIntFromBytes( unk25,    itReadfrom, itpastend );
             itReadfrom = utils::ReadIntFromBytes( lowkey,   itReadfrom, itpastend );
             itReadfrom = utils::ReadIntFromBytes( hikey,    itReadfrom, itpastend );
@@ -985,7 +988,7 @@ namespace DSE
         {
             SplitEntry sent;
             sent.id        = id;
-            sent.unk11     = unk11;
+            sent.bendrange = bendrange;
             sent.unk25     = unk25;
             sent.lowkey    = lowkey;
             sent.hikey     = hikey;
@@ -1013,13 +1016,14 @@ namespace DSE
             sent.env.hold     = hold;
             sent.env.decay2   = decay2;
             sent.env.release  = release;
-            return std::move(sent);
+            return sent;
         }
 
         SplitEntry_v415 & operator=( const SplitEntry & sent )
         {
+            unk = 0;
             id       = sent.id;
-            unk11    = sent.unk11;
+            bendrange = sent.bendrange;
             unk25    = sent.unk25;
             lowkey   = sent.lowkey;
             hikey    = sent.hikey;
@@ -1079,7 +1083,7 @@ namespace DSE
 
         ProgramInfo_v415( ProgramInfo && prginf )
         {
-            this->operator=(std::move(prginf));
+            this->operator=(std::forward<ProgramInfo>(prginf));
         }
 
 
@@ -1180,14 +1184,14 @@ namespace DSE
         {
             itwriteto = m_hdr.WriteToContainer(itwriteto);
 
-            for( const auto & entry : m_lfotbl )
+            for( const LFOTblEntry & entry : m_lfotbl )
                 itwriteto = entry.WriteToContainer(itwriteto);
 
             //16 bytes of padding
             itwriteto = std::fill_n( itwriteto, 16, m_hdr.padbyte );
 
-            for( const auto & splitentry : m_splitstbl )
-                itwriteto = SplitEntry_v415(splitentry).WriteToContainer(itwriteto);
+            for( const SplitEntry_v415& splitentry : m_splitstbl )
+                itwriteto = splitentry.WriteToContainer(itwriteto);
 
             return itwriteto;
         }
@@ -1201,13 +1205,13 @@ namespace DSE
             m_lfotbl   .resize(m_hdr.nblfos);
             m_splitstbl.resize(m_hdr.nbsplits);
 
-            for( auto & entry : m_lfotbl )
+            for( LFOTblEntry & entry : m_lfotbl )
                 itReadfrom = entry.ReadFromContainer(itReadfrom, itpastend);
 
             //16 bytes of padding
             itReadfrom = utils::advAsMuchAsPossible( itReadfrom, itpastend, 16 );
 
-            for( auto & smpl : m_splitstbl )
+            for( SplitEntry_v415 & smpl : m_splitstbl )
                 itReadfrom = smpl.ReadFromContainer(itReadfrom, itpastend );
 
             return itReadfrom;
@@ -1215,7 +1219,8 @@ namespace DSE
 
 
         //Operators:
-        operator ProgramInfo()const
+        //operator ProgramInfo()const
+        ProgramInfo toProgramInfo()const
         {
             ProgramInfo prginf;
             prginf.id        = m_hdr.id;
@@ -1229,10 +1234,10 @@ namespace DSE
             prginf.m_lfotbl = m_lfotbl;
 
             prginf.m_splitstbl.reserve(m_hdr.nbsplits);
-            for( const auto & split : m_splitstbl )
+            for (const SplitEntry_v415& split : m_splitstbl)
                 prginf.m_splitstbl.push_back(split); //implicit conversion operator is called
 
-            return std::move(prginf);
+            return prginf;
         }
 
         ProgramInfo_v415& operator=( const ProgramInfo & prginf )
@@ -1255,7 +1260,7 @@ namespace DSE
             m_lfotbl = prginf.m_lfotbl;
 
             m_splitstbl.reserve(m_hdr.nbsplits);
-            for( const auto & split : prginf.m_splitstbl )
+            for (const SplitEntry& split : prginf.m_splitstbl)
                 m_splitstbl.push_back(split);
             return *this;
         }
@@ -1280,11 +1285,10 @@ namespace DSE
             m_lfotbl = std::move(prginf.m_lfotbl);
 
             m_splitstbl.reserve(m_hdr.nbsplits);
-            for( const auto & split : prginf.m_splitstbl )
+            for (const SplitEntry& split : prginf.m_splitstbl)
                 m_splitstbl.push_back(split);
             return *this;
         }
-
 
         PrgInfoHeader                 m_hdr;
         std::vector<LFOTblEntry>      m_lfotbl;
@@ -1311,8 +1315,9 @@ namespace DSE
 
         static uint32_t size() { return SIZE; }
 
-        uint16_t id;        //0x1
-        uint8_t  unk11;     //0x2
+        uint8_t unk;
+        uint8_t id;        //0x1
+        uint8_t  bendrange;     //0x2
         uint8_t  unk25;     //0x3
         int8_t   lowkey;    //0x4
         int8_t   hikey;     //0x5
@@ -1353,8 +1358,9 @@ namespace DSE
 
         SplitEntry_v402()
         {
+            unk = 0;
             id       = 0;
-            unk11    = 0;
+            bendrange = 0;
             unk25    = 0;
             lowkey   = 0;
             hikey    = 0;
@@ -1393,17 +1399,17 @@ namespace DSE
             rx       = 0;
         }
 
-        SplitEntry_v402( const SplitEntry & sent )
+        SplitEntry_v402(const SplitEntry& other)
         {
-            (*this) = sent;
+            this->operator=(other);
         }
-
 
         template<class _outit>
             _outit WriteToContainer( _outit itwriteto )const
         {
+                itwriteto = utils::WriteIntToBytes(unk, itwriteto);
             itwriteto = utils::WriteIntToBytes( id,       itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk11,    itwriteto );
+            itwriteto = utils::WriteIntToBytes(bendrange,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk25,    itwriteto );
             itwriteto = utils::WriteIntToBytes( lowkey,   itwriteto );
             itwriteto = utils::WriteIntToBytes( hikey,    itwriteto );
@@ -1447,8 +1453,9 @@ namespace DSE
         template<class _init>
             _init ReadFromContainer( _init itReadfrom, _init itpastend )
         {
+            itReadfrom = utils::ReadIntFromBytes( unk,      itReadfrom, itpastend);
             itReadfrom = utils::ReadIntFromBytes( id,       itReadfrom, itpastend );
-            itReadfrom = utils::ReadIntFromBytes( unk11,    itReadfrom, itpastend );
+            itReadfrom = utils::ReadIntFromBytes(bendrange,    itReadfrom, itpastend );
             itReadfrom = utils::ReadIntFromBytes( unk25,    itReadfrom, itpastend );
             itReadfrom = utils::ReadIntFromBytes( lowkey,   itReadfrom, itpastend );
             itReadfrom = utils::ReadIntFromBytes( hikey,    itReadfrom, itpastend );
@@ -1496,7 +1503,7 @@ namespace DSE
         {
             SplitEntry sent;
             sent.id        = id;
-            sent.unk11     = unk11;
+            sent.bendrange = bendrange;
             sent.unk25     = unk25;
             sent.lowkey    = lowkey;
             sent.hikey     = hikey;
@@ -1524,13 +1531,14 @@ namespace DSE
             sent.env.hold     = hold;
             sent.env.decay2   = decay2;
             sent.env.release  = release;
-            return std::move(sent);
+            return sent;
         }
 
         SplitEntry_v402 & operator=( const SplitEntry & sent )
         {
+            unk = 0;
             id       = sent.id;
-            unk11    = sent.unk11;
+            bendrange = sent.bendrange;
             unk25    = sent.unk25;
             lowkey   = sent.lowkey;
             hikey    = sent.hikey;
@@ -1715,7 +1723,8 @@ namespace DSE
 
 
         //Operators:
-        operator ProgramInfo()const
+        //operator ProgramInfo()const
+        ProgramInfo toProgramInfo()const
         {
             ProgramInfo prginf;
             prginf.id        = m_hdr.id;
@@ -1732,10 +1741,10 @@ namespace DSE
             prginf.m_lfotbl = m_lfotbl;
 
             prginf.m_splitstbl.reserve(m_hdr.nbsplits);
-            for( const auto & split : m_splitstbl )
+            for (const SplitEntry_v402& split : m_splitstbl)
                 prginf.m_splitstbl.push_back(split); //implicit conversion operator is called
 
-            return std::move(prginf);
+            return prginf;
         }
 
         ProgramInfo_v402 & operator=( const ProgramInfo & prginf )
@@ -1770,7 +1779,7 @@ namespace DSE
             m_lfotbl = prginf.m_lfotbl;
 
             m_splitstbl.reserve(m_hdr.nbsplits);
-            for( const auto & split : prginf.m_splitstbl )
+            for (const SplitEntry& split : prginf.m_splitstbl)
                 m_splitstbl.push_back(split);
 
             return *this;
@@ -1793,7 +1802,7 @@ namespace DSE
             m_hdr.unk9      = 0;
 
             //!Build a default kgrp table #FIXME
-            for( auto & kgrp : m_kgrp2tbl )
+            for(KeyGroup & kgrp : m_kgrp2tbl)
             {
                 kgrp.id       = 0;
                 kgrp.poly     = KeyGroup::DefPoly;
@@ -1808,7 +1817,7 @@ namespace DSE
             m_lfotbl = std::move( prginf.m_lfotbl );
 
             m_splitstbl.reserve(m_hdr.nbsplits);
-            for( const auto & split : prginf.m_splitstbl )
+            for (const SplitEntry& split : prginf.m_splitstbl)
                 m_splitstbl.push_back(split);
 
             return *this;
@@ -1967,7 +1976,7 @@ namespace DSE
                 {
                     _PrgInfoTy curblock;
                     curblock.ReadFromContainer( prginfblk + itprgi, m_itend );
-                    infslot.reset( new ProgramInfo(curblock) );
+                    infslot.reset(new ProgramInfo(curblock.toProgramInfo()));
 
                     if( utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn() )
                         clog <<"Instrument ID#" <<infslot->id <<":\n" <<*infslot <<"\n";
@@ -2000,14 +2009,30 @@ namespace DSE
             itkgrp = kgrphdr.ReadFromContainer( itkgrp, m_itend ); //Move iter after header
             
             vector<KeyGroup> keygroups(kgrphdr.datlen / KeyGroup::size());
-            
+            if (utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn())
+            {
+                clog<< setfill(' ')
+                    << "#ID"
+                    << setw(8)
+                    << "Poly"
+                    << setw(8)
+                    << "Prio"
+                    << setw(8)
+                    << "Vc.Low"
+                    << setw(8)
+                    << "Vc.High"
+                    << setw(8)
+                    << "unk50 & unk51"
+                    << "\n"
+                    ;
+            }
             //Read all keygroups
             for( auto & grp : keygroups )
             {
                 itkgrp = grp.ReadFromContainer(itkgrp, m_itend);
 
                 if( utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn() )
-                    clog <<"Keygroup ID#" <<grp.id <<":\n" <<grp <<"\n";
+                    clog <<grp <<"\n";
                 
             }
 

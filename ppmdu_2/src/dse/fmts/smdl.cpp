@@ -51,7 +51,6 @@ namespace DSE
         static const uint32_t DefUnk2       = 0xFF10;
         static const uint32_t DefUnk3       = 0xFFFFFFB0;
         static const uint16_t DefUnk4       = 0x1;
-        static const uint16_t DefTPQN       = 48;
         static const uint16_t DefUnk5       = 0xFF01;
         static const uint32_t DefUnk6       = 0xF000000;
         static const uint32_t DefUnk7       = 0xFFFFFFFF;
@@ -70,7 +69,7 @@ namespace DSE
         uint32_t unk3    = 0;
         //#TODO: Update this so the stuff below is moved to its own struct since it's a seqinfo chunk
         uint16_t unk4    = 0;
-        uint16_t tpqn    = 0;
+        uint16_t offnext = 0x30; //Usually always 0x30
         uint16_t unk5    = 0;
         uint8_t  nbtrks  = 0;
         uint8_t  nbchans = 0;
@@ -92,7 +91,7 @@ namespace DSE
             itwriteto = utils::WriteIntToBytes( unk2,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk3,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk4,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( tpqn,    itwriteto );
+            itwriteto = utils::WriteIntToBytes( offnext, itwriteto );
             itwriteto = utils::WriteIntToBytes( unk5,    itwriteto );
             itwriteto = utils::WriteIntToBytes( nbtrks,  itwriteto );
             itwriteto = utils::WriteIntToBytes( nbchans, itwriteto );
@@ -116,7 +115,7 @@ namespace DSE
             itReadfrom = utils::ReadIntFromBytes( unk2,     itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk3,     itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk4,     itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( tpqn,     itReadfrom, itPastEnd );
+            itReadfrom = utils::ReadIntFromBytes( offnext,  itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk5,     itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( nbtrks,   itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( nbchans,  itReadfrom, itPastEnd );
@@ -142,7 +141,6 @@ namespace DSE
         operator SongData()
         {
             SongData sdat;
-            sdat.tpqn    = tpqn;
             sdat.nbtrks  = nbtrks;
             sdat.nbchans = nbchans;
             sdat.mainvol = 127;
@@ -182,7 +180,7 @@ namespace DSE
 
         //#TODO: Update this so the stuff below is moved to its own struct since it's a seqinfo chunk
         uint16_t unk4    = 0;
-        uint16_t tpqn    = 0;
+        uint16_t offnext = 0x30;
         uint8_t  nbtrks  = 0;
         uint8_t  nbchans = 0;
         uint8_t  unk5    = 0;
@@ -201,7 +199,7 @@ namespace DSE
             itwriteto = utils::WriteIntToBytes( unk2,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk3,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk4,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( tpqn,    itwriteto );
+            itwriteto = utils::WriteIntToBytes( offnext, itwriteto );
             itwriteto = utils::WriteIntToBytes( nbtrks,  itwriteto );
             itwriteto = utils::WriteIntToBytes( nbchans, itwriteto );
             itwriteto = utils::WriteIntToBytes( unk5,    itwriteto );
@@ -222,7 +220,7 @@ namespace DSE
             itReadfrom = utils::ReadIntFromBytes( unk2,    itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk3,    itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk4,    itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( tpqn,    itReadfrom, itPastEnd );
+            itReadfrom = utils::ReadIntFromBytes( offnext, itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( nbtrks,  itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( nbchans, itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk5,    itReadfrom, itPastEnd );
@@ -237,7 +235,6 @@ namespace DSE
         operator SongData()
         {
             SongData sdat;
-            sdat.tpqn    = tpqn;
             sdat.nbtrks  = nbtrks;
             sdat.nbchans = nbchans;
             sdat.mainvol = mainvol;
@@ -273,7 +270,7 @@ namespace DSE
             if( utils::LibWide().isLogOn() )
                 clog << "=== Parsing SMDL ===\n";
             //Set our iterator
-            m_itread = m_itbeg;//m_src.begin();
+            m_itread = m_itbeg;
 
             //#FIXME: It might have been easier to just check for trk chunks and stop when none are left? We'd save a lot of iteration!!
             m_itEoC  = DSE::FindNextChunk( m_itbeg, m_itend, DSE::eDSEChunks::eoc ); //Our end is either the eoc chunk, or the vector's end
@@ -287,12 +284,12 @@ namespace DSE
             if( m_hdr.version == static_cast<uint16_t>(eDSEVersion::V415) )
             {
                 //Parse tracks and return
-                return std::move( MusicSequence( ParseAllTracks(), std::move(meta) ) );
+                return MusicSequence( ParseAllTracks(), std::move(meta) );
             }
             else if( m_hdr.version == static_cast<uint16_t>(eDSEVersion::V402) )
             {
                 //Parse tracks and return
-                return std::move( MusicSequence( ParseAllTracks(), std::move(meta) ) );
+                return MusicSequence( ParseAllTracks(), std::move(meta) );
             }
             else
             {
@@ -359,7 +356,6 @@ namespace DSE
             meta.fname              = string( m_hdr.fname.data());
             meta.bankid_coarse      = m_hdr.bankid_low;
             meta.bankid_fine        = m_hdr.bankid_high;
-            meta.tpqn               = m_song.tpqn;
             meta.origversion        = intToDseVer( m_hdr.version );
             return meta;
         }
@@ -543,7 +539,7 @@ namespace DSE
             smdhdr.minute      = m_src.metadata().createtime.minute;
             smdhdr.second      = m_src.metadata().createtime.second;
             smdhdr.centisec    = m_src.metadata().createtime.centsec;
-            std::copy_n( begin(m_src.metadata().fname), smdhdr.fname.size(), begin(smdhdr.fname) );
+            std::copy(m_src.metadata().fname.c_str(), m_src.metadata().fname.c_str() + std::min(m_src.metadata().fname.size(), smdhdr.fname.size() - 1), smdhdr.fname.data());
             smdhdr.unk5        = SMDL_Header::DefUnk5;
             smdhdr.unk6        = SMDL_Header::DefUnk6;
             smdhdr.unk8        = SMDL_Header::DefUnk8;
@@ -558,7 +554,6 @@ namespace DSE
                 songchnk.unk2    = SongChunk_v402::DefUnk2;
                 songchnk.unk3    = SongChunk_v402::DefUnk3;
                 songchnk.unk4    = SongChunk_v402::DefUnk4;
-                songchnk.tpqn    = m_src.metadata().tpqn;
                 songchnk.unk5    = SongChunk_v402::DefUnk5;
                 songchnk.nbtrks  = static_cast<uint8_t>(m_src.getNbTracks());
                 songchnk.nbchans = static_cast<uint8_t>(existingchan.size());
@@ -576,7 +571,6 @@ namespace DSE
                 songchnk.unk2    = SongChunk_v415::DefUnk2;
                 songchnk.unk3    = SongChunk_v415::DefUnk3;
                 songchnk.unk4    = SongChunk_v415::DefUnk4;
-                songchnk.tpqn    = m_src.metadata().tpqn;
                 songchnk.unk5    = SongChunk_v415::DefUnk5;
                 songchnk.nbtrks  = static_cast<uint8_t>(m_src.getNbTracks());
                 songchnk.nbchans = static_cast<uint8_t>(existingchan.size());
@@ -646,9 +640,7 @@ std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v415& sd)
         << "\tUnk2         : " << sd.unk2 << "\n"
         << "\tUnk3         : " << sd.unk3 << "\n"
         << "\tUnk4         : " << sd.unk4 << "\n"
-        << dec << nouppercase
-        << "\tTPQN         : " << sd.tpqn << "\n"
-        << hex << uppercase
+        << "\toffnext      : " << sd.offnext << "\n"
         << "\tUnk5         : " << sd.unk5 << "\n"
         << dec << nouppercase
         << "\tNbTracks     : " << static_cast<short>(sd.nbtrks) << "\n"
@@ -681,8 +673,8 @@ std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v402& sd)
         << "\tUnk2         : " << sd.unk2 << "\n"
         << "\tUnk3         : " << sd.unk3 << "\n"
         << "\tUnk4         : " << sd.unk4 << "\n"
+        << "\toffnext      : " << sd.offnext << "\n"
         << dec << nouppercase
-        << "\tTPQN         : " << sd.tpqn << "\n"
         << "\tNbTracks     : " << static_cast<short>(sd.nbtrks) << "\n"
         << "\tNbChans      : " << static_cast<short>(sd.nbchans) << "\n"
         << hex << uppercase

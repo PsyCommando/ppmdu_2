@@ -269,17 +269,14 @@ namespace DSE
         typedef int16_t timeprop_t;
         typedef int8_t  volprop_t;
 
-        DSEEnvelope();
-
-        int8_t     envmulti;        //The envelope multiplier
-        
-        volprop_t  atkvol;
-        timeprop_t attack;
-        timeprop_t hold;
-        timeprop_t decay;
-        volprop_t  sustain;
-        timeprop_t decay2;
-        timeprop_t release;
+        int8_t     envmulti = 1;        //The envelope multiplier
+        volprop_t  atkvol   = 0;
+        timeprop_t attack   = 0;
+        timeprop_t hold     = 0;
+        timeprop_t decay    = 0;
+        volprop_t  sustain  = 0x7F;
+        timeprop_t decay2   = 0;
+        timeprop_t release  = 0;
     };
 
     /****************************************************************************************
@@ -330,13 +327,12 @@ namespace DSE
     ************************************************************************/
     struct SongData
     {
-        uint16_t tpqn;
-        uint8_t  nbtrks;
-        uint8_t  nbchans;
+        uint8_t  nbtrks  = 0;
+        uint8_t  nbchans = 0;
 
         // v0x402 specifics
-        int8_t   mainvol;
-        int8_t   mainpan;
+        int8_t   mainvol = 0x7F;
+        int8_t   mainpan = 0x40;
     };
 
     /****************************************************************************************
@@ -352,26 +348,20 @@ namespace DSE
         sampleid_t  id         = 0;
         int8_t      ftune      = 0; 
         int8_t      ctune      = 0;
-        uint8_t     rootkey    = 0;
+        uint8_t     rootkey    = DSERootKey;
         int8_t      ktps       = 0;
-        int8_t      vol        = 0;
-        int8_t      pan        = 0;
+        int8_t      vol        = 0x7F;
+        int8_t      pan        = 0x40;
         eDSESmplFmt smplfmt    = eDSESmplFmt::invalid;
         bool        smplloop   = false;
         uint32_t    smplrate   = 0; //Sampling rate of the sample
         uint32_t    smplpos    = 0;
         uint32_t    loopbeg    = 0; //Loop start in int32 (based on the resulting PCM16)
         uint32_t    looplen    = 0; //Length of the sample in int32
+        
         //Envelope
-        uint8_t     envon      = 0;
-        uint8_t     envmult    = 0;
-        int8_t      atkvol     = 0;
-        int8_t      attack     = 0;
-        int8_t      decay      = 0;
-        int8_t      sustain    = 0;
-        int8_t      hold       = 0;
-        int8_t      decay2     = 0;
-        int8_t      release    = 0;
+        uint8_t     envon      = 1;
+        DSEEnvelope env;
     };
 
 
@@ -444,6 +434,18 @@ namespace DSE
             UNK_4  = 4,
         };
 
+        enum struct eLFOWaveShape : uint8_t
+        {
+            None = 0,
+            Square = 1,
+            Triangle = 2,
+            Sinus = 3,
+            UNK4 = 4,
+            Saw = 5,
+            Noise = 6,
+            Random = 7,
+        };
+
         uint8_t  unk34  = 0;
         uint8_t  unk52  = 0;
         uint8_t  dest   = 0;
@@ -460,8 +462,8 @@ namespace DSE
         */
         inline bool isLFONonDefault()const
         {
-            return ( unk52 != 0 && dest != 0 && wshape != 1 && rate != 0 && 
-                        unk29 != 0 && depth != 0 && delay != 0 && unk32 != 0 && 
+            return (unk52 != 0 || dest != 0 || wshape != 1 || rate != 0 ||
+                        unk29 != 0 || depth != 0 || delay != 0 || unk32 != 0 || 
                         unk33 != 0 );
         }
 
@@ -505,26 +507,26 @@ namespace DSE
     ---------------------------------------------------------------------*/
     struct SplitEntry
     {
-        uint8_t     id        = 0; //0x1
-        uint8_t     unk11     = 0; //0x2
-        uint8_t     unk25     = 0; //0x3
-        int8_t      lowkey    = 0; //0x4
-        int8_t      hikey     = 0; //0x5
-        int8_t      lowkey2   = 0; //0x6
-        int8_t      hikey2    = 0; //0x7
-        int8_t      lovel     = 0; //0x8
-        int8_t      hivel     = 0; //0x9
-        int8_t      lovel2    = 0; //0xA
-        int8_t      hivel2    = 0; //0xB
-        sampleid_t  smplid    = 0; //0x12
-        int8_t      ftune     = 0; //0x14
-        int8_t      ctune     = 0; //0x15
-        int8_t      rootkey   = 0; //0x16
-        int8_t      ktps      = 0; //0x17
-        uint8_t     smplvol   = 0; //0x18
-        uint8_t     smplpan   = 0; //0x19
-        uint8_t     kgrpid    = 0; //0x1A
-        uint8_t     envon     = 0; //0x20
+        uint8_t     id        = 0; //split id, second byte
+        uint8_t     bendrange = 0;
+        uint8_t     unk25     = 1;
+        int8_t      lowkey    = 0;
+        int8_t      hikey     = 0x7F;
+        int8_t      lowkey2   = 0;
+        int8_t      hikey2    = 0x7F;
+        int8_t      lovel     = 0;
+        int8_t      hivel     = 0x7F;
+        int8_t      lovel2    = 0;
+        int8_t      hivel2    = 0x7F;
+        sampleid_t  smplid    = 0;
+        int8_t      ftune     = 0;
+        int8_t      ctune     = 0;
+        int8_t      rootkey   = DSERootKey;
+        int8_t      ktps      = 0;
+        uint8_t     smplvol   = 0x7F;
+        uint8_t     smplpan   = 0x40;
+        uint8_t     kgrpid    = 0;
+        uint8_t     envon     = 1;
         DSEEnvelope env;
     };
 
@@ -538,12 +540,12 @@ namespace DSE
         /*---------------------------------------------------------------------
             Program info header stuff
         ---------------------------------------------------------------------*/
-        uint16_t id        = 0;
-        uint8_t  prgvol    = 0;
-        uint8_t  prgpan    = 0;
-        uint8_t  unkpoly   = 0;
-        uint8_t  unk4      = 0;
-        uint8_t  padbyte   = 0;
+        uint16_t id      = 0;
+        uint8_t  prgvol  = 0x7F;
+        uint8_t  prgpan  = 0x40;
+        uint8_t  unkpoly = 0;
+        uint8_t  unk4    = 0;
+        uint8_t  padbyte = 0;
 
         std::vector<LFOTblEntry> m_lfotbl;
         std::vector<SplitEntry>  m_splitstbl;
@@ -673,10 +675,8 @@ namespace DSE
     struct DSE_MetaDataSMDL : public DSE_MetaData
     {
         DSE_MetaDataSMDL()
-            :DSE_MetaData(), tpqn(0), mainvol(127), mainpan(64) //#TODO: Replace with constants!
+            :DSE_MetaData(), mainvol(127), mainpan(64) //#TODO: Replace with constants!
         {}
-
-        uint16_t tpqn; //ticks per quarter note
         //More to be added
         //v0x402 specifics
         int8_t      mainvol;
