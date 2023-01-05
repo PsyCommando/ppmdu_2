@@ -13,9 +13,7 @@ All wrongs reversed, no crappyrights :P
 #include <dse/dse_common.hpp>
 #include <dse/dse_sequence.hpp>
 #include <dse/dse_conversion_info.hpp>
-//#include <vector>
 #include <string>
-//#include <map>
 #include <cstdint>
 
 namespace DSE
@@ -33,20 +31,8 @@ namespace DSE
     }
 
 //===============================================================================
-//  Export Utilities
+// Structs
 //===============================================================================
-    /*************************************************************************************************
-        eMIDIFormat
-            The standard MIDI file format to use to export the MIDI data.
-            - SingleTrack : Is format 0, a single track for all events.
-            - MultiTrack  : Is format 1, one dedicated tempo track, and all the other tracks for events.
-    *************************************************************************************************/
-    //enum struct eMIDIFormat
-    //{
-    //    SingleTrack,
-    //    MultiTrack,
-    //};
-
 
     /*************************************************************************************************
         eMIDIMode
@@ -61,6 +47,10 @@ namespace DSE
         GS,
         XG, //#TODO: Fix XG export. Though its vastly unsupported.
     };
+
+//===============================================================================
+//  Export Utilities
+//===============================================================================
 
     /*************************************************************************************************
         SequenceToMidi
@@ -87,6 +77,9 @@ namespace DSE
                          eMIDIMode                        midmode     = eMIDIMode::GS );
 
 
+//===============================================================================
+//  Import Utilities
+//===============================================================================
     /*************************************************************************************************
         MidiToSequence
             Converts a MIDI file into a DSE Sequence.

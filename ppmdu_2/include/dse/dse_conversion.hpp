@@ -16,6 +16,7 @@ All wrongs reversed, no crappyrights :P
 #include <dse/containers/dse_preset_db.hpp>
 #include <dse/containers/dse_se_sequence.hpp>
 
+
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -29,29 +30,19 @@ namespace sf2{ class SoundFont; class Instrument; };
 namespace DSE
 {
 //====================================================================================================
-//  Typedefs
-//====================================================================================================
-
-//====================================================================================================
 //  Constants
 //====================================================================================================
     const std::string SMDL_FileExtension = "smd";
     const std::string SWDL_FileExtension = "swd";
     const std::string SEDL_FileExtension = "sed";
 
-    //static const uint32_t    DSE_MaxDecayDur    =  8; //second
-    //static const uint32_t    DSE_MaxAttackDur   = 10; //second
-    //static const uint32_t    DSE_MaxHoldDur     = 10; //second
-    //static const uint32_t    DSE_MaxReleaseDur  =  8; //second
-
-
-
 //====================================================================================================
 // Structs
 //====================================================================================================
-    /*
-    * Helper struct for gathering statistics from dse conversion.
-    */
+
+    /// <summary>
+    /// Helper struct for gathering statistics from dse conversion.
+    /// </summary>
     struct audiostats;
 
 
@@ -77,12 +68,10 @@ namespace DSE
 // Class
 //====================================================================================================
 
-    /*
-        ProcessedPresets
-            A transition container used when doing extra processing on the sample data from the game.
-            Since the envelope, LFO, etc, are "baked" into the sample themselves, we need to change 
-            a lot about them.
-    */
+    /// <summary>
+    /// A transition container used when doing extra processing on the sample data from the game.
+    /// Since the envelope, LFO, etc, are "baked" into the sample themselves, we need to change a lot about them.
+    /// </summary>
     class ProcessedPresets
     {
     public:
@@ -130,11 +119,6 @@ namespace DSE
     };
 
 
-
-
-
-
-    
     /// <summary>
     /// Loads dse files to allow properly exporting/importing other dse files.
     /// </summary>
@@ -502,27 +486,6 @@ namespace DSE
                                              bool                     bakeenv         = true );
 
     //-------------------
-    //  Audio Loaders
-    //-------------------
-
-    // ======================= 1. Main Bank + Sequences + RefBanks ( smdl or sedl ) ( mainbank.swd + 001.smd + 001.swd ) =======================
-    //std::pair< DSE::PresetBank, std::vector<std::pair<DSE::MusicSequence,DSE::PresetBank>> > LoadBankAndPairs     ( const std::string & bank, const std::string & smdroot, const std::string & swdroot );
-    //std::pair< DSE::PresetBank, std::vector<std::pair<DSE::MusicSequence,DSE::PresetBank>> > LoadBankAndSinglePair( const std::string & bank, const std::string & smd,     const std::string & swd );
-
-    // ======================= 2. 1 Sequence + 1 Bank ( 001.smd + 001.swd ) =======================
-    //std::pair<DSE::MusicSequence,DSE::PresetBank> LoadSmdSwdPair( const std::string & smd, const std::string & swd );
-
-    // ======================= 3. Individual Bank ( bank.swd ) =======================
-    //DSE::PresetBank LoadSwdBank( const std::string & file );
-
-    // ======================= 4. Sequence only =======================
-    //DSE::MusicSequence LoadSequence( const std::string & file );
-
-
-
-
-
-    //-------------------
     //  Audio Exporters
     //-------------------
 
@@ -539,7 +502,7 @@ namespace DSE
     /*
         Export the PresetBank to a directory as XML and WAV samples.
     */
-    void ExportPresetBank( const std::string & directory, const DSE::PresetBank & bnk, bool samplesonly = true, bool hexanumbers = true, bool noconvert = true );
+    void ExportPresetBank( const std::string & bnkxmlfile, const DSE::PresetBank & bnk, bool samplesonly = true, bool hexanumbers = true, bool noconvert = true );
 
     /*
         To use the ExportSequence,
