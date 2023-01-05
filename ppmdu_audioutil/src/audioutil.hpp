@@ -25,16 +25,6 @@ namespace audioutil
     const std::string OPTION_PMD2        = "pmd2";
 
     /// <summary>
-    /// Whether we're importing something or exporting something
-    /// </summary>
-    enum struct eIEMode
-    {
-        Invalid,
-        Import, //To DSE
-        Export, //From DSE
-    };
-
-    /// <summary>
     /// The type of file exported for music sequences
     /// </summary>
     enum struct eExportSequenceFormat
@@ -86,6 +76,9 @@ namespace audioutil
     enum struct eOpMode
     {
         Invalid,
+
+        Import,
+        Export,
 
         MakeCvInfo,   //Outputs a blank Cvinfo file for all the swdl loaded !
         ListSWDLPrgm, //Outputs a list of the all the programs contained in the specified swdl/swdl dir and samples they uses
@@ -269,7 +262,6 @@ namespace audioutil
         eExportSamplesFormat  m_smplsExportFmt;
 
         importExportTarget  m_targetPaths; //When changing this make sure to update CheckAndUpdateDseSystemPaths()
-        eIEMode             m_iemode;
         std::string         m_pmd2root;
         std::string         m_mbankpath;
         std::string         m_swdlpath;

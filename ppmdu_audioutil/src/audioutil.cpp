@@ -351,6 +351,24 @@ namespace audioutil
             "-v",
             std::bind( &CAudioUtil::ParseOptionVerbose, &GetInstance(), placeholders::_1 ),
         },
+
+        //Import Mode
+        {
+            "i",
+            0,
+            "Import files and directories to the DSE format.",
+            "-i",
+            std::bind(&CAudioUtil::ParseOptionImport, &GetInstance(), placeholders::_1),
+        },
+
+        //Export Mode
+        {
+            "e",
+            0,
+            "Export DSE files to other formats.",
+            "-e",
+            std::bind(&CAudioUtil::ParseOptionExport, &GetInstance(), placeholders::_1),
+        },
     }};
 
 
@@ -377,7 +395,6 @@ namespace audioutil
         m_bConvertSamples = false;
         m_bmatchbyname    = true;
         m_nbloops         = 0;
-        m_iemode          = eIEMode::Export;
         m_seqExportFmt    = eExportSequenceFormat::Midi_GS;
         m_smplsExportFmt  = eExportSamplesFormat::SF2;
     }
@@ -478,13 +495,13 @@ namespace audioutil
 
     bool CAudioUtil::ParseOptionExport(const std::vector<std::string>& optdata)
     {
-        m_iemode = eIEMode::Export;
+        m_operationMode = eOpMode::Export;
         return true;
     }
 
     bool CAudioUtil::ParseOptionImport(const std::vector<std::string>& optdata)
     {
-        m_iemode = eIEMode::Import;
+        m_operationMode = eOpMode::Import;
         return true;
     }
 
@@ -815,13 +832,23 @@ namespace audioutil
         if( !m_outputPath.empty() && !Poco::File( Poco::Path( m_outputPath ).makeAbsolute().parent() ).exists() )
             throw runtime_error("Specified output path does not exists!");
 
+        //No mode forced, so try to guess
+        if (m_operationMode == eOpMode::Invalid)
+        {
+            const std::string extension = inpath.getExtension();
+            if (extension == DSE::SWDL_FileExtension || extension == DSE::SMDL_FileExtension || extension == DSE::SEDL_FileExtension)
+                m_operationMode = eOpMode::Export;
+            else if (extension == "mid" || extension == "xml" || inpath.isDirectory())
+                m_operationMode = eOpMode::Import;
+        }
+
         //Fill up system paths if specified
         bool bdseSystemDirSpecified = CheckAndUpdateDseSystemPaths(); // Whether we defined any dir paths to the dse files
 
         //
         // Setup in/out paths for our operation
         //
-        if(m_iemode == eIEMode::Import)
+        if(m_operationMode == eOpMode::Import)
         {
             cout << "<*>- Import Mode\n";
 
@@ -830,7 +857,13 @@ namespace audioutil
 
             //Set output
             if (!bdseSystemDirSpecified)
-                m_targetPaths.outpath = Poco::Path::transcode(outpath.absolute().toString()); //If we didn't sepcify any of the dse locations, fallback to single dir/file mode
+            {
+                //If we didn't sepcify any of the dse locations, fallback to single dir/file mode
+                if(m_outputPath.empty())
+                    m_targetPaths.outpath = Poco::Path::transcode(inpath.absolute().makeParent().toString());
+                else
+                    m_targetPaths.outpath = Poco::Path::transcode(outpath.absolute().toString());
+            }
 
             //Report unused paramters on import
             if (!m_bgmblobpath.empty())
@@ -839,7 +872,7 @@ namespace audioutil
                 cerr << "<!>- Bgm container path parameter is unsupported on import!!";
 
         }
-        else if (m_iemode == eIEMode::Export)
+        else if (m_operationMode == eOpMode::Export)
         {
             cout << "<*>- Export Mode\n";
 
@@ -847,7 +880,7 @@ namespace audioutil
             if (!bdseSystemDirSpecified)
             {
                 m_targetPaths.paths.insert(Poco::Path::transcode(infile.path()));
-                m_targetPaths.outpath = Poco::Path::transcode(outpath.absolute().toString());
+                m_targetPaths.outpath = Poco::Path::transcode(outpath.absolute().makeParent().toString());
             }
             else
                 m_targetPaths.outpath = Poco::Path::transcode(infile.path());  //If we have system paths specified, we use the input path as output
@@ -885,7 +918,8 @@ namespace audioutil
 
     int CAudioUtil::LoadFromArgPaths()
     {
-        try
+        if (m_operationMode == eOpMode::Import)
+            return 0; //Don't load anything in import mode
         {
             //
             //Fill up the batch loader
@@ -946,15 +980,6 @@ namespace audioutil
                 //    m_pmd2MeLoader.LoadSingleSMDLs(m_targetPaths.pmd2MeDirPath);
                 //}
 
-            }
-        }
-        catch (Poco::Exception& e)
-        {
-            cerr << "\n" << "<!>- POCO Exception - " << e.name() << "(" << e.code() << ") : " << e.message() << "\n" << endl;
-        }
-        catch (exception& e)
-        {
-            cerr << "\n" << "<!>- Exception - " << e.what() << "\n" << "\n";
         }
         return 0;
     }
@@ -969,10 +994,15 @@ namespace audioutil
             LoadFromArgPaths();
 
             //Then run import/export from what data we got
-            if (m_iemode == eIEMode::Import)
+            switch (m_operationMode)
+            {
+            case eOpMode::Import:
                 ExecuteImport();
-            else if (m_iemode == eIEMode::Export)
+                break;
+            case eOpMode::Export:
                 ExecuteExport(m_targetPaths, m_seqExportFmt, m_smplsExportFmt);
+                break;
+            };
 
             //switch(m_operationMode)
             //{
@@ -1135,24 +1165,24 @@ namespace audioutil
                 //Export everything in the dse paths that were specified
                 if (smplfmt == eExportSamplesFormat::SF2)
                 {
-                    cout << "Exporting soundfont and MIDI files to " << exportpaths.outpath << "..\n";
+                    cout << "<*>- Exporting soundfont and MIDI files to " << exportpaths.outpath << "..\n";
                     auto cvinf = m_loader.ExportSoundfont(exportpaths.outpath, DSE::sampleProcessingOptions{ m_bBakeSamples , m_bUseLFOFx}, false);
                     m_loader.ExportMIDIs(exportpaths.outpath, DSE::sequenceProcessingOptions{ m_nbloops, cvinf });
                 }
                 //else if (smplfmt == eExportSamplesFormat::SF2_multiple)
                 //{
-                //    cout << "Exporting soundfont and MIDI files to " << exportpaths.outpath << "..\n";
+                //    cout << "<*>- Exporting soundfont and MIDI files to " << exportpaths.outpath << "..\n";
                 //    m_loader.ExportSoundfontAndMIDIs(exportpaths.outpath, m_nbloops, m_bBakeSamples, true);
                 //}
                 else if (smplfmt == eExportSamplesFormat::XML)
                 {
-                    cout << "Exporting sample + instruments presets data and MIDI files to " << exportpaths.outpath << "..\n";
+                    cout << "<*>- Exporting sample + instruments presets data and MIDI files to " << exportpaths.outpath << "..\n";
                     m_loader.ExportXMLPrograms(exportpaths.outpath, m_bConvertSamples);
                     m_loader.ExportMIDIs(exportpaths.outpath, DSE::sequenceProcessingOptions{ m_nbloops });
                 }
                 else if (smplfmt == eExportSamplesFormat::None)
                 {
-                    cout << "Exporting MIDI files only to " << exportpaths.outpath << "..\n";
+                    cout << "<*>- Exporting MIDI files only to " << exportpaths.outpath << "..\n";
                     m_loader.ExportMIDIs(exportpaths.outpath, DSE::sequenceProcessingOptions{ m_nbloops, DSE::SMDLConvInfoDB(m_convinfopath) });
                 }
                 else
@@ -1163,7 +1193,7 @@ namespace audioutil
                 //Export everything in the dse paths that were specified
                 if (smplfmt == eExportSamplesFormat::SF2)
                 {
-                    cout << "Exporting soundfont and MIDI files to " << exportpaths.outpath << "..\n";
+                    cout << "<*>- Exporting soundfont and MIDI files to " << exportpaths.outpath << "..\n";
                     m_loader.ExportSoundfont(exportpaths.outpath, sampleProcessingOptions{ m_bBakeSamples, m_bUseLFOFx });
                 }
                 //else if (smplfmt == eExportSamplesFormat::SF2_multiple)
@@ -1176,11 +1206,11 @@ namespace audioutil
                 //}
                 else if (smplfmt == eExportSamplesFormat::XML)
                 {
-                    cout << "Exporting sample + instruments presets data and MIDI files to " << exportpaths.outpath << "..\n";
+                    cout << "<*>- Exporting sample + instruments presets data and MIDI files to " << exportpaths.outpath << "..\n";
                     m_loader.ExportXMLPrograms(exportpaths.outpath, m_bConvertSamples);
                 }
                 else if (smplfmt == eExportSamplesFormat::None)
-                    cout << "Exporting nothing???";
+                    cout << "<!>- Exporting nothing???";
                 else
                     assert(false);
             }
