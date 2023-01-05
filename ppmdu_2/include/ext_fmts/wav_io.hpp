@@ -405,6 +405,9 @@ namespace wave
                     trait_t::WriteASample( m_samples[cntchan][cntsamples], itbackinsdata );
             }
 
+            if ((datachnk.data_.size() % 2) != 0)
+                datachnk.data_.push_back(0xFF); //Put a padding byte
+
             waveout.subchunks_.push_back( std::move(datachnk) );
 
             //Append extra chunks
@@ -413,9 +416,6 @@ namespace wave
 
             //Write the RIFF
             itwrite = waveout.Write( itwrite );
-
-            if( (datachnk.data_.size() % 2) != 0 )
-                datachnk.data_.push_back(0xFF); //Put a padding byte
 
             return itwrite;
         }
