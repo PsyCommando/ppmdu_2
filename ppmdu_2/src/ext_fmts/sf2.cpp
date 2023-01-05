@@ -1811,17 +1811,17 @@ namespace sf2
     {
         genparam_t param;
         param = static_cast<uint16_t>(env.delay);
-        AddGenerator( eSFGen::delayModEnv,  utils::Clamp( param, SF_GenLimitsModEnvDelay.min_, SF_GenLimitsModEnvDelay.max_ ) );
+        AddGenerator( eSFGen::delayModEnv, param /*utils::Clamp(param, SF_GenLimitsModEnvDelay.min_, SF_GenLimitsModEnvDelay.max_)*/);
         param = static_cast<uint16_t>(env.attack);
-        AddGenerator( eSFGen::attackModEnv, utils::Clamp( param, SF_GenLimitsModEnvAttack.min_, SF_GenLimitsModEnvAttack.max_ ) );
+        AddGenerator( eSFGen::attackModEnv, param /*utils::Clamp(param, SF_GenLimitsModEnvAttack.min_, SF_GenLimitsModEnvAttack.max_) */ );
         param = static_cast<uint16_t>(env.hold);
-        AddGenerator( eSFGen::holdModEnv,   utils::Clamp( param, SF_GenLimitsModEnvHold.min_, SF_GenLimitsModEnvHold.max_ ) );
+        AddGenerator( eSFGen::holdModEnv, param  /*utils::Clamp(param, SF_GenLimitsModEnvHold.min_, SF_GenLimitsModEnvHold.max_)*/);
         param = static_cast<uint16_t>(env.decay);
-        AddGenerator( eSFGen::decayModEnv,  utils::Clamp( param, SF_GenLimitsModEnvDecay.min_, SF_GenLimitsModEnvDecay.max_ ) );
+        AddGenerator( eSFGen::decayModEnv, param /*utils::Clamp(param, SF_GenLimitsModEnvDecay.min_, SF_GenLimitsModEnvDecay.max_)*/);
         param = static_cast<uint16_t>(env.sustain);
-        AddGenerator( eSFGen::sustainModEnv,utils::Clamp( param, SF_GenLimitsModEnvSustain.min_, SF_GenLimitsModEnvSustain.max_ ) );
+        AddGenerator( eSFGen::sustainModEnv, param /*utils::Clamp(param, SF_GenLimitsModEnvSustain.min_, SF_GenLimitsModEnvSustain.max_)*/);
         param = static_cast<uint16_t>(env.release);
-        AddGenerator( eSFGen::releaseModEnv,utils::Clamp( param, SF_GenLimitsModEnvRelease.min_, SF_GenLimitsModEnvRelease.max_ ) );
+        AddGenerator( eSFGen::releaseModEnv,param /*utils::Clamp(param, SF_GenLimitsModEnvRelease.min_, SF_GenLimitsModEnvRelease.max_)*/);
     }
 
     Envelope BaseGeneratorUser::GetModEnvelope()const
