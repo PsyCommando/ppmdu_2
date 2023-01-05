@@ -496,11 +496,7 @@ namespace DSE
                 nbwritten += lenmod;
 
                 //Write padding
-                lenmod = (lenmod % 4);
-                uint32_t lenpad = lenmod;
-                if( lenmod != 0 )
-                    std::fill_n( itout, lenpad, static_cast<uint8_t>(eTrkEventCodes::EndOfTrack) );
-
+                nbwritten += utils::AppendPaddingBytes(itout, nbwritten, 4, static_cast<uint8_t>(eTrkEventCodes::EndOfTrack));
                 existingchan.insert( preamble.chanid );
             }
 
