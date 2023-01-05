@@ -122,7 +122,7 @@ namespace DSE
             return "IMA ADPCM3";
         };
         std::array<char, 48> tmpchr{0};
-        snprintf(tmpchr.data(), tmpchr.size(), "Invalid (0x%x)\0", static_cast<uint16_t>(fmt));
+        snprintf(tmpchr.data(), tmpchr.size(), "Invalid (0x%x)", static_cast<uint16_t>(fmt));
         return { tmpchr.data() };
     }
 
@@ -225,7 +225,7 @@ namespace DSE
         //Convert into the standard std::tm calendar time format 
         inline operator std::tm()const
         {
-            std::tm result;
+            std::tm result{};
             result.tm_year  = year - 1900;
             result.tm_mon   = month;
             result.tm_mday  = day + 1;
@@ -239,7 +239,7 @@ namespace DSE
         inline void SetTimeToNow()
         {
             std::time_t t  = std::time(nullptr);
-            std::tm     ti;
+            std::tm     ti{};
 #if __cplusplus > 202002L //C++23 gets rid of warnings and other annoyance you get for using localtime() on MSVC
             if(localtime_r(&t, &ti) == nullptr)
 #else

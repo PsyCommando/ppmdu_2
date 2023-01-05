@@ -148,11 +148,8 @@ namespace DSE
         //Handle Sustain
         volenv.sustain = DSE_VolToSf2Attenuation(interpenv.sustain);
 
-        //uint16_t sustainfactor = (interpenv.sustain * DSE_SustainFactor_msec) /127; //Add a bit more time, because soundfont handles volume exponentially, and thus, the volume sinks to 0 really quickly!
-
-
         //Handle Decay
-        if (origenv.decay != 0 && origenv.decay2 != 0 && origenv.decay2 != 0x7F)
+        if (origenv.decay != 0 && (origenv.decay2 != 0 && origenv.decay2 != 0x7F))
         {
             if (utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn())
                 clog << "We got combined decays! decay1-2 : "
@@ -162,13 +159,11 @@ namespace DSE
 
             //If decay is set to infinite, we just ignore it!
             if (origenv.decay == 0x7F)
-                volenv.decay = sf2::MSecsToTimecentsDecay(interpenv.decay2) /*+ sustainfactor*/;
+                volenv.decay = sf2::MSecsToTimecentsDecay(interpenv.decay2);
             else if (origenv.sustain == 0) //The sustain check is to avoid the case where the first decay phase already should have brought the volume to 0 before the decay2 phase would do anything. 
-                volenv.decay = sf2::MSecsToTimecentsDecay(interpenv.decay) /*+ sustainfactor*/;
+                volenv.decay = sf2::MSecsToTimecentsDecay(interpenv.decay);
             else
-            {
-                volenv.decay = sf2::MSecsToTimecentsDecay(interpenv.decay + interpenv.decay2) /*+ sustainfactor*/; //Add an extra factor based on the sustain value
-            }
+                volenv.decay = sf2::MSecsToTimecentsDecay(interpenv.decay + interpenv.decay2);
             volenv.sustain = DSE_InfiniteAttenuation_cB;
         }
         else if (origenv.decay != 0)

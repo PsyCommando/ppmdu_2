@@ -17,35 +17,35 @@ namespace DSE
     public:
         typedef std::unique_ptr<DSE::ProgramInfo> ptrprg_t;
 
-        ProgramBank()
+        ProgramBank()noexcept
         {}
 
-        ~ProgramBank()
+        ~ProgramBank()noexcept
         {}
 
-        ProgramBank(std::vector<ptrprg_t>&& prgminf, std::vector<DSE::KeyGroup>&& kgrp)
+        ProgramBank(std::vector<ptrprg_t>&& prgminf, std::vector<DSE::KeyGroup>&& kgrp)noexcept
             :m_prgminfoslots(std::forward<std::vector<ptrprg_t>>(prgminf)),
             m_Groups(kgrp)
         {}
 
-        ProgramBank(ProgramBank&& mv)
+        ProgramBank(ProgramBank&& mv)noexcept
         {
             operator=(std::forward<ProgramBank>(mv));
         }
 
-        ProgramBank& operator=(ProgramBank&& mv)
+        ProgramBank& operator=(ProgramBank&& mv)noexcept
         {
             m_prgminfoslots = std::move(mv.m_prgminfoslots);
             m_Groups = std::move(mv.m_Groups);
             return *this;
         }
 
-        ProgramBank(const ProgramBank& other)
+        ProgramBank(const ProgramBank& other)noexcept
         {
             operator=(other);
         }
 
-        ProgramBank& operator=(const ProgramBank& other)
+        ProgramBank& operator=(const ProgramBank& other)noexcept
         {
             m_prgminfoslots.reserve(other.m_prgminfoslots.size());
             for (const ptrprg_t& ptr : other.m_prgminfoslots)

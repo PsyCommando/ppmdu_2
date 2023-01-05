@@ -21,6 +21,7 @@
 #include <map>
 #include <unordered_map>
 #include <iostream>
+#include <optional>
 
 #include <Poco/Path.h>
 #include <Poco/File.h>
@@ -184,11 +185,11 @@ namespace DSE
                     catch (std::exception& e)
                     {
                         cerr << "\nLoadSIR0Containers(): Exception : " << e.what() << "\n"
-                            << "Skipping file and attemnpting to recover!\n\n";
+                            << "\nSkipping file and attemnpting to recover!\n\n";
                         if (utils::LibWide().isLogOn())
                         {
                             clog << "\nLoadSIR0Containers(): Exception : " << e.what() << "\n"
-                                << "Skipping file and attemnpting to recover!\n\n";
+                                << "\nSkipping file and attemnpting to recover!\n\n";
                         }
                     }
                 }
@@ -207,7 +208,7 @@ namespace DSE
             cout << "-----------------------------------------\n"
                 << "Loading pairs from blob " << "..\n"
                 << "-----------------------------------------\n";
-            for (const auto apair : foundpairs)
+            for (const auto & apair : foundpairs)
             {
                 if (utils::LibWide().isLogOn())
                 {
@@ -229,7 +230,7 @@ namespace DSE
                 seq .metadata().origfname = apair.second._name;
                 bank.metadata().origfname = apair.first._name;
                 ++cntpairs;
-                cout << "\r[" << setfill(' ') << setw(4) << right << cntpairs << " of " << foundpairs.size() << " loaded]" << "..";
+                cout << "\r[" << setfill(' ') << setw(4) << right << cntpairs << " of " << foundpairs.size() << " loaded]...";
             }
 
             cout << "\n..done!\n";
@@ -247,24 +248,28 @@ namespace DSE
             //#TODO: Make soundfonts have the same name as the exported midis
             //#TODO: Try to cache some of the sample conversion stuff, since it's redundant to do it for every single soundfont when it's always the same.
 
+            cout << "Writing soundfont...\n";
             int cnt = 0;
+            const size_t nbbanks = m_bankdb.size();
+            size_t longestname = 0;
             for (const auto& entry : m_bankdb)
             {
                 //Make a soundfont for the current Bank
                 const DSE::PresetBank& bnk      = entry.second;
-                
                 const Poco::Path  curfpath = Poco::Path(fpath).append(std::to_string(bnk.metadata().origloadorder) + "_" + bnk.metadata().fname).makeFile().setExtension("sf2");
                 const std::string curfname = Poco::Path::transcode(curfpath.getFileName());
+
                 if (!bnk.prgmbank().lock())
-                {
-                    cout << "Skipping creating soundfont for \"" << bnk.metadata().fname << "\", since it doesn't have any programs to export.\n";
                     continue;
-                }
-                cout <<"Writing soundfont \"" << curfname << "...\n";
+                
                 sfb(bnk, curfname).Write(Poco::Path::transcode(curfpath.toString()));
                 convinf.AddConversionInfo(bnk.metadata().origfname, sfb._convertionInfo);
+
                 ++cnt;
+                longestname = std::max(curfname.size(), longestname);
+                cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << nbbanks << " written] - " << curfname << std::string(longestname - -curfname.size(), ' ');
             }
+            cout << "\n";
             return convinf;
         }
 
@@ -284,41 +289,51 @@ namespace DSE
 
         void ExportXMLPrograms(const std::string& destpath, bool bConvertSamples = false)
         {
+            const size_t nbbanks = m_bankdb.size();
+            size_t cnt = 0;
+            size_t longestname = 0;
+            cout << "Writing xml...\n";
+
             //Then the MIDIs + presets + optionally samples contained in the swd of the pair
             for (const auto & bnk : m_bankdb)
             {
-                Poco::Path fpath(destpath);
-                fpath.append(std::to_string(bnk.second.metadata().origloadorder) + "_" + bnk.second.metadata().fname);
+                const Poco::Path  curfile  = Poco::Path(destpath).append(std::to_string(bnk.second.metadata().origloadorder) + "_" + bnk.second.metadata().fname).setExtension("xml");
+                const std::string curfpath = Poco::Path::transcode(curfile.toString());
+                const std::string curfname = Poco::Path::transcode(curfile.getBaseName());
 
-                if (!utils::DoCreateDirectory(fpath.toString()))
-                {
-                    clog << "Couldn't create directory for track " << fpath.toString() << "!\n";
-                    continue;
-                }
+                ExportPresetBank(curfpath, bnk.second, false, false, !bConvertSamples);
 
-                ExportPresetBank(fpath.toString(), bnk.second, false, false, !bConvertSamples);
+                ++cnt;
+                longestname = std::max(curfname.size(), longestname);
+                cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << nbbanks << " written] - " << curfname << std::string(longestname - curfname.size(), ' ');
             }
+            cout << "\n";
         }
 
         void ExportMIDIs(const std::string& destdirpath, sequenceProcessingOptions options)
         {
+            const size_t nbmidis = m_mseqs.size();
+            size_t cnt = 0;
+            size_t longestname = 0;
+            cout << "Writing midis...\n";
             for (const auto & entry : m_mseqs)
             {
                 const MusicSequence& seq = entry.second;
                 Poco::Path fpath(destdirpath);
                 fpath.append(std::to_string(seq.metadata().origloadorder) + "_" + seq.metadata().fname).makeFile().setExtension("mid");
+                const std::string curpath  = fpath.toString();
+                const std::string curfname = fpath.getBaseName();
 
-                cout << "<*>- Currently exporting smd to " << fpath.toString() << "\n";
                 if (utils::LibWide().isLogOn())
-                    clog << "<*>- Currently exporting smd to " << fpath.toString() << "\n";
+                    clog << "<*>- Currently exporting smd to " << curpath << "\n";
                 
                 //Lookup cvinfo with the original filename from the game filesystem!
                 auto foundinfo = getCvInfForSequence(options.cvinfo, seq.metadata().origfname);
                 if (foundinfo.has_value())
                 {
                     if (utils::LibWide().isLogOn())
-                        clog << "<*>- Got conversion info for this track! MIDI will be remapped accordingly!\n";
-                    DSE::SequenceToMidi(fpath.toString(),
+                        clog << "\n<*>- Got conversion info for this track! MIDI will be remapped accordingly!\n";
+                    DSE::SequenceToMidi(curpath,
                         seq,
                         foundinfo.value(),
                         options.nbloops,
@@ -327,12 +342,27 @@ namespace DSE
                 else
                 {
                     if (utils::LibWide().isLogOn())
-                        clog << "<!>- Couldn't find a conversion info entry for this SMDL! Falling back to converting as-is..\n";
-                    DSE::SequenceToMidi(fpath.toString(),
+                        clog << "\n<!>- Couldn't find a conversion info entry for this SMDL! Falling back to converting as-is..\n";
+                    DSE::SequenceToMidi(curpath,
                         seq,
                         options.nbloops,
                         DSE::eMIDIMode::GS);  //This will disable the drum channel, since we don't need it at all!
                 }
+
+                ++cnt;
+                longestname = std::max(curfname.size(), longestname);
+                cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << nbmidis << " written] - " << curfname << std::string(longestname - -curfname.size(), ' ');
+            }
+            cout << "\n";
+        }
+
+        //Import
+        void ImportChangesToGame(const std::string& swdlpath, std::string smdlpath = {}, std::string sedlpath = {})
+        {
+            {
+                {
+                }
+                cout << "\n";
             }
         }
 
@@ -372,10 +402,10 @@ namespace DSE
         {
             cout << "Loading SWDL Dir..\n";
             utils::ProcessAllFileWithExtension(path, SWDL_FileExtension, 
-                [this](const std::string& filepath, size_t cnt, size_t total) 
+                [&](const std::string& filepath, size_t cnt, size_t total) 
                 {
-                    LoadSWDL(filepath);
-                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << total << " loaded]" << "..";
+                    this->LoadSWDL(filepath);
+                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << total << " loaded]...";
                 });
             cout << "\n";
         }
@@ -399,10 +429,10 @@ namespace DSE
         {
             cout << "Loading SMDL Dir..\n";
             utils::ProcessAllFileWithExtension(path, SMDL_FileExtension, 
-                [this](const std::string& filepath, size_t cnt, size_t total) 
+                [&](const std::string& filepath, size_t cnt, size_t total) 
                 {
                     LoadSMDL(filepath);
-                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << total << " loaded]" << "..";
+                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << total << " loaded]...";
                 });
             cout << "\n";
         }
@@ -427,10 +457,10 @@ namespace DSE
         {
             cout << "Loading SEDL Dir..\n";
             utils::ProcessAllFileWithExtension(path, SEDL_FileExtension, 
-                [this](const std::string& filepath, size_t cnt, size_t total) 
+                [&](const std::string& filepath, size_t cnt, size_t total) 
                 {
                     LoadSEDL(filepath);
-                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << total << " loaded]" << "..";
+                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << total << " loaded]...";
                 });
             cout << "\n";
         }

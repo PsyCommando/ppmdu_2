@@ -465,7 +465,7 @@ namespace DSE
             else if( m_version == eDSEVersion::V415 )
             {
                 itout = std::fill_n( itout, (SongChunk_v415::SizeNoPadd + SongChunk_v415::LenMaxPadding), 0 );
-                nbwritten += (SongChunk_v415::SizeNoPadd + SongChunk_v415::LenMaxPadding);
+                nbwritten += ((size_t)SongChunk_v415::SizeNoPadd + SongChunk_v415::LenMaxPadding);
             }
             else
                 throw std::runtime_error( "SMDL_Writer::operator()(): Invalid DSE version supplied!!" );

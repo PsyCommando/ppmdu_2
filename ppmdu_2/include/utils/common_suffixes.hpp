@@ -1,3 +1,5 @@
+#ifndef COMMON_SUFFIXES_HPP
+#define COMMON_SUFFIXES_HPP
 #include <cstdint>
 #ifndef _MSC_BUILD
     #if __GNUG__
@@ -19,3 +21,4 @@ constexpr int64_t operator"" i64(unsigned long long literal_){return literal_;}
         #pragma GCC diagnostic pop
     #endif
 #endif // !_MSC_BUILD
+#endif // ! COMMON_SUFFIXES_HPP

@@ -142,12 +142,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
 add_executable(
-    audioutil ${audioutil_SRC} 
+    audioutil 
+    ${audioutil_SRC} 
     "src/audioutil.cpp" 
     "src/audioutil_export.cpp" 
     "src/audioutil_import.cpp" 
     ${audioutil_HEADER} 
-    "src/audioutil.hpp" )
+    "src/audioutil.hpp" 
+)
 set(audioutil_VERSION 0.39.0)
 
 add_compile_definitions(USE_PPMDU_CONTENT_TYPE_ANALYSER)

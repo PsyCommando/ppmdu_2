@@ -103,7 +103,6 @@ namespace DSE
         DSE::DSE_MetaDataSWDL m_meta;
         ptrprg_t              m_pPrgbnk;      //A program bank may not be shared by many
         ptrsmpl_t             m_pSamples;     //A sample bank may be shared by many
-        bool                  m_bWasModified; //Whether this file was modified after being loaded, or was imported by a user
     };
 };
 

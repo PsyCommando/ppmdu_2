@@ -448,10 +448,10 @@ namespace DSE
     struct TrkEventInfo
     {
         //Event code range
-        eTrkEventCodes evcodebeg;   //Beginning of the range of event codes that can be used to represent this event.
-        eTrkEventCodes evcodeend;   //Leave to invalid when is event with single code
+        eTrkEventCodes evcodebeg = eTrkEventCodes::Invalid;   //Beginning of the range of event codes that can be used to represent this event.
+        eTrkEventCodes evcodeend = eTrkEventCodes::Invalid;   //Leave to invalid when is event with single code
         //nb params
-        uint32_t       nbreqparams; //if has any required parameters
+        uint32_t       nbreqparams = 0; //if has any required parameters
         //bool           hasoptparam; //if has optional param  # Only play note events have a variable parameter count!
         std::string    evlbl;       //text label for the event, mainly for logging/debugging
     };
@@ -743,7 +743,7 @@ namespace DSE
             }
         }
 
-        return (hdr.Size + hdr.datlen);
+        return ((size_t)hdr.Size + hdr.datlen);
     }
 
     template<class _backinsit, class _inevit>

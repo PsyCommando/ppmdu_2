@@ -201,7 +201,7 @@ namespace DSE
         void setSampleData(sampleid_t index, std::vector<uint8_t>&& data)
         {
             if (m_SampleData.size() <= index)
-                m_SampleData.resize(index + 1); //Make sure we're big enough
+                m_SampleData.resize((size_t)index + 1); //Make sure we're big enough
 
             if (m_SampleData.size() > index)
                 m_SampleData[index].pdata_.reset(new std::vector<uint8_t>(data));

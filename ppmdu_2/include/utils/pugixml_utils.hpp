@@ -39,7 +39,7 @@ namespace pugixmlutils
             Also helps with clarity.
     /***************************************************************************************/
     template<class T>
-        inline void WriteNodeWithValue( pugi::xml_node & parentnode, const pugi::string_t & name, T value )
+        inline void WriteNodeWithValue( pugi::xml_node parentnode, const pugi::string_t & name, T value )
     {
         using namespace pugi;
         using namespace std;
@@ -47,42 +47,42 @@ namespace pugixmlutils
     }
 
     template<>
-        inline void WriteNodeWithValue<const pugi::char_t *>( pugi::xml_node & parentnode, const pugi::string_t & name, const pugi::char_t * value )
+        inline void WriteNodeWithValue<const pugi::char_t *>( pugi::xml_node  parentnode, const pugi::string_t & name, const pugi::char_t * value )
     {
         using namespace pugi;
         parentnode.append_child(name.c_str()).append_child(node_pcdata).set_value(value);
     }
 
     template<>
-        inline void WriteNodeWithValue<const pugi::string_t &>( pugi::xml_node & parentnode, const pugi::string_t & name, const pugi::string_t & value )
+        inline void WriteNodeWithValue<const pugi::string_t &>( pugi::xml_node  parentnode, const pugi::string_t & name, const pugi::string_t & value )
     {
         using namespace pugi;
         parentnode.append_child(name.c_str()).append_child(node_pcdata).set_value(value.c_str());
     }
 
     template<>
-        inline void WriteNodeWithValue<pugi::string_t&&>( pugi::xml_node & parentnode, const pugi::string_t & name, pugi::string_t &&value )
+        inline void WriteNodeWithValue<pugi::string_t&&>( pugi::xml_node  parentnode, const pugi::string_t & name, pugi::string_t &&value )
     {
         using namespace pugi;
         parentnode.append_child(name.c_str()).append_child(node_pcdata).set_value(value.c_str());
     }
 
     template<>
-        inline void WriteNodeWithValue<pugi::string_t>( pugi::xml_node & parentnode, const pugi::string_t & name, pugi::string_t value )
+        inline void WriteNodeWithValue<pugi::string_t>( pugi::xml_node  parentnode, const pugi::string_t & name, pugi::string_t value )
     {
         using namespace pugi;
         parentnode.append_child(name.c_str()).append_child(node_pcdata).set_value(value.c_str());
     }
 
     template<>
-        inline void WriteNodeWithValue<int8_t>( pugi::xml_node & parentnode, const pugi::string_t & name, int8_t value )
+        inline void WriteNodeWithValue<int8_t>( pugi::xml_node  parentnode, const pugi::string_t & name, int8_t value )
     {
         using namespace pugi;
         parentnode.append_child(name.c_str()).append_child(node_pcdata).set_value( std::to_string( static_cast<int16_t>(value) ).c_str() );
     }
 
     template<>
-        inline void WriteNodeWithValue<uint8_t>( pugi::xml_node & parentnode, const pugi::string_t & name, uint8_t value )
+        inline void WriteNodeWithValue<uint8_t>( pugi::xml_node  parentnode, const pugi::string_t & name, uint8_t value )
     {
         using namespace pugi;
         parentnode.append_child(name.c_str()).append_child(node_pcdata).set_value( std::to_string( static_cast<uint16_t>(value) ).c_str() );
@@ -92,7 +92,7 @@ namespace pugixmlutils
         AppendChildNode
             Makes appending a child node and setting its name easier, clearer with std::string.
     /***************************************************************************************/
-    inline pugi::xml_node AppendChildNode( pugi::xml_node & parent, const pugi::string_t & childname )
+    inline pugi::xml_node AppendChildNode( pugi::xml_node  parent, const pugi::string_t & childname )
     {
         return parent.append_child( childname.c_str() );
     }

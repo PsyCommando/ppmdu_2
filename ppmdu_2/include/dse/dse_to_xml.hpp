@@ -11,7 +11,7 @@ Descritpton: Contains utilities for converting DSE audio parameters to XML data.
 #include <ppmdu/pmd2/pmd2_audio_data.hpp>
 #include <string>
 
-namespace dse
+namespace DSE
 {
 
     /*
