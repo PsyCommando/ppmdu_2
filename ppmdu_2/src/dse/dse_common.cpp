@@ -4,9 +4,15 @@
 #include <dse/fmts/sedl.hpp>
 #include <ext_fmts/adpcm.hpp>
 
+#include <utils/pugixml_utils.hpp>
+
+#include <pugixml.hpp>
+
 #include <sstream>
 #include <iomanip>
 using namespace std;
+using namespace pugi;
+using namespace pugixmlutils;
 
 namespace DSE
 {
@@ -160,6 +166,58 @@ namespace DSE
         unk6 = hdr.unk6;
         unk7 = hdr.unk7;
         unk8 = hdr.unk8;
+    }
+
+
+//
+//
+//
+
+    namespace SeqInfoXml
+    {
+        const std::string PROP_;
+    };
+    void seqinfo_table::WriteXml(pugi::xml_node seqnode)const
+    {
+        using namespace SeqInfoXml;
+        WriteNumberVarToXml(unk30, seqnode);
+        WriteNumberVarToXml(unk16, seqnode);
+        WriteNumberVarToXml(nbtrks, seqnode);
+        WriteNumberVarToXml(nbchans, seqnode);
+        WriteNumberVarToXml(unk19, seqnode);
+        WriteNumberVarToXml(unk20, seqnode);
+        WriteNumberVarToXml(unk21, seqnode);
+        WriteNumberVarToXml(unk22, seqnode);
+        WriteNumberVarToXml(unk23, seqnode);
+        WriteNumberVarToXml(unk24, seqnode);
+        WriteNumberVarToXml(unk25, seqnode);
+        WriteNumberVarToXml(unk26, seqnode);
+        WriteNumberVarToXml(unk27, seqnode);
+        WriteNumberVarToXml(unk28, seqnode);
+        WriteNumberVarToXml(unk29, seqnode);
+        WriteNumberVarToXml(unk31, seqnode);
+        WriteNumberVarToXml(unk12, seqnode);
+    }
+    void seqinfo_table::ParseXml(pugi::xml_node seqnode)
+    {
+        using namespace SeqInfoXml;
+        ParseNumberVarFromXml(unk30,   seqnode);
+        ParseNumberVarFromXml(unk16,   seqnode);
+        ParseNumberVarFromXml(nbtrks,  seqnode);
+        ParseNumberVarFromXml(nbchans, seqnode);
+        ParseNumberVarFromXml(unk19,   seqnode);
+        ParseNumberVarFromXml(unk20,   seqnode);
+        ParseNumberVarFromXml(unk21,   seqnode);
+        ParseNumberVarFromXml(unk22,   seqnode);
+        ParseNumberVarFromXml(unk23,   seqnode);
+        ParseNumberVarFromXml(unk24,   seqnode);
+        ParseNumberVarFromXml(unk25,   seqnode);
+        ParseNumberVarFromXml(unk26,   seqnode);
+        ParseNumberVarFromXml(unk27,   seqnode);
+        ParseNumberVarFromXml(unk28,   seqnode);
+        ParseNumberVarFromXml(unk29,   seqnode);
+        ParseNumberVarFromXml(unk31,   seqnode);
+        ParseNumberVarFromXml(unk12,   seqnode);
     }
 
 };

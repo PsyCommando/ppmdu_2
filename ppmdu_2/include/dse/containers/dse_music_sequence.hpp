@@ -34,15 +34,19 @@ namespace DSE
 
         DSE::DSE_MetaDataSMDL& metadata() { return m_meta; }
         const DSE::DSE_MetaDataSMDL& metadata()const { return m_meta; }
-        void                      metadata(const DSE::DSE_MetaDataSMDL& data) { m_meta = data; }
-        void                      metadata(DSE::DSE_MetaDataSMDL&& data) { m_meta = data; }
+        void                      setMetadata(const DSE::DSE_MetaDataSMDL& data) { m_meta = data; }
+        void                      setMetadata(DSE::DSE_MetaDataSMDL&& data) { m_meta = data; }
 
         DSE::seqinfo_table& seqinfo() { return m_seqinfo; }
         const DSE::seqinfo_table& seqinfo()const { return m_seqinfo; }
-        void                      seqinfo(const DSE::seqinfo_table& sinfo) { m_seqinfo = sinfo; }
-        void                      seqinfo(DSE::seqinfo_table& sinfo) { m_seqinfo = sinfo; }
+        void                      setSeqinfo(const DSE::seqinfo_table& sinfo) { m_seqinfo = sinfo; }
+        void                      setSeqinfo(DSE::seqinfo_table& sinfo) { m_seqinfo = sinfo; }
 
-        size_t                             getNbTracks()const { return m_tracks.size(); }
+        size_t getNbTracks()const { return m_tracks.size(); }
+        void setNbTracks(size_t newsize) { m_tracks.resize(newsize); }
+
+        void setTracks(std::vector<MusicTrack>&& trks) { m_tracks = trks; }
+        void setTrack(size_t trkid, MusicTrack&& trk)  { m_tracks[trkid] = trk; }
 
         MusicTrack& track(size_t index) { return m_tracks[index]; }
         const MusicTrack& track(size_t index)const { return m_tracks[index]; }

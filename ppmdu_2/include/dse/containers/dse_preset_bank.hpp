@@ -75,6 +75,14 @@ namespace DSE
             return pbank;
         }
 
+        /// <summary>
+        /// Returns whether this bank is a sample bank only/master bank
+        /// </summary>
+        /// <returns></returns>
+        bool isMasterSampleBank()const
+        {
+            return !m_pPrgbnk && m_pSamples && (m_pSamples->NbSlots() > 0);
+        }
 
         DSE::DSE_MetaDataSWDL& metadata() { return m_meta; }
         const DSE::DSE_MetaDataSWDL& metadata()const { return m_meta; }

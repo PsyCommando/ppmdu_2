@@ -46,28 +46,11 @@ namespace DSE
         DSE::PresetDatabase                                        m_bankdb;
         std::unordered_map<std::string, DSE::MusicSequence>        m_mseqs;
         std::unordered_map<std::string, DSE::SoundEffectSequences> m_eseqs;
+        std::string                                                m_masterbankid; //If we have a master sample bank, store its id in here
 
         //Pair Ordering
         size_t                        m_pairCnt;
         std::map<std::string, size_t> m_loadedPairOrdering;
-
-        //Wrapper for adding new banks to the loader so we can set them up properly
-        DSE::PresetBank& AddBank(DSE::PresetBank && bnk) 
-        {
-            return m_bankdb.AddBank(std::forward<DSE::PresetBank>(bnk));
-        }
-
-        DSE::MusicSequence& AddMusicSeq(DSE::MusicSequence&& seq) 
-        {
-            auto res = m_mseqs.insert(std::make_pair(seq.metadata().get_original_file_name_no_ext(), std::forward<DSE::MusicSequence>(seq)));
-            return (res.first)->second;
-        }
-
-        DSE::SoundEffectSequences& AddSoundEffectSeq(DSE::SoundEffectSequences&& seq) 
-        {
-            auto res = m_eseqs.insert(std::make_pair(seq.m_meta.get_original_file_name_no_ext(), std::forward<DSE::SoundEffectSequences>(seq)));
-            return (res.first)->second;
-        }
 
         size_t GetOrSetLoadOrder(const std::string& pairname)
         {
@@ -88,6 +71,26 @@ namespace DSE
                 order = m_loadedPairOrdering.at(pairname);
             }
             return order;
+        }
+
+        //Wrapper for adding new banks to the loader so we can set them up properly
+        DSE::PresetBank& AddBank(DSE::PresetBank&& bnk)
+        {
+            if (bnk.isMasterSampleBank())
+                m_masterbankid = bnk.metadata().get_original_file_name_no_ext();
+            return m_bankdb.AddBank(std::forward<DSE::PresetBank>(bnk));
+        }
+
+        DSE::MusicSequence& AddMusicSeq(DSE::MusicSequence&& seq)
+        {
+            auto res = m_mseqs.insert(std::make_pair(seq.metadata().get_original_file_name_no_ext(), std::forward<DSE::MusicSequence>(seq)));
+            return (res.first)->second;
+        }
+
+        DSE::SoundEffectSequences& AddSoundEffectSeq(DSE::SoundEffectSequences&& seq)
+        {
+            auto res = m_eseqs.insert(std::make_pair(seq.m_meta.get_original_file_name_no_ext(), std::forward<DSE::SoundEffectSequences>(seq)));
+            return (res.first)->second;
         }
 
     public:
@@ -283,7 +286,17 @@ namespace DSE
             //Move all the presets to the banks they're on
 
             assert(false);
+            cout << "Writing soundfont...\n";
+            int cnt = 0;
+            const size_t nbbanks = m_bankdb.size();
+            for (const auto& entry : m_bankdb)
+            {
+                //Re-order presets so we can jam as many presets as possible in the soundfont over all the 128 banks
+                ++cnt;
+                cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << nbbanks << " merged]";
+            }
 
+            cout << "\n";
             return convinf;
         }
 
@@ -337,7 +350,7 @@ namespace DSE
                         seq,
                         foundinfo.value(),
                         options.nbloops,
-                        DSE::eMIDIMode::GS);  //This will disable the drum channel, since we don't need it at all!
+                        utils::eMIDIMode::GS);  //This will disable the drum channel, since we don't need it at all!
                 }
                 else
                 {
@@ -346,7 +359,7 @@ namespace DSE
                     DSE::SequenceToMidi(curpath,
                         seq,
                         options.nbloops,
-                        DSE::eMIDIMode::GS);  //This will disable the drum channel, since we don't need it at all!
+                        utils::eMIDIMode::GS);  //This will disable the drum channel, since we don't need it at all!
                 }
 
                 ++cnt;
@@ -359,11 +372,137 @@ namespace DSE
         //Import
         void ImportChangesToGame(const std::string& swdlpath, std::string smdlpath = {}, std::string sedlpath = {})
         {
+            //Since we don't support differential saving right now, just import everything
+            bool hasmaster = !m_masterbankid.empty();
+            const std::string outswdlpath = Poco::Path::transcode(Poco::Path(swdlpath).makeDirectory().makeAbsolute().toString());
+            const std::string outsmdlpath = (!smdlpath.empty()) ? (Poco::Path::transcode(Poco::Path(smdlpath).makeDirectory().makeAbsolute().toString())) : std::string();
+            const std::string outsedlpath = (!sedlpath.empty()) ? (Poco::Path::transcode(Poco::Path(sedlpath).makeDirectory().makeAbsolute().toString())) : std::string();
+            size_t cnt = 0;
+            size_t longestname = 0;
+
             {
+                cout << "Importing Program Banks...\n";
+                const size_t nbbanks = m_bankdb.size();
+                for (const auto& entry : m_bankdb)
                 {
+                    const std::string& pairname = entry.first;
+                    const PresetBank& pbank = entry.second;
+                    if (pbank.metadata().origfname.empty())
+                        throw std::runtime_error("SWDL file to import is missing its original file name");
+
+                    WriteSWDL(
+                        Poco::Path::transcode(Poco::Path(outswdlpath).append(pbank.metadata().origfname).makeFile().toString()),
+                        pbank);
+
+                    ++cnt;
+                    longestname = std::max(pbank.metadata().origfname.size(), longestname);
+                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << nbbanks << " written] - " << pbank.metadata().origfname << std::string(longestname - -pbank.metadata().origfname.size(), ' ');
                 }
                 cout << "\n";
             }
+
+            if (outsmdlpath.empty())
+                return;
+
+            {
+                cout << "Importing Sequences...\n";
+                cnt = 0;
+                longestname = 0;
+                const size_t nbseqs = m_mseqs.size();
+                for (const auto& entry : m_mseqs)
+                {
+                    const MusicSequence& seq = entry.second;
+                    if (seq.metadata().origfname.empty())
+                        throw std::runtime_error("SMDL file to import is missing its original file name");
+                    WriteSMDL(
+                        Poco::Path::transcode(Poco::Path(outsmdlpath).append(seq.metadata().origfname).makeFile().toString()),
+                        seq
+                    );
+                    ++cnt;
+                    longestname = std::max(seq.metadata().origfname.size(), longestname);
+                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << nbseqs << " written] - " << seq.metadata().origfname << std::string(longestname - -seq.metadata().origfname.size(), ' ');
+                }
+                cout << "\n";
+            }
+
+            if (outsedlpath.empty())
+                return;
+            
+            {
+                cout << "Importing Sound Effect Sequences...\n";
+                cnt = 0;
+                longestname = 0;
+                const size_t nbeseqs = m_eseqs.size();
+                for (const auto& entry : m_eseqs)
+                {
+                    const SoundEffectSequences& seq = entry.second;
+                    if (seq.metadata().origfname.empty())
+                        throw std::runtime_error("SEDL file to import is missing its original file name");
+                    WriteSEDL(
+                        Poco::Path::transcode(Poco::Path(outsedlpath).append(seq.metadata().origfname).makeFile().toString()),
+                        seq
+                    );
+                    ++cnt;
+                    longestname = std::max(seq.metadata().origfname.size(), longestname);
+                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << nbeseqs << " written] - " << seq.metadata().origfname << std::string(longestname - -seq.metadata().origfname.size(), ' ');
+                }
+                cout << "\n";
+            }
+        }
+
+        //Import
+
+        void ImportDirectory(const std::string& pathdir)
+        {
+            Poco::DirectoryIterator itdir(pathdir);
+            Poco::DirectoryIterator itend;
+
+            for (; itdir != itend; ++itdir)
+            {
+                const std::string fpath = Poco::Path::transcode(itdir.path().absolute().toString());
+                if (itdir->isFile())
+                {
+                    
+                    //Tell if its a set of sequence or a bank
+                    if (itdir.path().getExtension() == "xml" && IsXMLPresetBank(fpath))
+                        ImportBank(fpath);
+                    else if (itdir.path().getExtension() == "mid")
+                        ImportMusicSeq(fpath);
+                }
+                else if (itdir->isDirectory() && IsSESequenceXmlDir(fpath))
+                    ImportSoundEffectSeq(fpath);
+            }
+        }
+
+        //Wrapper for adding new banks to the loader so we can set them up properly
+        DSE::PresetBank& ImportBank(const std::string& bnkxmlfile)
+        {
+            DSE::PresetBank bnk = ImportPresetBank(bnkxmlfile);
+            if (bnk.isMasterSampleBank())
+                m_masterbankid = bnk.metadata().get_original_file_name_no_ext();
+            return m_bankdb.AddBank(std::forward<DSE::PresetBank>(bnk));
+        }
+
+        DSE::MusicSequence& ImportMusicSeq(const std::string& midipath)
+        {
+            DSE::MusicSequence seq = MidiToSequence(midipath);
+
+            //#TODO: generate the name to use when importing the sequence back into the game.
+
+            auto res = m_mseqs.insert(std::make_pair(seq.metadata().get_original_file_name_no_ext(), std::forward<DSE::MusicSequence>(seq)));
+            return (res.first)->second;
+        }
+
+        DSE::SoundEffectSequences& ImportSoundEffectSeq(const std::string& seqdir)
+        {
+            DSE::SoundEffectSequences seq;
+            if (!IsSESequenceXmlDir(seqdir))
+                throw runtime_error("The \"" + seqdir + "\" directory is missing the required xml files to assemble a sound effect set from.");
+
+            assert(false);
+
+            auto res = m_eseqs.insert(std::make_pair(seq.m_meta.get_original_file_name_no_ext(), std::forward<DSE::SoundEffectSequences>(seq)));
+            return (res.first)->second;
         }
 
     private:
@@ -509,6 +648,19 @@ namespace DSE
         m_pimpl->LoadFromBlobFile(itbeg, itend);
     }
 
+    DSE::PresetBank& DSELoader::ImportBank(const std::string& bnkxmlfile)
+    {
+        return m_pimpl->ImportBank(bnkxmlfile);
+    }
+    DSE::MusicSequence& DSELoader::ImportMusicSeq(const std::string& midipath)
+    {
+        return m_pimpl->ImportMusicSeq(midipath);
+    }
+    DSE::SoundEffectSequences& DSELoader::ImportSoundEffectSeq(const std::string& seqdir)
+    {
+        return m_pimpl->ImportSoundEffectSeq(seqdir);
+    }
+
     SMDLConvInfoDB DSELoader::ExportSoundfont(const std::string& despath, sampleProcessingOptions options, bool bSingleSf2)
     {
         if(!bSingleSf2)
@@ -525,6 +677,16 @@ namespace DSE
     void DSELoader::ExportMIDIs(const std::string& destdirpath, sequenceProcessingOptions options)
     {
         m_pimpl->ExportMIDIs(destdirpath, std::move(options));
+    }
+
+    void DSELoader::ImportChangesToGame(const std::string& swdlpath, std::string smdlpath, std::string sedlpath)
+    {
+        m_pimpl->ImportChangesToGame(swdlpath, smdlpath, sedlpath);
+    }
+
+    void DSELoader::ImportDirectory(const std::string& pathdir)
+    {
+        m_pimpl->ImportDirectory(pathdir);
     }
 
 };

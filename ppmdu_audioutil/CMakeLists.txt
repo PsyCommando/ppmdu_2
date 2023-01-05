@@ -36,6 +36,7 @@ list(APPEND audioutil_HEADER
     "../ppmdu_2/include/utils/gstringutils.hpp"
     "../ppmdu_2/include/utils/handymath.hpp"
     "../ppmdu_2/include/utils/library_wide.hpp"
+    "../ppmdu_2/include/utils/midi_helpers.hpp"
     "../ppmdu_2/include/utils/multiple_task_handler.hpp"
     "../ppmdu_2/include/utils/multithread_logger.hpp"
     "../ppmdu_2/include/utils/parallel_tasks.hpp"
@@ -77,6 +78,7 @@ list(APPEND audioutil_HEADER
     "../ppmdu_2/include/ext_fmts/riff.hpp"
     "../ppmdu_2/include/ext_fmts/sf2.hpp"
     "../ppmdu_2/include/ext_fmts/wav_io.hpp"
+    
 )
 
 ###########################################################
@@ -124,10 +126,14 @@ list(APPEND audioutil_SRC
     "../ppmdu_2/src/dse/dse_interpreter.cpp"
     "../ppmdu_2/src/dse/dse_interpreter_events.cpp"
     "../ppmdu_2/src/dse/dse_loader.cpp"
-    "../ppmdu_2/src/dse/dse_prgmbank_xml_io.cpp"
+    "../ppmdu_2/src/dse/dse_midi_track_parser.cpp"
+    "../ppmdu_2/src/dse/dse_midi_track_writer.cpp"
+    "../ppmdu_2/src/dse/dse_preset_bank_xml_io.cpp"
+    "../ppmdu_2/src/dse/dse_se_sequence_xml_io.cpp"
     "../ppmdu_2/src/dse/dse_sequence.cpp"
     "../ppmdu_2/src/dse/sample_processor.cpp"
     "../ppmdu_2/src/dse/dse_to_sf2.cpp"
+    "../ppmdu_2/src/dse/dse_to_xml.cpp"
 
     "../ppmdu_2/src/ext_fmts/adpcm.cpp"
     "../ppmdu_2/src/ext_fmts/midi_fmtrule.cpp"

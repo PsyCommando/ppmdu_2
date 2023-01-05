@@ -41,7 +41,7 @@ namespace audioutil
         int                   nbloops,
         bool                  asGM)
     {
-        DSE::eMIDIMode convmode = (asGM) ? DSE::eMIDIMode::GM : DSE::eMIDIMode::GS;
+        utils::eMIDIMode convmode = (asGM) ? utils::eMIDIMode::GM : utils::eMIDIMode::GS;
 
         if (asGM)
             clog << "<*>- Conversion mode set to General MIDI instead of the default Roland GS!\n";

@@ -16,6 +16,7 @@ namespace audio
 //  Constants
 //====================================================================================================
     static const uint32_t IMA_ADPCM_PreambleLen = 4;//bytes
+    static const std::string ADPCM_String = "adpcm";
 
 //====================================================================================================
 // Functions

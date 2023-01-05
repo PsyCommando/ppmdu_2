@@ -198,13 +198,22 @@ namespace DSE
                 return nullptr;
         }
 
-        void setSampleData(sampleid_t index, std::vector<uint8_t>&& data)
+        std::vector<uint8_t> * setSampleData(sampleid_t index, std::vector<uint8_t>&& data)
         {
             if (m_SampleData.size() <= index)
                 m_SampleData.resize((size_t)index + 1); //Make sure we're big enough
 
-            if (m_SampleData.size() > index)
-                m_SampleData[index].pdata_.reset(new std::vector<uint8_t>(data));
+            m_SampleData[index].pdata_.reset(new std::vector<uint8_t>(data));
+            return m_SampleData[index].pdata_.get();
+        }
+
+        WavInfo* setSampleInfo(sampleid_t index, WavInfo&& winf)
+        {
+            if (m_SampleData.size() <= index)
+                m_SampleData.resize((size_t)index + 1); //Make sure we're big enough
+
+            m_SampleData[index].pinfo_.reset(new WavInfo(winf));
+            return m_SampleData[index].pinfo_.get();
         }
 
         inline std::vector<uint8_t>* operator[](sampleid_t index) { return sample(index); }

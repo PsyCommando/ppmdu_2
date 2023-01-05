@@ -18,6 +18,8 @@ Description: Common data between several of the Procyon Studio Digital Sound Ele
 #include <limits>
 #include <iostream>
 
+namespace pugi { class xml_node; };
+
 namespace DSE
 {
 //====================================================================================================
@@ -33,6 +35,7 @@ namespace DSE
     const presetid_t    InvalidPresetID    = std::numeric_limits<presetid_t>::max();
     const dsepresetid_t InvalidDSEPresetID = std::numeric_limits<dsepresetid_t>::max();
     const uint8_t       InvalidMIDIKey     = std::numeric_limits<uint8_t>::max(); //The default value for the MIDI key
+    const uint8_t       DSE_MaxOctave      = 9; //The maximum octave value possible to handle
 
 //====================================================================================================
 //  Constants
@@ -625,6 +628,9 @@ namespace DSE
             unk12   = utils::ReadIntFromBytes<decltype(unk12)>  (itReadfrom, itPastEnd);
             return itReadfrom;
         }
+
+        void WriteXml(pugi::xml_node seqnode)const;
+        void ParseXml(pugi::xml_node seqnode);
     };
 
 //  DSEMetaData
@@ -666,6 +672,9 @@ namespace DSE
                 return std::string(origfname.c_str(), origfname.c_str() + befext);
             return origfname;
         }
+
+        virtual void WriteXml(pugi::xml_node dsei)const;
+        virtual void ParseXml(pugi::xml_node dsei);
     };
 
     /************************************************************************
@@ -681,6 +690,9 @@ namespace DSE
         //v0x402 specifics
         int8_t      mainvol;
         int8_t      mainpan;
+
+        void WriteXml(pugi::xml_node dsei)const override;
+        void ParseXml(pugi::xml_node dsei)override;
     };
 
     /************************************************************************
@@ -695,6 +707,9 @@ namespace DSE
         uint16_t nbwavislots;
         uint16_t nbprgislots;
         uint16_t unk17;
+
+        void WriteXml(pugi::xml_node dsei)const override;
+        void ParseXml(pugi::xml_node dsei)override;
     };
 
     /************************************************************************
@@ -713,6 +728,9 @@ namespace DSE
         uint16_t unk6;
         uint16_t unk7;
         uint16_t unk8;
+
+        void WriteXml(pugi::xml_node dsei)const override;
+        void ParseXml(pugi::xml_node dsei)override;
     };
 
 //====================================================================================================

@@ -24,6 +24,7 @@ All wrongs reversed, no crappyrights :P
 #include <future>
 #include <map>
 #include <sstream>
+#include <optional>
 
 namespace sf2{ class SoundFont; class Instrument; };
 
@@ -174,6 +175,19 @@ namespace DSE
 
         void ExportXMLPrograms(const std::string& destpath, bool bConvertSamples = false);
         void ExportMIDIs(const std::string& destdirpath, sequenceProcessingOptions options);
+
+        void ImportChangesToGame(const std::string& swdlpath, std::string smdlpath = {}, std::string sedlpath = {});
+
+        //-----------------------------
+        // Import Methods
+        //-----------------------------
+        /*
+        * Methods for loading exported data back in
+        */
+        DSE::PresetBank&           ImportBank          (const std::string& bnkxmlfile);
+        DSE::MusicSequence&        ImportMusicSeq      (const std::string& midipath);
+        DSE::SoundEffectSequences& ImportSoundEffectSeq(const std::string& seqdir);
+        void                       ImportDirectory     (const std::string& pathdir); //Batch import everything contained in a directory. XML for banks, midi, SE sequences folders
 
     private:
         class DSELoaderImpl;
@@ -508,21 +522,28 @@ namespace DSE
         To use the ExportSequence,
     */
 
+    //Import
+
+    DSE::PresetBank ImportPresetBank(const std::string& directory);
+
+    /// <summary>
+    /// Returns true if the directory contains importable sets of a midi/mml and xml sound bank
+    /// </summary>
+    /// <param name="dirpath"></param>
+    /// <returns></returns>
+    bool IsDirImportableSequences(const std::string& dirpath);
+
 //=================================================================================================
 //  XML
 //=================================================================================================
+    bool IsSESequenceXmlDir(const std::string& destdir);
+    bool IsXMLPresetBank   (const std::string& xmlfilepath);
 
-    /*
-        PresetBankToXML
-            Write the 3 XML files for a given set of presets and samples.
-    */
-    void PresetBankToXML( const DSE::PresetBank & srcbnk, const std::string & destdir );
+    void PresetBankToXML          (const DSE::PresetBank&           srcbnk, const std::string& bnkxmlfile);
+    void SoundEffectSequencesToXML(const DSE::SoundEffectSequences& srcseq, const std::string& destdir);
 
-    /*
-        XMLToPresetBank
-            Read the 3 XML files for a given set of presets and samples.
-    */
-    DSE::PresetBank XMLToPresetBank( const std::string & srcdir );
+    DSE::PresetBank           XMLToPresetBank     (const std::string& bnkxmlfile);
+    DSE::SoundEffectSequences XMLToEffectSequences(const std::string& srcdir);
 
 };
 

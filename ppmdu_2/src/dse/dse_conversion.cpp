@@ -1427,10 +1427,11 @@ namespace DSE
     const string SupportedImportSound_Wav = "wav"s;
     const string SupportedImportSound_Adpcm = "adpcm"s;
 
-    DSE::PresetBank ImportPresetBank(const std::string& directory)
+    DSE::PresetBank ImportPresetBank(const std::string& pathbankxml)
     {
-        PresetBank bnk      = XMLToPresetBank(directory);
-        Poco::File smplsdir = Poco::Path(directory).absolute().append(_DefaultSamplesSubDir);
+        const std::string samplesdir = Poco::Path::transcode(Poco::Path(pathbankxml).makeAbsolute().setExtension("").makeDirectory().toString());
+        PresetBank        bnk        = XMLToPresetBank(pathbankxml);
+        Poco::File        smplsdir(samplesdir);
 
         //Handle sound samples:
         if (smplsdir.isDirectory() && smplsdir.exists())
@@ -1473,8 +1474,8 @@ namespace DSE
                         if (psmplinfo)
                         {
                             psmplinfo->smplfmt = eDSESmplFmt::pcm8;
-                            psmplinfo->loopbeg /= 2;
-                            psmplinfo->looplen /= 2;
+                            //psmplinfo->loopbeg /= 2;
+                            //psmplinfo->looplen /= 2;
                         }
                     }
                     else if(fmt.bitspersample_ == 16)
@@ -1496,8 +1497,8 @@ namespace DSE
                     if (psmplinfo)
                     {
                         psmplinfo->smplfmt = eDSESmplFmt::ima_adpcm4;
-                        psmplinfo->loopbeg = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
-                        psmplinfo->looplen = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
+                        //psmplinfo->loopbeg = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
+                        //psmplinfo->looplen = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
                     }
                 }
             }
@@ -1506,155 +1507,131 @@ namespace DSE
         return bnk;
     }
 
-    void ExportPresetBank( const std::string & directory, const DSE::PresetBank & bnk, bool samplesonly, bool hexanumbers, bool noconvert )
+    void ExportPresetBank( const std::string & bnkxmlfile, const DSE::PresetBank & bnk, bool samplesonly, bool hexanumbers, bool noconvert )
     {
         auto smplptr = bnk.smplbank().lock();
+
+        if (!samplesonly)
+            PresetBankToXML(bnk, bnkxmlfile);
         
-        if( smplptr != nullptr )
+        if (smplptr == nullptr)
         {
-            size_t       nbsamplesexport = 0;
-            const size_t nbslots         = smplptr->NbSlots();
-            string       smpldir;
-
-            if( !samplesonly )
-            {
-                Poco::Path smpldirpath(directory);
-                smpldirpath.append(_DefaultSamplesSubDir).makeDirectory();
-                if( ! utils::DoCreateDirectory( smpldirpath.toString() ) )
-                    throw runtime_error( "ExportPresetBank(): Couldn't create sample directory ! " + smpldirpath.toString() );
-                smpldir = smpldirpath.toString();
-            }
-            else
-                smpldir = directory;
-
-            for( size_t cntsmpl = 0; cntsmpl < nbslots; ++cntsmpl )
-            {
-                auto * ptrinfo = smplptr->sampleInfo( cntsmpl );
-                auto * ptrdata = smplptr->sample    ( cntsmpl );
-
-                if( ptrinfo != nullptr && ptrdata != nullptr )
-                {
-                    wave::smpl_chunk_content             smplchnk;
-                    stringstream                         sstrname;
-                    wave::smpl_chunk_content::SampleLoop loopinfo;
-                    DSESampleConvertionInfo              cvinf;
-
-                    //Set the loop data
-                    smplchnk.MIDIUnityNote_ = ptrinfo->rootkey;        //#FIXME: Most of the time, the correct root note is only stored in the preset, not the sample data!
-                    smplchnk.samplePeriod_  = (1 / ptrinfo->smplrate);
-
-                    if( hexanumbers )
-                        sstrname <<"0x" <<hex <<uppercase << cntsmpl <<nouppercase;
-                    else
-                        sstrname <<right <<setw(4) <<setfill('0') << cntsmpl;
-
-                    if( ptrinfo->smplfmt == eDSESmplFmt::ima_adpcm4 && noconvert )
-                    {
-                        //wave::IMAADPCMWaveFile outwave;
-
-                        ////We only have mono samples
-                        //outwave.GetSamples().resize(1);
-                        //outwave.SampleRate( ptrinfo->smplrate );
-
-                        //std::copy( std::begin(*ptrdata), std::end(*ptrdata), std::back_inserter(outwave.GetSamples().front()) );
-                        cvinf.loopbeg_ = (cvinf.loopbeg_ - SizeADPCMPreambleWords) * 8; //loopbeg is counted in int32, for APCM data, so multiply by 8 to get the loop beg as pcm16. Subtract one, because of the preamble.
-                        cvinf.loopend_ = ::audio::ADPCMSzToPCM16Sz( ptrdata->size() );
-
-                        //sstrname <<"_adpcm";
-
-                        loopinfo.start_ = cvinf.loopbeg_;
-                        loopinfo.end_   = cvinf.loopend_;
-
-                        ////Add loopinfo!
-                        //smplchnk.loops_.push_back( loopinfo );
-                        //outwave.AddRIFFChunk( smplchnk );
-                        sstrname<<".adpcm";
-                        //outwave.WriteWaveFile( Poco::Path(smpldir).append(sstrname.str()).makeFile().absolute().toString() );
-                        audio::DumpADPCM( Poco::Path(smpldir).append(sstrname.str()).makeFile().absolute().toString(), *ptrdata );
-                    }
-                    else if( ptrinfo->smplfmt == eDSESmplFmt::pcm8 && noconvert )
-                    {
-                        wave::PCM8WaveFile outwave;
-
-                        //We only have mono samples
-                        outwave.GetSamples().resize(1);
-                        outwave.SampleRate( ptrinfo->smplrate );
-
-                        auto backins = std::back_inserter(outwave.GetSamples().front());
-                        //#TODO: Check wtf is going on here?
-                        for( const auto asample : *ptrdata )
-                            (*backins) = asample ^ 0x80; //Flip the first bit, to turn from 2's complement to offset binary(excess-K)
-
-                        //sstrname <<"_pcm8";
-                        loopinfo.start_ = cvinf.loopbeg_;
-                        loopinfo.end_   = cvinf.loopend_;
-
-                        //Add loopinfo!
-                        smplchnk.loops_.push_back( loopinfo );
-                        outwave.AddRIFFChunk( smplchnk );
-                        sstrname<<".wav";
-                        outwave.WriteWaveFile( Poco::Path(smpldir).append(sstrname.str()).makeFile().absolute().toString() );
-                    }
-                    else
-                    {
-                        wave::PCM16sWaveFile outwave;
-
-                        //We only have mono samples
-                        outwave.GetSamples().resize(1);
-                        outwave.SampleRate( ptrinfo->smplrate );
-                        auto & outsamp = outwave.GetSamples().front();
-
-                        switch( ConvertDSESample(static_cast<uint16_t>(ptrinfo->smplfmt), ptrinfo->loopbeg, *ptrdata, cvinf, outsamp) )
-                        {
-                            case eDSESmplFmt::ima_adpcm4:
-                            {
-                                sstrname <<"_adpcm";
-                                break;
-                            }
-                            case eDSESmplFmt::pcm8:
-                            {
-                                sstrname <<"_pcm8";
-                                break;
-                            }
-                            case eDSESmplFmt::pcm16:
-                            {
-                                //sstrname <<"_pcm16";
-                                break;
-                            }
-                            case eDSESmplFmt::ima_adpcm3:
-                            {
-                                clog <<"<!>- Sample# " <<cntsmpl <<" is an unsported PSG sample and was skipped!\n";
-                                break;
-                            }
-                            case eDSESmplFmt::invalid:
-                            {
-                                clog <<"<!>- Sample# " <<cntsmpl <<" is in an unknown unsported format and was skipped!\n";
-                            }
-                        }
-
-                        loopinfo.start_ = cvinf.loopbeg_;
-                        loopinfo.end_   = cvinf.loopend_;
-
-                        //Add loopinfo!
-                        smplchnk.loops_.push_back( loopinfo );
-                        outwave.AddRIFFChunk( smplchnk );
-                        sstrname<<".wav";
-                        outwave.WriteWaveFile( Poco::Path(smpldir).append(sstrname.str()).makeFile().absolute().toString() );
-                    }
-                    ++nbsamplesexport;
-                    cout <<"\r\tExported " <<nbsamplesexport <<" samples!";
-                }
-                else if( ptrinfo == nullptr || ptrdata == nullptr )
-                    clog<<"\n<!>- Sample + Sample info mismatch detected for index " <<cntsmpl <<"!\n";
-            }
-            cout <<"\n";
+            clog << "\tNo samples to export!\n";
+            return;
         }
-        else
-            cout << "\tNo samples to export!\n";
 
-        if( !samplesonly )
+        //Create a directory named after the bank to put the samples in
+        const std::string sampledir = Poco::Path::transcode(Poco::Path(bnkxmlfile).setExtension("").makeDirectory().makeAbsolute().toString());
+        if(!utils::DoCreateDirectory(sampledir))
+            throw runtime_error( "ExportPresetBank(): Couldn't create sample directory ! " + sampledir);
+
+        //Then export samples
+        const size_t nbslots = smplptr->NbSlots();
+        for( size_t cntsmpl = 0; cntsmpl < nbslots; ++cntsmpl )
         {
-            PresetBankToXML( bnk, directory );
+            auto * ptrinfo = smplptr->sampleInfo( cntsmpl );
+            auto * ptrdata = smplptr->sample    ( cntsmpl );
+
+            if( ptrinfo != nullptr && ptrdata != nullptr )
+            {
+                wave::smpl_chunk_content             smplchnk;
+                stringstream                         sstrname;
+                wave::smpl_chunk_content::SampleLoop loopinfo;
+                DSESampleConvertionInfo              cvinf;
+
+                //Set the loop data
+                smplchnk.MIDIUnityNote_ = ptrinfo->rootkey;        //#FIXME: Most of the time, the correct root note is only stored in the preset, not the sample data!
+                smplchnk.samplePeriod_  = (1 / ptrinfo->smplrate);
+
+                if( hexanumbers )
+                    sstrname <<"0x" <<hex <<uppercase << cntsmpl <<nouppercase;
+                else
+                    sstrname <<right <<setw(4) <<setfill('0') << cntsmpl;
+
+                if( ptrinfo->smplfmt == eDSESmplFmt::ima_adpcm4 && noconvert )
+                {
+                    //We only allow mono samples
+                    cvinf.loopbeg_ = (cvinf.loopbeg_ - SizeADPCMPreambleWords) * 8; //loopbeg is counted in int32, for APCM data, so multiply by 8 to get the loop beg as pcm16. Subtract one, because of the preamble.
+                    cvinf.loopend_ = ::audio::ADPCMSzToPCM16Sz( ptrdata->size() );
+
+                    loopinfo.start_ = cvinf.loopbeg_;
+                    loopinfo.end_   = cvinf.loopend_;
+
+                    //Add loopinfo!
+                    sstrname<<".adpcm";
+                    audio::DumpADPCM( Poco::Path(sampledir).append(sstrname.str()).makeFile().absolute().toString(), *ptrdata );
+                }
+                else if( ptrinfo->smplfmt == eDSESmplFmt::pcm8 && noconvert )
+                {
+                    wave::PCM8WaveFile outwave;
+
+                    //We only allow mono samples
+                    outwave.GetSamples().resize(1);
+                    outwave.SampleRate( ptrinfo->smplrate );
+
+                    auto backins = std::back_inserter(outwave.GetSamples().front());
+                    //#TODO: Check wtf is going on here?
+                    for( const auto asample : *ptrdata )
+                        (*backins) = asample ^ 0x80; //Flip the first bit, to turn from 2's complement to offset binary(excess-K)
+
+                    loopinfo.start_ = cvinf.loopbeg_;
+                    loopinfo.end_   = cvinf.loopend_;
+
+                    //Add loopinfo!
+                    smplchnk.loops_.push_back( loopinfo );
+                    outwave.AddRIFFChunk( smplchnk );
+                    sstrname<<".wav";
+                    outwave.WriteWaveFile( Poco::Path(sampledir).append(sstrname.str()).makeFile().absolute().toString() );
+                }
+                else
+                {
+                    wave::PCM16sWaveFile outwave;
+
+                    //We only have mono samples
+                    outwave.GetSamples().resize(1);
+                    outwave.SampleRate( ptrinfo->smplrate );
+                    auto & outsamp = outwave.GetSamples().front();
+
+                    switch( ConvertDSESample(static_cast<uint16_t>(ptrinfo->smplfmt), ptrinfo->loopbeg, *ptrdata, cvinf, outsamp) )
+                    {
+                        case eDSESmplFmt::ima_adpcm4:
+                        {
+                            sstrname <<"_adpcm";
+                            break;
+                        }
+                        case eDSESmplFmt::pcm8:
+                        {
+                            sstrname <<"_pcm8";
+                            break;
+                        }
+                        case eDSESmplFmt::pcm16:
+                        {
+                            //sstrname <<"_pcm16";
+                            break;
+                        }
+                        case eDSESmplFmt::ima_adpcm3:
+                        {
+                            clog <<"<!>- Sample# " <<cntsmpl <<" is an unsported PSG sample and was skipped!\n";
+                            break;
+                        }
+                        case eDSESmplFmt::invalid:
+                        {
+                            clog <<"<!>- Sample# " <<cntsmpl <<" is in an unknown unsported format and was skipped!\n";
+                        }
+                    }
+
+                    loopinfo.start_ = cvinf.loopbeg_;
+                    loopinfo.end_   = cvinf.loopend_;
+
+                    //Add loopinfo!
+                    smplchnk.loops_.push_back( loopinfo );
+                    outwave.AddRIFFChunk( smplchnk );
+                    sstrname<<".wav";
+                    outwave.WriteWaveFile( Poco::Path(sampledir).append(sstrname.str()).makeFile().absolute().toString() );
+                }
+            }
+            else if( ptrinfo == nullptr || ptrdata == nullptr )
+                clog<<"\n<!>- Sample + Sample info mismatch detected for index " <<cntsmpl <<"!\n";
         }
     }
 
