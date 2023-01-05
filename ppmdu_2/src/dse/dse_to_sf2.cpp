@@ -59,14 +59,14 @@ namespace DSE
     int16_t DSE_LFOFrequencyToCents(int16_t freqhz)
     {
         const double ReferenceFreq = 8.176; // 0 cents is 8.176 Hz
-        return static_cast<int16_t>(lround(1200.00 * log2(static_cast<double>(freqhz) / ReferenceFreq)));
+        return static_cast<int16_t>(lround(log2((static_cast<double>(freqhz) / ReferenceFreq) * 1200.00)));
     }
 
     int16_t DSE_LFODepthToCents(int16_t depth)
     {
-        return (depth / 12) * -1; /*static_cast<int16_t>( lround(depth * 12000.0 / 10000.0 ) )*/;
+        //return (depth / 12) * -1; /*static_cast<int16_t>( lround(depth * 12000.0 / 10000.0 ) )*/;
 
-        //return static_cast<int16_t>( lround( 1200.00 * log2( static_cast<double>(depth)  ) ) );
+        return static_cast<int16_t>( lround( log2(1200.00 * static_cast<double>(depth) ) ) );
     }
 
     /*********************************************************************************
