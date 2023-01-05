@@ -108,8 +108,7 @@ namespace DSE
         sf2::Envelope volenv;
 
         //#TODO: implement scaling by users !!!
-        //DSEEnvelope interpenv = IntepretEnvelopeDuration(origenv);
-        DSEEnvelope interpenv = IntepretAndScaleEnvelopeDuration(origenv, 1.0, 1.0, 1.0, 1.0, 1.0);
+        DSEEnvelope interpenv = IntepretEnvelopeDuration(origenv);
 
         if (utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn())
         {
@@ -589,8 +588,8 @@ namespace DSE
         using namespace ::audio;
 
         //Had to use this, as stringstreams are just too slow for this..
-        std::array<char, 48> instrument_name;
-        snprintf(instrument_name.data(), instrument_name.size(), "Inst%zu\0", _cntExportedSplits);
+        std::array<char, 48> instrument_name{0};
+        snprintf(instrument_name.data(), instrument_name.size(), "Inst%zu", _cntExportedSplits);
 
         Instrument myinst(string(instrument_name.begin(), instrument_name.end()));
         for (uint16_t cntsplit = 0; cntsplit < prgm->m_splitstbl.size(); ++cntsplit)
