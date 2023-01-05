@@ -13,6 +13,14 @@ Description:
 #include <codecvt>
 #include <locale>
 #include <sstream>
+#include <utils/parse_utils.hpp>
+
+//Helper macro to write xml nodes named after variables and not having to make a million constants
+#define WriteStringVarToXml(VARNAME, NODE) pugixmlutils::WriteNodeWithValue(NODE, #VARNAME, VARNAME)
+#define WriteNumberVarToXml(VARNAME, NODE) pugixmlutils::WriteNodeWithValue(NODE, #VARNAME, VARNAME)
+
+#define ParseStringVarFromXml(VARNAME, NODE) NODE.child(#VARNAME).text().as_string()
+#define ParseNumberVarFromXml(VARNAME, NODE) utils::parseHexaValToValue( ParseStringVarFromXml(VARNAME, NODE) , VARNAME )
 
 namespace pugixmlutils
 {
