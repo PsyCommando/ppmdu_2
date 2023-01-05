@@ -826,9 +826,6 @@ namespace audioutil
         const Poco::File infile(inpath.absolute());
         const Poco::Path outpath(m_outputPath);
 
-        if( m_operationMode != eOpMode::Invalid )
-            return; //Skip if we have a forced mode
-
         if( !m_outputPath.empty() && !Poco::File( Poco::Path( m_outputPath ).makeAbsolute().parent() ).exists() )
             throw runtime_error("Specified output path does not exists!");
 
@@ -920,66 +917,64 @@ namespace audioutil
     {
         if (m_operationMode == eOpMode::Import)
             return 0; //Don't load anything in import mode
+        //
+        //Fill up the batch loader
+        //
+        if (!m_bgmcntpath.empty())
         {
-            //
-            //Fill up the batch loader
-            //
-            if (!m_bgmcntpath.empty())
+            cout << "<*>- Loading SIR0 Container(s)...\n";
+            Poco::File cntpath(m_bgmcntpath);
+            if (cntpath.isDirectory())
             {
-                cout << "<*>- Loading SIR0 Container(s)...\n";
-                Poco::File cntpath(m_bgmcntpath);
-                if (cntpath.isDirectory())
-                {
-                    m_loader.LoadSIR0Containers(Poco::Path::transcode(Poco::Path(m_bgmcntpath).absolute().toString()), m_bgmcntext);
-                }
-                else if (cntpath.isFile())
-                {
-                    m_loader.LoadSIR0Container(Poco::Path::transcode(Poco::Path(m_bgmcntpath).absolute().toString()));
-                }
-                else
-                    throw std::runtime_error("Error parsing path to sir0 container.");
+                m_loader.LoadSIR0Containers(Poco::Path::transcode(Poco::Path(m_bgmcntpath).absolute().toString()), m_bgmcntext);
+            }
+            else if (cntpath.isFile())
+            {
+                m_loader.LoadSIR0Container(Poco::Path::transcode(Poco::Path(m_bgmcntpath).absolute().toString()));
+            }
+            else
+                throw std::runtime_error("Error parsing path to sir0 container.");
+        }
+
+        if (!m_bgmblobpath.empty())
+        {
+            cout << "<*>- Scanning and Loading Blob Container(s)...\n";
+            for (const string& path : m_bgmblobpath)
+            {
+                m_loader.LoadFromBlobFile(Poco::Path::transcode(Poco::Path(path).absolute().toString()));
+            }
+        }
+
+        if (m_targetPaths.hasDseSystemPaths())
+        {
+            cout << "<*>- Loading DSE System Directories...\n";
+            //Load specified system files
+            if (!m_targetPaths.masterSwdlPath.empty())
+            {
+                m_loader.LoadSWDL(m_targetPaths.masterSwdlPath);
+                cout << "<*>- Loaded Master Bank!\n";
             }
 
-            if (!m_bgmblobpath.empty())
+            if (!m_targetPaths.smdlDirPath.empty())
             {
-                cout << "<*>- Scanning and Loading Blob Container(s)...\n";
-                for (const string& path : m_bgmblobpath)
-                {
-                    m_loader.LoadFromBlobFile(Poco::Path::transcode(Poco::Path(path).absolute().toString()));
-                }
+                m_loader.LoadSMDL(m_targetPaths.smdlDirPath);
+                cout << "<*>- Loaded SMDL Dir!\n";
+            }
+            if (!m_targetPaths.swdlDirPath.empty())
+            {
+                m_loader.LoadSWDL(m_targetPaths.smdlDirPath);
+                cout << "<*>- Loaded SWDL Dir!\n";
             }
 
-            if (m_targetPaths.hasDseSystemPaths())
-            {
-                cout << "<*>- Loading DSE System Directories...\n";
-                //Load specified system files
-                if (!m_targetPaths.masterSwdlPath.empty())
-                {
-                    m_loader.LoadSWDL(m_targetPaths.masterSwdlPath);
-                    cout << "<*>- Loaded Master Bank!\n";
-                }
+            //TODO: load the extra paths for ME and etc
+            //if (!m_targetPaths.sedlDirPath.empty())
+            //    m_loader.LoadSingleSEDLs(m_targetPaths.sedlDirPath);
 
-                if (!m_targetPaths.smdlDirPath.empty())
-                {
-                    m_loader.LoadSMDL(m_targetPaths.smdlDirPath);
-                    cout << "<*>- Loaded SMDL Dir!\n";
-                }
-                if (!m_targetPaths.swdlDirPath.empty())
-                {
-                    m_loader.LoadSWDL(m_targetPaths.smdlDirPath);
-                    cout << "<*>- Loaded SWDL Dir!\n";
-                }
-
-                //TODO: load the extra paths for ME and etc
-                //if (!m_targetPaths.sedlDirPath.empty())
-                //    m_loader.LoadSingleSEDLs(m_targetPaths.sedlDirPath);
-
-                //if (!m_targetPaths.pmd2MeDirPath.empty())
-                //{
-                //    m_pmd2MeLoader.LoadMasterBank(Poco::Path::transcode(Poco::Path(m_targetPaths.pmd2MeDirPath).setFileName("me").setExtension(DSE::SWDL_FileExtension).toString()));
-                //    m_pmd2MeLoader.LoadSingleSMDLs(m_targetPaths.pmd2MeDirPath);
-                //}
-
+            //if (!m_targetPaths.pmd2MeDirPath.empty())
+            //{
+            //    m_pmd2MeLoader.LoadMasterBank(Poco::Path::transcode(Poco::Path(m_targetPaths.pmd2MeDirPath).setFileName("me").setExtension(DSE::SWDL_FileExtension).toString()));
+            //    m_pmd2MeLoader.LoadSingleSMDLs(m_targetPaths.pmd2MeDirPath);
+            //}
         }
         return 0;
     }
@@ -1238,26 +1233,35 @@ namespace audioutil
             Poco::File curfile(path);
             if (curfile.isFile())
             {
+                const std::string fext = Poco::Path(path).getExtension();
                 //Handle single file operations
-                vector<uint8_t> fdata = utils::io::ReadFileToByteVector(path);
-                auto            cntty = filetypes::DetermineCntTy(fdata.begin(), fdata.end(), Poco::Path(path).getExtension());
-
-                if (cntty._type == static_cast<unsigned int>(filetypes::CnTy_MIDI))
-                    assert(false); //TODO: This should import a midi to the dse format more or less as-is.
+                if (fext == "xml")
+                {
+                    //A single xml file is usually a bank
+                    if(IsXMLPresetBank(path))
+                        m_loader.ImportBank(path);
+                    else
+                        throw std::runtime_error("Unknown XML file:\""s + path + "\""s);
+                }
+                else if (fext == "mid")
+                {
+                    //If we find some midi file, import them as sequences
+                    m_loader.ImportMusicSeq(path);
+                }
                 else
                     throw std::runtime_error("Unknown file type for path:\""s + path + "\""s);
             }
             else if (curfile.isDirectory())
             {
-                //If directory
-                Poco::DirectoryIterator dirit(curfile);
-                assert(false); //#TODO
-                // - check if directory contains midi files
-                // - Check if directory contains exported pmd2 data
-                // - Check if directory contains exported dse system files
-                // - Check if directory contains a single exported swdl bank
+                //Try to batch import everything in there
+                m_loader.ImportDirectory(path);
             }
         }
+
+        //Next convert into dse files what we loaded
+        const std::string outputswdl = m_targetPaths.swdlDirPath.empty() ? m_targetPaths.outpath : m_targetPaths.swdlDirPath;
+        const std::string outputsmdl = m_targetPaths.smdlDirPath.empty() ? m_targetPaths.outpath : m_targetPaths.smdlDirPath;
+        m_loader.ImportChangesToGame(outputswdl, outputsmdl);
         return 0;
     }
 
