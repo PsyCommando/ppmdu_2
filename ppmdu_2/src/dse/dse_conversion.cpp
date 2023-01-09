@@ -1434,7 +1434,7 @@ namespace DSE
         Poco::File        smplsdir(samplesdir);
 
         //Handle sound samples:
-        if (smplsdir.isDirectory() && smplsdir.exists())
+        if (smplsdir.exists() && smplsdir.isDirectory())
         {
             Poco::DirectoryIterator itdir(smplsdir);
             Poco::DirectoryIterator itdirend;
