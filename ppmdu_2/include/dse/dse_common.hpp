@@ -90,7 +90,7 @@ namespace DSE
     //
     enum struct eDSESmplFmt : uint16_t 
     {
-        invalid    = std::numeric_limits<int16_t>::max(),
+        invalid    = std::numeric_limits<std::underlying_type_t<eDSESmplFmt>>::max(),
         pcm8       = 0x000,
         pcm16      = 0x100,
         ima_adpcm4 = 0x200,
@@ -547,7 +547,7 @@ namespace DSE
         uint8_t  prgvol  = 0x7F;
         uint8_t  prgpan  = 0x40;
         uint8_t  unkpoly = 0;
-        uint8_t  unk4    = 0;
+        uint16_t unk4    = 0;
         uint8_t  padbyte = 0;
 
         std::vector<LFOTblEntry> m_lfotbl;
@@ -668,7 +668,7 @@ namespace DSE
         std::string get_original_file_name_no_ext()const
         {
             size_t befext = origfname.find_last_of('.');
-            if (befext != std::string::npos && (befext != 0)) //Don't remove if the filename starts with .
+            if ((befext != std::string::npos) && (befext != 0)) //Don't remove if the filename starts with .
                 return std::string(origfname.c_str(), origfname.c_str() + befext);
             return origfname;
         }
