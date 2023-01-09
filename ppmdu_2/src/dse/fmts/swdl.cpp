@@ -1067,6 +1067,13 @@ namespace DSE
             rx       = DefRX;
             return *this;
         }
+
+        void setPaddingByte(uint8_t padbyte)
+        {
+            unk16 = padbyte | padbyte << 8 | padbyte << 16 | padbyte << 24;
+            unk17 = padbyte | padbyte << 8;
+            unk24 = padbyte | padbyte << 8;
+        }
     };
 
 
@@ -1266,7 +1273,10 @@ namespace DSE
 
             m_splitstbl.reserve(m_hdr.nbsplits);
             for (const SplitEntry& split : prginf.m_splitstbl)
+            {
                 m_splitstbl.push_back(split);
+                m_splitstbl.back().setPaddingByte(m_hdr.padbyte); //Make sure our split have a matching padding byte (Not sure how important it is, but that's how it is in the originals)
+            }
             return *this;
         }
 
@@ -1291,7 +1301,10 @@ namespace DSE
 
             m_splitstbl.reserve(m_hdr.nbsplits);
             for (const SplitEntry& split : prginf.m_splitstbl)
+            {
                 m_splitstbl.push_back(split);
+                m_splitstbl.back().setPaddingByte(m_hdr.padbyte); //Make sure our split have a matching padding byte (Not sure how important it is, but that's how it is in the originals)
+            }
             return *this;
         }
 
@@ -1862,46 +1875,19 @@ namespace DSE
                 clog << "=== Parsing SWDL ===\n";
             ParseHeader();
             ParseMeta();
+            std::unique_ptr<ProgramBank> pinst;
+            std::unique_ptr<SampleBank>  psmpls;
 
             //Version check
             if( m_hdr.version == DseVerToInt(eDSEVersion::V415) )
             {
-                //Parse programs + keygroups
-                auto pinst = ParsePrograms<ProgramInfo_v415>();
-
-                //Parse pcmd + wavi
-                if( m_hdr.pcmdlen != 0 && (m_hdr.pcmdlen & 0xFFFF0000) != SWDL_PCMDSpecialSize )
-                {
-                    //Grab the info on every samples
-                    vector<SampleBank::SampleBlock> smpldat(ParseWaviChunk_v415());
-                    auto psmpls = ParseSamples(smpldat);
-
-                    if( utils::LibWide().isLogOn() )
-                        clog << "\n\n";
-
-                    return PresetBank( move(m_meta), move(pinst), move(psmpls) );
-                }
-                else
-                {
-                    if( utils::LibWide().isLogOn() )
-                        clog << "\n\n";
-
-                    return PresetBank( move(m_meta), move(pinst) );
-                }
+                pinst  = ParsePrograms<ProgramInfo_v415>();
+                psmpls = ParseSampleBank<WavInfo_v415>();
             }
             else if( m_hdr.version == DseVerToInt(eDSEVersion::V402) )
             {
-                auto pinst  = ParsePrograms<ProgramInfo_v402>();
-                //Grab the info on every samples
-                vector<SampleBank::SampleBlock> smpldat(ParseWaviChunk_v402());
-                auto psmpls = ParseSamples(smpldat);
-
-                if( utils::LibWide().isLogOn() )
-                    clog << "\n\n";
-
-                return std::move( PresetBank( move(m_meta), 
-                                  move(pinst), 
-                                  move(psmpls) ) );
+                pinst  = ParsePrograms<ProgramInfo_v402>();
+                psmpls = ParseSampleBank<WavInfo_v402>();
             }
             else
             {
@@ -1909,6 +1895,11 @@ namespace DSE
                 sstr << "SWDLParser::Parse() : Unsuported DSE version " << hex <<"0x" <<m_hdr.version;
                 throw runtime_error( sstr.str() );
             }
+
+            if (utils::LibWide().isLogOn())
+                clog << "\n\n";
+
+            return PresetBank(move(m_meta), move(pinst), move(psmpls));
         }
 
     private:
@@ -1979,9 +1970,9 @@ namespace DSE
 
                 if( prginfblk != 0 )
                 {
-                    _PrgInfoTy curblock;
+                    _PrgInfoTy curblock{};
                     curblock.ReadFromContainer( prginfblk + itprgi, m_itend );
-                    infslot.reset(new ProgramInfo(curblock.toProgramInfo()));
+                    infslot = std::make_unique<ProgramInfo>( std::forward<ProgramInfo>(curblock.toProgramInfo() ));
 
                     if( utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn() )
                         clog <<"Instrument ID#" <<infslot->id <<":\n" <<*infslot <<"\n";
@@ -1989,7 +1980,7 @@ namespace DSE
             }
             if( utils::LibWide().isLogOn() )
                 clog << endl;
-            return unique_ptr<ProgramBank>( new ProgramBank( move(prginf), move(kgrps) ) );
+            return make_unique<ProgramBank>(std::move(prginf), std::move(kgrps));
         }
 
         vector<KeyGroup> ParseKeygroups()
@@ -2047,8 +2038,22 @@ namespace DSE
             return keygroups;
         }
 
-        std::unique_ptr<SampleBank> ParseSamples( vector<SampleBank::SampleBlock> & smpldat )
+        template<class _WAVI_T> std::unique_ptr<SampleBank> ParseSampleBank()
         {
+            //Grab the info on every samples
+            SampleBank smplbnk;
+            ParseWaviChunk<_WAVI_T>(smplbnk);
+
+            //Grab samples from the pcmd chunk if they're in here
+            ParseSamples(smplbnk);
+            return std::make_unique<SampleBank>(std::move(smplbnk));
+        }
+
+        void ParseSamples(SampleBank& out_smplbnk)
+        {
+            if ((m_hdr.pcmdlen == 0) || (m_hdr.pcmdlen == SWDL_PCMDSpecialSize))
+                return; //We do not have a pcmd chunk if the size is 0, or the special size value.
+
             //Find the PCMD chunk
             auto itpcmd = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::pcmd );
             
@@ -2060,24 +2065,30 @@ namespace DSE
             itpcmd = pcmdhdr.ReadFromContainer( itpcmd, m_itend ); //Move iter after header
 
             //Grab the samples
-            for( size_t cntsmpl = 0; cntsmpl < smpldat.size(); ++cntsmpl )
+            for(sampleid_t cntsmpl = 0; cntsmpl < out_smplbnk.NbSlots(); ++cntsmpl)
             {
-                const auto & psinfo = smpldat[cntsmpl].pinfo_;
-                if( psinfo != nullptr )
-                {
-                    auto   itsmplbeg = itpcmd + psinfo->smplpos;
-                    size_t smpllen   = DSESampleLoopOffsetToBytes( psinfo->loopbeg + psinfo->looplen );
-                    smpldat[cntsmpl].pdata_.reset( new vector<uint8_t>( itsmplbeg, 
-                                                                        itsmplbeg + smpllen ) );
-                }
-            }
+                if (!out_smplbnk.IsInfoPresent(cntsmpl))
+                    continue;
+                const DSE::WavInfo& wavi      = *out_smplbnk.sampleInfo(cntsmpl);
+                auto                itsmplbeg = itpcmd + wavi.smplpos;
+                const size_t        smpllen   = DSESampleLoopOffsetToBytes(wavi.loopbeg + wavi.looplen);
 
-            return std::unique_ptr<SampleBank>( new SampleBank( move(smpldat) ) );
+                out_smplbnk.setSampleData(cntsmpl, vector<uint8_t>(itsmplbeg, itsmplbeg + smpllen) );
+            }
         }
 
-        vector<SampleBank::SampleBlock> ParseWaviChunk_v415()
+        //This probably could be done better. But specializing templates inside a parent class is sort of not really standard currently
+        template<class _WAVI_T> void ParseWaviChunk(SampleBank & out_smpls)
         {
-            auto itwavi = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::wavi );
+            if (std::is_same_v <_WAVI_T, WavInfo_v415>)
+                ParseWaviChunk_v415(out_smpls);
+            else if(std::is_same_v <_WAVI_T, WavInfo_v402>)
+                ParseWaviChunk_v402(out_smpls);
+        }
+
+        void ParseWaviChunk_v415(SampleBank& out_smpls)
+        {
+            auto itwavi = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::wavi ); //#FIXME:Might be a bit overkill to find the chunk this way
 
             if( itwavi == m_itend )
                 throw std::runtime_error("SWDLParser::ParseWaviChunk(): Couldn't find wavi chunk !!!!!");
@@ -2086,7 +2097,7 @@ namespace DSE
             itwavi = wavihdr.ReadFromContainer( itwavi, m_itend ); //Move iterator past the header
 
             //Create the vector with the nb of slots mentioned in the header
-            vector<SampleBank::SampleBlock> waviptrs( m_hdr.nbwavislots );
+            out_smpls.resize(std::max(out_smpls.NbSlots(), m_hdr.nbwavislots)); //Don't resize to a smaller than initial state just in case
 
             if( utils::LibWide().isLogOn() )
             {
@@ -2095,8 +2106,7 @@ namespace DSE
             }
             
             auto   itreadptr = itwavi; //Copy the iterator to keep one on the start of the wavi data
-            size_t cntslot   = 0; 
-            for( auto & ablock : waviptrs )
+            for(size_t cntslot = 0; cntslot < m_hdr.nbwavislots; ++cntslot)
             {
                 //Read a ptr
                 uint16_t smplinfoffset = utils::ReadIntFromBytes<uint16_t>(itreadptr, m_itend); //Iterator is incremented
@@ -2106,31 +2116,15 @@ namespace DSE
                     WavInfo_v415 winf;
                     winf.ReadFromContainer( smplinfoffset + itwavi, m_itend );
                     if( utils::LibWide().isLogOn() )
-                    {
-                        clog <<"\t* Sample #" <<cntslot <<", " <<winf.smplrate <<" Hz, ";
-                        if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::pcm8) )
-                            clog << "PCM8";
-                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::pcm16) )
-                            clog << "PCM16";
-                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm4) )
-                            clog << "IMA ADPCM4";
-                        else if( winf.smplfmt == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm3) )
-                            clog << "PSG?";
-                        else
-                            clog << "UNKNOWN FORMAT( 0x" <<hex <<winf.smplfmt <<dec << " )";
-                        clog << "\n";
-                    }
-                    ablock.pinfo_.reset( new WavInfo(winf) );
+                        clog <<"\t* Sample #" <<cntslot <<", " <<winf.smplrate <<" Hz, " << DseSmplFmtToString(static_cast<eDSESmplFmt>(winf.smplfmt)) << "\n";
+                    out_smpls.setSampleInfo(cntslot, std::move(winf) );
                 }
-                ++cntslot;
             }
-
-            return waviptrs;
         }
 
-        vector<SampleBank::SampleBlock> ParseWaviChunk_v402()
+        void ParseWaviChunk_v402(SampleBank& out_smpls)
         {
-            auto itwavi = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::wavi );
+            auto itwavi = DSE::FindNextChunk( m_itbeg, m_itend, eDSEChunks::wavi ); //#FIXME: Overkill to search the entire file for the chunk marker?
 
             if( itwavi == m_itend )
                 throw std::runtime_error("SWDLParser::ParseWaviChunk(): Couldn't find wavi chunk !!!!!");
@@ -2139,7 +2133,7 @@ namespace DSE
             itwavi = wavihdr.ReadFromContainer( itwavi, m_itend ); //Move iterator past the header
 
             //Create the vector with the nb of slots mentioned in the header
-            vector<SampleBank::SampleBlock> waviptrs( m_hdr.nbwavislots );
+            out_smpls.resize( m_hdr.nbwavislots );
 
             if( utils::LibWide().isLogOn() )
             {
@@ -2152,7 +2146,7 @@ namespace DSE
             //Calculate the length of an entry
             uint32_t entrylen = 0;
             uint32_t lastoffs = 0;
-            for( auto & ablock : waviptrs )
+            for(sampleid_t cntslot = 0; cntslot < m_hdr.nbwavislots; ++cntslot)
             {
                 //Read a ptr
                 uint16_t smplinfoffset = utils::ReadIntFromBytes<uint16_t>(itlenchk, m_itend); //Iterator is incremented
@@ -2171,8 +2165,7 @@ namespace DSE
             }
 
             auto   itreadptr = itwavi; //Copy the iterator to keep one on the start of the wavi data
-            size_t cntslot   = 0; 
-            for( auto & ablock : waviptrs )
+            for(sampleid_t cntslot = 0; cntslot < out_smpls.NbSlots(); ++cntslot)
             {
                 //Read a ptr
                 uint16_t smplinfoffset = utils::ReadIntFromBytes<uint16_t>(itreadptr, m_itend); //Iterator is incremented
@@ -2187,22 +2180,16 @@ namespace DSE
                         clog <<"\t* Sample #" <<cntslot <<", " <<winf.smplrate <<" Hz, ";
                         clog << DseSmplFmtToString(static_cast<eDSESmplFmt>(winf.smplfmt)) << "\n";
                     }
-                    ablock.pinfo_.reset( new WavInfo(winf) );
+                    out_smpls.setSampleInfo(cntslot, std::move(winf));
                 }
-                ++cntslot;
             }
-
-            return waviptrs;
         }
 
     private:
-        DSE_MetaDataSWDL             m_meta;
-        SWDL_HeaderData              m_hdr;
-
-        rd_iterator_t                m_itbeg;
-        rd_iterator_t                m_itend;
-
-        //const std::vector<uint8_t> & m_src;
+        DSE_MetaDataSWDL m_meta;
+        SWDL_HeaderData  m_hdr;
+        rd_iterator_t    m_itbeg;
+        rd_iterator_t    m_itend;
     };
 
 
@@ -2229,6 +2216,19 @@ namespace DSE
             :m_tgtcn(tgtcnt), m_src(srcbnk), m_pcmdflag(pcmdflag), m_padbyte(padbyte), m_version(dseVersion)
         {}
 
+        static constexpr size_t GetWaviEntrySize(eDSEVersion ver)
+        {
+            switch (ver)
+            {
+            case eDSEVersion::V402:
+                return WavInfo_v402::SzType2;
+            case eDSEVersion::V415:
+                return WavInfo_v415::Size;
+            }
+            assert(false);
+            return 0;
+        }
+
         void operator()()
         {
             streampos befswdl = m_tgtcn.tellp();
@@ -2251,9 +2251,19 @@ namespace DSE
             itout = std::fill_n( itout, GetDSEHeaderLen( m_version ), 0 );
 
             //Calculate and reserve Wavi chunk size
-            streampos beforewavi = m_tgtcn.tellp();
-            size_t    wavisz     = DSE::ChunkHeader::Size + CalculateWaviTableLenWithPadding( *ptrsbnk ) + 
-                                   (WavInfo_v402::SzType2 * ptrsbnk->NbSlots());
+            const size_t waviEntrySz   = GetWaviEntrySize(m_version);
+            streampos    beforewavi   = m_tgtcn.tellp();
+            const size_t waviTableLen = CalculateWaviTableLenWithPadding(*ptrsbnk);
+            size_t       wavisz       = DSE::ChunkHeader::Size + waviTableLen;
+            
+            //Add up non-empty wavi entries. Since those with a null pointer don't have an entry
+            for (sampleid_t cntsmpl = 0; cntsmpl < ptrsbnk->NbSlots(); ++cntsmpl)
+            {
+                if (ptrsbnk->IsInfoPresent(cntsmpl))
+                    wavisz += waviEntrySz;
+            }
+
+            //Fill up the expected area with 0 for when we come back later with the actual offsets
             itout = std::fill_n( itout, wavisz, 0 );
 
             //Write prgi chunk
@@ -2281,6 +2291,7 @@ namespace DSE
             //Write wavi chunk
             m_tgtcn.seekp(beforewavi);
             size_t wavilen = WriteWavi( sampleOffsets, *ptrsbnk );
+            assert((wavisz - DSE::ChunkHeader::Size) == wavilen);
 
             //Finish and write header
             streampos aftswdl = m_tgtcn.tellp();
@@ -2452,44 +2463,36 @@ namespace DSE
 
         size_t CalculateWaviTableLenWithPadding( const DSE::SampleBank & smplbank )
         {
-            return (smplbank.NbSlots() * 2) + ((smplbank.NbSlots() * 2) % 16);
+            const size_t len    = smplbank.NbSlots() * sizeof(uint16_t);
+            const size_t padlen = ((len % 16) > 0)? (16 - len % 16) : 0;
+            return len + padlen;
         }
 
 
         size_t WriteWavi( const std::vector<uint32_t> & sampleoffsets, const DSE::SampleBank & smplbank )
         {
-            //auto ptrsbnk = m_src.smplbank().lock();
-            //if( ptrsbnk == nullptr )
-            //    throw runtime_error("SWDL_Writer::WriteWavi() : SWDL has no sample info or data!");
+            streampos befhdr = m_tgtcn.tellp();
+            streampos beftbl = befhdr + static_cast<streampos>(DSE::ChunkHeader::Size);
+            writeit_t itout(m_tgtcn);
+            const size_t nbwavislots = smplbank.NbSlots();
+            const size_t wavitbllen = nbwavislots * sizeof(uint16_t);
 
-            streampos   befhdr = m_tgtcn.tellp();
-            writeit_t   itout(m_tgtcn);
-            //ChunkHeader wavihdr;
+            //Place table padding, and place the stream cursor to the start of the wavi entries data
+            streampos beftablepadding = beftbl + static_cast<streampos>(wavitbllen);
+            m_tgtcn.seekp(beftablepadding);
+            utils::AppendPaddingBytes(itout, static_cast<uint32_t>(m_tgtcn.tellp()), 16, m_padbyte);
 
-            //Reserve chunk header
-            std::fill_n( itout, ChunkHeader::Size, 0 );
-            
-            //Reserve Table
-            streampos beftbl = m_tgtcn.tellp();
-            std::fill_n( itout, CalculateWaviTableLenWithPadding(smplbank), 0 );
-
-            //std::fill_n( itout, smplbank.NbSlots() * 2, 0 ); //Each slots is 16 bits
-            //
-            ////Place table padding 
-            //int padlen =  (m_tgtcn.tellp() % 16);
-            //if( padlen != 0 )
-            //    std::fill_n( itout, padlen, m_padbyte );
-
-            //Write down wavi entries, and add them to the table!
-            const size_t nbslots = smplbank.NbSlots();
-            for( size_t i = 0; i < nbslots; ++i )
+            //Write down wavi entries, and then seek to the wavi offset table and add a pointer for each
+            for( size_t i = 0; i < nbwavislots; ++i )
             {
                 const WavInfo * ptrentry = smplbank.sampleInfo(i);
                 if( ptrentry != nullptr)
                     WriteWaviEntry( *ptrentry, itout, beftbl, i, sampleoffsets[i] );
             }
 
-            //Go back to the beginning and write header!
+            //No padding needed after the wavi entries, since their length are multiple of 16
+
+            //Go back to the beginning of the wavi chunk and write header!
             streamoff endchunk = m_tgtcn.tellp();
             size_t    chunklen = static_cast<size_t>((m_tgtcn.tellp() - beftbl));
             m_tgtcn.seekp(befhdr);
@@ -2497,11 +2500,6 @@ namespace DSE
             WriteChunkHeader( itout, 
                               static_cast<uint32_t>(eDSEChunks::wavi), 
                               chunklen );
-            //wavihdr.label  = static_cast<uint32_t>(eDSEChunks::wavi);
-            //wavihdr.datlen = chunklen;
-            //wavihdr.param1 = SWDL_ChunksDefParam1;
-            //wavihdr.param2 = SWDL_ChunksDefParam2;
-            //wavihdr.WriteToContainer(itout);
 
             //Seek to end of wavi chunk
             m_tgtcn.seekp(endchunk);
@@ -2509,7 +2507,7 @@ namespace DSE
             return chunklen;
         }
 
-        void WriteWaviEntry( DSE::WavInfo wavientry, writeit_t & itout, std::streampos beftbl, size_t entryindex, size_t pcmdsmploffset )
+        void WriteWaviEntry(DSE::WavInfo wavientry, writeit_t & itout, std::streampos beftbl, size_t entryindex, size_t pcmdsmploffset )
         {
             streampos entryoffset = m_tgtcn.tellp();
             wavientry.smplpos = pcmdsmploffset; //Set the pcmd chunk relative sample offset
@@ -2527,14 +2525,13 @@ namespace DSE
                 itout = vdwavinf.WriteToContainer(itout);
             }
 
-
             streampos afterentry = m_tgtcn.tellp();
             int offfromtbl = (entryoffset - beftbl);
             if( offfromtbl > std::numeric_limits<uint16_t>::max() )
                 throw overflow_error("SWDL_Writer::WriteWavi(): Couldn't add offset to table. Offset overflows a int16!");
                     
             //Seek back to the pointer table, to write the offset
-            std::streampos offsetptr = beftbl + std::streampos(entryindex * 2);
+            std::streampos offsetptr = beftbl + std::streampos(entryindex * sizeof(uint16_t));
             m_tgtcn.seekp(offsetptr);
             utils::WriteIntToBytes( static_cast<uint16_t>(offfromtbl), itout );
 
@@ -2549,19 +2546,16 @@ namespace DSE
                 return;
             const auto & prgbnk = ptrpresbnk->PrgmInfo();
 
-            streampos befprgi = m_tgtcn.tellp();
+            const streampos befprgi = m_tgtcn.tellp();
             //Reserve header
             std::fill_n( itout, ChunkHeader::Size, 0 );
-            streampos begtbl = m_tgtcn.tellp();
 
             //Reserve pointer table
-            streampos beftbl = m_tgtcn.tellp();
-            std::fill_n( itout, prgbnk.size() * 2, 0 ); //Each slots is 16 bits
+            const streampos beftbl = m_tgtcn.tellp();
+            std::fill_n( itout, prgbnk.size() * sizeof(uint16_t), 0); //Each slots is 16 bits
             
             //Place table padding 
-            int padlen =  (m_tgtcn.tellp() % 16);
-            if( padlen != 0 )
-                std::fill_n( itout, padlen, m_padbyte );
+            utils::AppendPaddingBytes(itout, static_cast<uint32_t>(m_tgtcn.tellp()), 16, m_padbyte);
 
             //Write Entries
             for( size_t i = 0; i < prgbnk.size(); ++i )
@@ -2571,26 +2565,19 @@ namespace DSE
                     WritePrgiEntry( itout, *ptrentry, beftbl, i );
             }
 
-            streampos endprgi = m_tgtcn.tellp();
+            const streampos endprgi = m_tgtcn.tellp();
             m_tgtcn.seekp(befprgi);
 
             //Write header
             WriteChunkHeader( itout, 
                               static_cast<uint32_t>(eDSEChunks::prgi), 
-                              static_cast<std::streamoff>(endprgi));
-            //ChunkHeader hdr;
-            //hdr.label  = static_cast<uint32_t>(eDSEChunks::prgi);
-            //hdr.param1 = SWDL_ChunksDefParam1;
-            //hdr.param2 = SWDL_ChunksDefParam2;
-            //hdr.datlen = endprgi.seekpos();
-            //hdr.WriteToContainer(itout);
+                              static_cast<std::streamoff>(endprgi - beftbl));
             m_tgtcn.seekp(endprgi);
         }
 
         void WritePrgiEntry( writeit_t & itout, const DSE::ProgramInfo & entry, streampos beftbl, size_t entryindex )
         {
-            streampos befentry = m_tgtcn.tellp();
-
+            const streampos befentry = m_tgtcn.tellp();
             if( m_version == eDSEVersion::V415 )
             {
                 ProgramInfo_v415 prginf = entry;
@@ -2600,21 +2587,19 @@ namespace DSE
             {
                 itout = static_cast<ProgramInfo_v402>(entry).WriteToContainer(itout);
             }
+            const streampos afterentry = m_tgtcn.tellp();
 
-
-            //entry.WriteToContainer( itout );
-
-            long long offsbegtbl = static_cast<std::streamoff>(befentry) - static_cast<std::streamoff>(beftbl);
+            //Calc the pointer from the start of the pointer table
+            std::streamoff offsbegtbl = befentry - beftbl;
             if( offsbegtbl > std::numeric_limits<uint16_t>::max() )
                 throw overflow_error("SWDL_Writer::WritePrgiEntry(): Couldn't add offset of entry#" + to_string(entryindex) + " to table. Offset overflows a int16!");
 
             //Go write pointer in the table
-            streampos afentry = m_tgtcn.tellp();
-            m_tgtcn.seekp(static_cast<std::streamoff>(beftbl) + offsbegtbl);
-            utils::WriteIntToBytes( static_cast<uint16_t>(offsbegtbl), itout );
+            m_tgtcn.seekp(beftbl + std::streampos(entryindex * sizeof(uint16_t)) );
+            itout = utils::WriteIntToBytes( static_cast<uint16_t>(offsbegtbl), itout );
 
-            //Seek back to end
-            m_tgtcn.seekp(afentry);
+            //Seek back to end of entry
+            m_tgtcn.seekp(afterentry);
         }
 
         //Return pcm data length
@@ -2636,29 +2621,28 @@ namespace DSE
                 if( ptrdata != nullptr )
                 {
                     streampos befsmpl = m_tgtcn.tellp();
-                    sampleoffsets[i]  = static_cast<uint32_t>(befsmpl); //Store sample offset!
+                    assert((befsmpl % 4) == 0); //We're always aligned on 4 bytes
+                    sampleoffsets[i]  = static_cast<uint32_t>(befsmpl - begdata); //Store sample offset from start of pcmd chunk!
                     itout = std::copy( ptrdata->begin(), ptrdata->end(), itout );
                 }
             }
+            const streampos afterdata = m_tgtcn.tellp();
+
+            //Add padding
+            utils::AppendPaddingBytes(itout, static_cast<uint32_t>(afterdata), 16, m_padbyte);
+            const streampos afterpadding = m_tgtcn.tellp();
 
             //Seek to beginning and write the header!
-            //ChunkHeader hdr;
-            streampos   afterdata = m_tgtcn.tellp();
             m_tgtcn.seekp(befhdr);
             
             WriteChunkHeader( itout, 
                               static_cast<uint32_t>(eDSEChunks::pcmd), 
-                              static_cast<uint32_t>(afterdata) );
-            //hdr.label  = static_cast<uint32_t>(eDSEChunks::pcmd);
-            //hdr.param1 = SWDL_ChunksDefParam1;
-            //hdr.param2 = SWDL_ChunksDefParam2;
-            //hdr.datlen = static_cast<uint32_t>(afterdata.seekpos());
-            //itout = hdr.WriteToContainer(itout);
+                              static_cast<uint32_t>(afterdata - begdata) );
 
             //Seek back to end
-            m_tgtcn.seekp(afterdata);
+            m_tgtcn.seekp(afterpadding);
 
-            return static_cast<streamoff>(afterdata);
+            return static_cast<streamoff>(afterdata - begdata);
         }
 
         void WriteKgrp( writeit_t & itout )
@@ -2671,17 +2655,17 @@ namespace DSE
             //Reserve header
             streampos befhdr = m_tgtcn.tellp();
             std::fill_n( itout, ChunkHeader::Size, 0 );
+            streampos afterhdr = m_tgtcn.tellp();
 
             //Write keygroups
-            for( const auto & akgrp : kgrplist )
+            for(const KeyGroup & akgrp : kgrplist)
                 akgrp.WriteToContainer(itout);
 
-            uint32_t chunklen = static_cast<uint32_t>(m_tgtcn.tellp());
+            //Chunk length excludes padding
+            uint32_t chunklen = static_cast<uint32_t>((m_tgtcn.tellp() - afterhdr));
 
-            //Add padding
-            int padlen =  (m_tgtcn.tellp() % 16);
-            if( padlen != 0 )
-                std::fill_n( itout, padlen, m_padbyte );
+            //Add padding. Usually, the padding after a keygroup entry is apparently garbage bytes??
+            utils::AppendPaddingBytes(itout, static_cast<uint32_t>(m_tgtcn.tellp()), 16, m_padbyte);
 
             //Write header
             streampos aftkgrps = m_tgtcn.tellp();
@@ -2692,12 +2676,6 @@ namespace DSE
 
         void WriteEod( writeit_t & itout )
         {
-            //ChunkHeader eodhdr;
-            //eodhdr.label  = static_cast<uint32_t>(eDSEChunks::eod);
-            //eodhdr.datlen = 0;
-            //eodhdr.param1 = SWDL_ChunksDefParam1;
-            //eodhdr.param2 = SWDL_ChunksDefParam2;
-            //eodhdr.WriteToContainer(itout);
             WriteChunkHeader( itout, 
                               static_cast<uint32_t>(eDSEChunks::eod), 
                               0 );
@@ -2705,11 +2683,6 @@ namespace DSE
 
         void BuildSampleOffsetsNoPCMDChnk( std::vector<uint32_t> & smploffsets, const DSE::SampleBank & smplbank )
         {
-            //auto ptrnbk = m_src.smplbank().lock();
-
-            //if( ptrnbk == nullptr )
-            //    std::runtime_error( "SWDL_Writer::BuildSampleOffsetsNoPCMDChnk() : Sample bank is null!" );
-
             size_t currentoffset = 0; //We add up the size of each samples in there
 
             //Add up each valid samples
