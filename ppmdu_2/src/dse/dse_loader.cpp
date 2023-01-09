@@ -478,20 +478,38 @@ namespace DSE
             Poco::DirectoryIterator itdir(pathdir);
             Poco::DirectoryIterator itend;
 
-            for (; itdir != itend; ++itdir)
+            cout << "Scanning directory \"" << pathdir << "\"...\n";
+            try
             {
-                const std::string fpath = Poco::Path::transcode(itdir.path().absolute().toString());
-                if (itdir->isFile())
+                size_t filecount = 0;
+                for (; itdir != itend; ++itdir, ++filecount);
+                itdir = Poco::DirectoryIterator(pathdir);
+
+                size_t cnt = 0;
+                for (; itdir != itend; ++itdir)
                 {
-                    
-                    //Tell if its a set of sequence or a bank
-                    if (itdir.path().getExtension() == "xml" && IsXMLPresetBank(fpath))
-                        ImportBank(fpath);
-                    else if (itdir.path().getExtension() == "mid")
-                        ImportMusicSeq(fpath);
+                    const std::string fpath = Poco::Path::transcode(itdir.path().absolute().toString());
+                    if (itdir->isFile())
+                    {
+
+                        //Tell if its a set of sequence or a bank
+                        if (itdir.path().getExtension() == "xml" && IsXMLPresetBank(fpath))
+                            ImportBank(fpath);
+                        else if (itdir.path().getExtension() == "mid")
+                            ImportMusicSeq(fpath);
+                    }
+                    else if (itdir->isDirectory() && IsSESequenceXmlDir(fpath))
+                        ImportSoundEffectSeq(fpath);
+
+                    ++cnt;
+                    const std::string& fname = itdir.name();
+                    cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << filecount << "] - " <<left << setw(32) << ((fname.size() > 32)? fname.substr(0, 32) : fname);
                 }
-                else if (itdir->isDirectory() && IsSESequenceXmlDir(fpath))
-                    ImportSoundEffectSeq(fpath);
+                cout << "\n";
+            }
+            catch (...)
+            {
+                std::throw_with_nested(std::runtime_error("Error importing file " + Poco::Path::transcode(itdir.path().toString())));
             }
         }
 
@@ -507,11 +525,7 @@ namespace DSE
         DSE::MusicSequence& ImportMusicSeq(const std::string& midipath)
         {
             DSE::MusicSequence seq = MidiToSequence(midipath);
-
-            //#TODO: generate the name to use when importing the sequence back into the game.
-
-            auto res = m_mseqs.insert(std::make_pair(seq.metadata().get_original_file_name_no_ext(), std::forward<DSE::MusicSequence>(seq)));
-            return (res.first)->second;
+            return (m_mseqs[seq.metadata().get_original_file_name_no_ext()] = std::move(seq));
         }
 
         DSE::SoundEffectSequences& ImportSoundEffectSeq(const std::string& seqdir)
