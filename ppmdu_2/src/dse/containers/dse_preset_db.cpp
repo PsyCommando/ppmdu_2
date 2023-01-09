@@ -19,6 +19,7 @@ namespace DSE
         }
 
         //Keep some references to banks that contain samples, and banks that contain programs
+        try
         {
             auto smplbnk = bnk.smplbank().lock();
             if (smplbnk)
@@ -47,6 +48,10 @@ namespace DSE
                     }
                 }
             }
+        }
+        catch (const std::exception&)
+        {
+            std::throw_with_nested(std::runtime_error( "Error adding bank \"" + bnk.metadata().fname + "\"."));
         }
 
         auto result = m_banks.emplace(myid, std::forward<DSE::PresetBank>(bnk));

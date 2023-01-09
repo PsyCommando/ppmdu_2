@@ -1489,7 +1489,9 @@ namespace DSE
                             psmplinfo->smplfmt = eDSESmplFmt::pcm16;
                         }
                     }
-                    
+                    else
+                        assert(false);
+
                 }
                 else if (ext == SupportedImportSound_Adpcm)
                 {
@@ -1501,6 +1503,8 @@ namespace DSE
                         //psmplinfo->looplen = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
                     }
                 }
+                else
+                    assert(false);
             }
         }
 

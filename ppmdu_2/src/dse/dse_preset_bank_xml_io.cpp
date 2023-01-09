@@ -666,7 +666,7 @@ private:
 
         if (ptrwavs == nullptr)
         {
-            clog << "PresetBankXMLWriter::WriteWavInfo(): No Sample Data";
+            clog << "PresetBankXMLWriter::WriteWavInfo(): No Sample Info to write.";
             return;
         }
 
@@ -719,7 +719,14 @@ private:
     */
     void PresetBankToXML( const DSE::PresetBank & srcbnk, const std::string& bnkxmlfile)
     {
-        PresetBankXMLWriter(srcbnk).Write(bnkxmlfile);
+        try
+        {
+            PresetBankXMLWriter(srcbnk).Write(bnkxmlfile);
+        }
+        catch (...)
+        {
+            std::throw_with_nested(std::runtime_error("Error while writing preset bank xml file: " + bnkxmlfile));
+        }
     }
 
     /*
@@ -728,7 +735,14 @@ private:
     */
     DSE::PresetBank XMLToPresetBank(const std::string& bnkxmlfile)
     {
-        return PresetBankXMLParser(bnkxmlfile).Parse();
+        try
+        {
+            return PresetBankXMLParser(bnkxmlfile).Parse();
+        }
+        catch (...)
+        {
+            std::throw_with_nested(std::runtime_error("Error while parsing preset bank xml file: " + bnkxmlfile));
+        }
     }
 
     bool IsXMLPresetBank(const std::string& xmlfilepath)

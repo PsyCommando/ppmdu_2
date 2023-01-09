@@ -2234,7 +2234,7 @@ namespace DSE
             auto                       ptrsbnk = m_src.smplbank().lock();
             bool                       hassmpldata  = false;
             if( ptrsbnk == nullptr )
-                throw runtime_error("SWDL_Writer::WritePCMD() : SWDL has no sample info or data!");
+                throw runtime_error("SWDL_Writer::WritePCMD() : SWDL has no sample info or data! To be valid, a SWDL must have at least sample info for samples it's using from another bank.");
 
             hassmpldata = !std::all_of( ptrsbnk->begin(), 
                                         ptrsbnk->end(), 
@@ -2513,20 +2513,12 @@ namespace DSE
             if( m_version == eDSEVersion::V415 )
             {
                 WavInfo_v415 vdwavinf = wavientry;
-
-                //Fill in missing data
-                assert(false);
-
                 //write
                 itout = vdwavinf.WriteToContainer(itout);
             }
             else if( m_version == eDSEVersion::V402 )
             {
                 WavInfo_v402 vdwavinf( wavientry);
-
-                //Fill in missing data
-                assert(false);
-
                 //write
                 itout = vdwavinf.WriteToContainer(itout);
             }
@@ -2597,23 +2589,12 @@ namespace DSE
 
             if( m_version == eDSEVersion::V415 )
             {
-                ProgramInfo_v415 prginf(entry);
-
-                //!#TODO: Fill in missing data
-                assert(false);
-
-                //write
+                ProgramInfo_v415 prginf = entry;
                 itout = prginf.WriteToContainer(itout);
             }
             else if( m_version == eDSEVersion::V402 )
             {
-                ProgramInfo_v402 prginf(entry);
-
-                //!#TODO: Fill in missing data
-                assert(false);
-
-                //write
-                itout = prginf.WriteToContainer(itout);
+                itout = static_cast<ProgramInfo_v402>(entry).WriteToContainer(itout);
             }
 
 
@@ -2843,7 +2824,14 @@ namespace DSE
         if( !outf.is_open() || outf.bad() )
             throw std::runtime_error( "WriteSMDL(): Couldn't open output file " + filename );
 
-        SWDL_Writer<std::ofstream>(outf, audiodata)();
+        try
+        {
+            SWDL_Writer<std::ofstream>(outf, audiodata)();
+        }
+        catch (...)
+        {
+            std::throw_with_nested(std::runtime_error("Error while writing swdl file : " + filename));
+        }
     }
 
 };
