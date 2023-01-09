@@ -352,14 +352,7 @@ namespace utils
     template<class _outit> 
         _outit WriteStrToByteContainer( _outit itwhere, const std::string & str )
     {
-        //if( str.empty() )
-        //{
-        //    (*itwhere) = '\0';
-        //    ++itwhere;
-        //    return itwhere;
-        //}
-        //else
-            return WriteStrToByteContainer( itwhere, str.c_str(), str.size()+1 );
+        return WriteStrToByteContainer( itwhere, str.c_str(), str.size()+1 );
     }
 
     /*

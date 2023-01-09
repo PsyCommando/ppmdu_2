@@ -448,8 +448,14 @@ namespace DSE
                                             std::end(DSESmplFmtData), 
                                             [&]( const DSESmplFmtInfo & info )->bool{ return info.fmt == winf.smplfmt; } );
 
-            if( itfoundfmt == std::end(DSESmplFmtData) )
-                throw runtime_error("WaveInfo_v415::operator=() : Unknown sample format..");
+            if (itfoundfmt != std::end(DSESmplFmtData))
+            {
+                unk9 = itfoundfmt->unk9;
+                smplblk = itfoundfmt->smplblk;
+                bitdepth = itfoundfmt->bitdepth;
+                bps1 = itfoundfmt->bps;
+                bps2 = itfoundfmt->bps;
+            }
 
             unk1       = DefUnk1;
             id         = winf.id;
@@ -466,14 +472,12 @@ namespace DSE
             version    = static_cast<uint16_t>(eDSEVersion::V415);
             //Sample Info
             smplfmt    = static_cast<uint16_t>(winf.smplfmt);
-            unk9       = itfoundfmt->unk9; 
+
             smplloop   = winf.smplloop; 
             unk10      = DefUnk10;
-            smplblk    = itfoundfmt->smplblk;
+
             unk11      = 0;
-            bitdepth   = itfoundfmt->bitdepth;
-            bps1       = itfoundfmt->bps;
-            bps2       = itfoundfmt->bps;
+
             unk13      = 0;
             smplrate   = winf.smplrate;
             smplpos    = winf.smplpos;

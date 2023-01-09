@@ -148,6 +148,17 @@ namespace DSE
         bool                                IsInfoPresent(sampleid_t index)const { return sampleInfo(index) != nullptr; }
         bool                                IsDataPresent(sampleid_t index)const { return sample(index) != nullptr; }
 
+        //Check if any sample entry has sample data
+        bool hasAnySampleData()const 
+        {
+            for (const SampleBlock& smpl : m_SampleData)
+            {
+                if (smpl.pdata_)
+                    return true;
+            }
+            return false;
+        }
+
         inline DSE::SampleBank::SampleBlock* sampleBlock(sampleid_t index)
         {
             if (m_SampleData.size() > index)
@@ -216,8 +227,9 @@ namespace DSE
             return m_SampleData[index].pinfo_.get();
         }
 
-        inline std::vector<uint8_t>* operator[](sampleid_t index) { return sample(index); }
+        inline std::vector<uint8_t>*       operator[](sampleid_t index) { return sample(index); }
         inline const std::vector<uint8_t>* operator[](sampleid_t index)const { return sample(index); }
+        inline void resize(size_t newsize) { m_SampleData.resize(newsize); }
 
     private:
 

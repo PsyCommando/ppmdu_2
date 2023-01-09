@@ -1455,6 +1455,10 @@ namespace DSE
             {
                 WavInfo * psmplinfo = samplebank->sampleInfo(entry.first);
 
+                //We must have sample info here, because we're adding info on the sample format below
+                if (!psmplinfo)
+                    psmplinfo = samplebank->setSampleInfo(entry.first, DSE::WavInfo());
+
                 string ext = entry.second.getExtension();
                 if (ext == SupportedImportSound_Wav)
                 {
@@ -1467,27 +1471,19 @@ namespace DSE
                         auto samples = fl.GetSamples().front(); //Always one channel only
 
                         //#TODO: Check wtf is going on here?
-                        for (auto & asample : samples)
+                        for (auto& asample : samples)
                             asample ^= 0x80; //Since we did this on export, do it on import too. Flip the first bit, to turn from 2's complement to offset binary(excess-K).
 
                         samplebank->setSampleData(entry.first, std::move(samples));
-                        if (psmplinfo)
-                        {
-                            psmplinfo->smplfmt = eDSESmplFmt::pcm8;
-                            //psmplinfo->loopbeg /= 2;
-                            //psmplinfo->looplen /= 2;
-                        }
+                        psmplinfo->smplfmt = eDSESmplFmt::pcm8;
                     }
-                    else if(fmt.bitspersample_ == 16)
+                    else if (fmt.bitspersample_ == 16)
                     {
                         wave::PCM16sWaveFile fl;
                         fl.ReadWave(fdat.begin(), fdat.end());
                         auto samples = fl.GetSamples().front(); //Always one channel only
                         samplebank->setSampleData(entry.first, utils::PCM16VecToRawBytes(&samples));
-                        if (psmplinfo)
-                        {
-                            psmplinfo->smplfmt = eDSESmplFmt::pcm16;
-                        }
+                        psmplinfo->smplfmt = eDSESmplFmt::pcm16;
                     }
                     else
                         assert(false);
@@ -1496,12 +1492,7 @@ namespace DSE
                 else if (ext == SupportedImportSound_Adpcm)
                 {
                     samplebank->setSampleData(entry.first, audio::ReadADPCMDump(entry.second.toString()));
-                    if (psmplinfo)
-                    {
-                        psmplinfo->smplfmt = eDSESmplFmt::ima_adpcm4;
-                        //psmplinfo->loopbeg = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
-                        //psmplinfo->looplen = (psmplinfo->loopbeg / 4) - ::audio::IMA_ADPCM_PreambleLen;
-                    }
+                    psmplinfo->smplfmt = eDSESmplFmt::ima_adpcm4;
                 }
                 else
                     assert(false);
@@ -1518,7 +1509,7 @@ namespace DSE
         if (!samplesonly)
             PresetBankToXML(bnk, bnkxmlfile);
         
-        if (smplptr == nullptr)
+        if (smplptr == nullptr || !smplptr->hasAnySampleData())
         {
             clog << "\tNo samples to export!\n";
             return;

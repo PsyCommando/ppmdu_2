@@ -102,7 +102,7 @@ namespace DSE
         const string PROP_SmplUnk6     = "Unk6"s;
         const string PROP_SmplUnk7     = "Unk7"s;
         const string PROP_SmplUnk59    = "Unk59"s;
-        //const string PROP_SmplFmt = "SampleFormat"s;
+        const string PROP_SmplFmt      = "SampleFormat"s;
         const string PROP_SmplUnk9     = "Unk9"s;
         const string PROP_SmplLoop     = "LoopOn"s;
         const string PROP_SmplUnk10    = "Unk10"s;
@@ -428,7 +428,7 @@ private:
             const string nodename(node.name());
             const string value = node.text().get();
 
-            if(nodename == PROP_FTune)
+            if (nodename == PROP_FTune)
                 utils::parseHexaValToValue(value, wavinf->ftune);
             else if (nodename == PROP_CTune)
                 utils::parseHexaValToValue(value, wavinf->ctune);
@@ -444,7 +444,8 @@ private:
                 utils::parseValToValue(value, wavinf->smplloop);
             else if (nodename == PROP_SmplRate)
                 utils::parseValToValue(value, wavinf->smplrate);
-
+            else if (nodename == PROP_SmplFmt)
+                wavinf->smplfmt = static_cast<eDSESmplFmt>(utils::parseHexaValToValue<std::underlying_type_t<eDSESmplFmt>>(value));
             else if (nodename == NODE_Loop)
             {
                 utils::parseValToValue(node.attribute(ATTR_On.c_str()).value(), wavinf->smplloop);
@@ -689,6 +690,7 @@ private:
         WriteNodeWithValue(infonode, PROP_Volume, winfo.vol);
         WriteNodeWithValue(infonode, PROP_Pan, winfo.pan);
         WriteCommentNode( infonode, "Tuning Data" );
+        WriteNodeWithValue( infonode, PROP_SmplFmt,     static_cast<std::underlying_type_t<eDSESmplFmt>>(winfo.smplfmt));
         WriteNodeWithValue( infonode, PROP_FTune,       winfo.ftune );
         WriteNodeWithValue( infonode, PROP_CTune,       winfo.ctune );
         WriteNodeWithValue( infonode, PROP_RootKey,     winfo.rootkey );
