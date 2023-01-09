@@ -72,7 +72,7 @@ namespace DSE
         uint8_t  minute          = 0;
         uint8_t  second          = 0;
         uint8_t  centisec        = 0;
-        std::array<char,FNameLen> fname;
+        std::array<char, FNameLen> fname{0xFFi8};
 
         //Common 
         uint16_t nbwavislots     = 0;
@@ -128,7 +128,7 @@ namespace DSE
         uint8_t  second          = 0;
         uint8_t  centisec        = 0;
 
-        std::array<char,FNameLen> fname;
+        std::array<char, FNameLen> fname{0};
 
         uint32_t unk10           = 0;
         uint32_t unk11           = 0;
@@ -257,7 +257,7 @@ namespace DSE
             //smddat.unk17           = ;
 
             //v402 only
-            smddat.nbkeygroups     = nbkeygroups;   
+            smddat.nbkeygroups     = nbkeygroups;
             return std::move(smddat);
         }
     };
@@ -298,7 +298,7 @@ namespace DSE
         uint8_t  second          = 0;
         uint8_t  centisec        = 0;
 
-        std::array<char,FNameLen> fname;
+        std::array<char, FNameLen> fname{0xFFi8};
         uint32_t unk10           = 0;
         uint32_t unk11           = 0;
 

@@ -67,7 +67,7 @@ namespace DSE
         uint8_t  second          = 0;
         uint8_t  centisec        = 0;
 
-        std::array<char, FNameLen> fname{0};
+        std::array<char, FNameLen> fname{0xFFi8};
 
         uint32_t unk5            = 0;
         uint32_t unk6            = 0;
