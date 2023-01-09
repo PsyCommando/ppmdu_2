@@ -380,6 +380,13 @@ namespace DSE
             size_t cnt = 0;
             size_t longestname = 0;
 
+            Poco::File outdir(outswdlpath);
+            if (!outdir.exists())
+            {
+                cout << "Creating output directory \"" << outswdlpath <<"\"...\n";
+                outdir.createDirectories();
+            }
+
             {
                 cout << "Importing Program Banks...\n";
                 const size_t nbbanks = m_bankdb.size();
@@ -404,6 +411,13 @@ namespace DSE
             if (outsmdlpath.empty())
                 return;
 
+            outdir = Poco::File(outsmdlpath);
+            if (!outdir.exists())
+            {
+                cout << "Creating output directory \"" << outsmdlpath << "\"...\n";
+                outdir.createDirectories();
+            }
+
             {
                 cout << "Importing Sequences...\n";
                 cnt = 0;
@@ -427,6 +441,13 @@ namespace DSE
 
             if (outsedlpath.empty())
                 return;
+
+            outdir = Poco::File(outsedlpath);
+            if (!outdir.exists())
+            {
+                cout << "Creating output directory \"" << outsedlpath << "\"...\n";
+                outdir.createDirectories();
+            }
             
             {
                 cout << "Importing Sound Effect Sequences...\n";
