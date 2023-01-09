@@ -998,113 +998,11 @@ namespace audioutil
                 ExecuteExport(m_targetPaths, m_seqExportFmt, m_smplsExportFmt);
                 break;
             };
-
-            //switch(m_operationMode)
-            //{
-            //    //case eOpMode::ExportSWDLBank:
-            //    //{
-            //    //    cout << "=== Exporting SWD Bank ===\n";
-            //    //    returnval = ExportSWDLBank();
-            //    //    break;
-            //    //}
-            //    case eOpMode::ExportSWDL:
-            //    {
-            //        cout << "=== Exporting SWD ===\n";
-            //        returnval = ExportSWDL();
-            //        break;
-            //    }
-            //    case eOpMode::ExportSMDL:
-            //    {
-            //        cout << "=== Exporting SMD ===\n";
-            //        returnval = ExportSMDL();
-            //        break;
-            //    }
-            //    case eOpMode::ExportSEDL:
-            //    {
-            //        cout << "=== Exporting SED ===\n";
-            //        returnval = ExportSEDL();
-            //        break;
-            //    }
-            //    case eOpMode::ExportPMD2:
-            //    {
-            //        cout <<"=== Exporting PMD2 /SOUND Directory ===\n"
-            //             <<"Friendly friends~\n";
-            //        returnval = ExportPMD2Audio();
-            //        break;
-            //    }
-            //    case eOpMode::BuildSWDL:
-            //    {
-            //        cout << "=== Building SWD ===\n";
-            //        returnval = BuildSWDL();
-            //        break;
-            //    }
-            //    case eOpMode::BuildSMDL:
-            //    {
-            //        cout << "=== Building SMD ===\n";
-            //        returnval = BuildSMDL();
-            //        break;
-            //    }
-            //    case eOpMode::BuildSEDL:
-            //    {
-            //        cout << "=== Building SED ===\n";
-            //        returnval = BuildSEDL();
-            //        break;
-            //    }
-            //    case eOpMode::ExportBatchPairsAndBank:
-            //    {
-            //        cout <<"=== Exporting Batch SMDL + SWDL + Main Bank ! ===\n";
-            //        returnval = ExportBatchPairsAndBank();
-            //        break;
-            //    }
-            //    case eOpMode::ExportBatchPairs:
-            //    {
-            //        cout <<"=== Exporting Batch SMDL + SWDL ! ===\n";
-            //        returnval = ExportBatchPairs();
-            //        break;
-            //    }
-            //    case eOpMode::ExportBatchSWDL:
-            //    {
-            //        cout <<"=== Exporting Batch SWDL ! ===\n";
-            //        returnval = ExportBatchSWDL();
-            //        break;
-            //    }
-            //    case eOpMode::ExportBatchSMDL:
-            //    {
-            //        cout <<"=== Exporting Batch SMDL ! ===\n";
-            //        returnval = ExportBatchSMDL();
-            //        break;
-            //    }
-            //    case eOpMode::BatchListSWDLPrgm:
-            //    {
-            //        cout <<"=== Batch Writing List of Presets + Samples Contained in SWDL ! ===\n";
-            //        returnval = BatchListSWDLPrgm( m_swdlpath );
-            //        break;
-            //    }
-            //    case eOpMode::ListSWDLPrgm:
-            //    {
-            //        cout <<"=== Writing List of Presets + Samples Contained in SWDL ! ===\n";
-            //        returnval = BatchListSWDLPrgm( m_inputPath );
-            //        break;
-            //    }
-            //    case eOpMode::MakeCvInfo:
-            //    {
-            //        cout <<"=== Writing a Populated CvInfo XML File ! ===\n";
-            //        returnval = MakeCvinfo();
-            //        break;
-            //    }
-            //    default:
-            //    {
-            //        throw runtime_error( "Invalid operation mode. Something is wrong with the arguments!" );
-            //    }
-            //};
         }
-        catch(Poco::Exception & e )
+        catch(const exception &e)
         {
-            cerr <<"\n" << "<!>- POCO Exception - " <<e.name() <<"(" <<e.code() <<") : " << e.message() <<"\n" <<endl;
-        }
-        catch( exception &e )
-        {
-            cerr <<"\n" << "<!>- Exception - " <<e.what() <<"\n" <<"\n";
+            cerr << "\n<!>- ";
+            utils::PrintNestedExceptions(cerr, e);
         }
         return returnval;
     }
