@@ -142,8 +142,12 @@ namespace riff
                 fmtid_ = utils::ReadIntFromBytes<decltype(fmtid_)>(itbeg, itchnkend, false);
 
                 //Read all sub-chunks
-                while( itbeg != itchnkend )
-                    itbeg = Read( itbeg, itchnkend );
+                while (itbeg != itchnkend)
+                {
+                    Chunk achunk;
+                    itbeg = achunk.Read(itbeg, itchnkend);
+                    subchunks_.push_back(std::move(achunk));
+                }
             }
             else
             {

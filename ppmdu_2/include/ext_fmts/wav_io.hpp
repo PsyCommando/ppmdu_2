@@ -242,11 +242,15 @@ namespace wave
             throw std::runtime_error("GetWaveFormatInfo(): Error, the container specified is not a valid WAVE file. RIFF header is invalid!");
 
         //Read format tag
-        uint32_t fmttag = utils::ReadIntFromBytes<uint32_t>( itwavbeg, itwavend, false ); //Iterator incremented!
+        uint32_t WAVEtag = utils::ReadIntFromBytes<uint32_t>( itwavbeg, itwavend, false ); //Iterator incremented!
+        uint32_t fmttag  = utils::ReadIntFromBytes<uint32_t>(itwavbeg, itwavend, false); //Iterator incremented!
 
-        if( fmttag != WAVE_FormatTag )
-            throw std::runtime_error("GetWaveFormatInfo(): Error, the container specified is not a valid WAVE file! Missing WAVE format tag after the header!");
+        if(WAVEtag != WAVE_FormatTag )
+            throw std::runtime_error("GetWaveFormatInfo(): Error, the container specified is not a valid WAVE file! Missing 'WAVE' tag after the header!");
+        if(fmttag != FMT_ChunkTag)
+            throw std::runtime_error("GetWaveFormatInfo(): Error, the container specified is not a valid WAVE file! Missing 'fmt' tag after the 'WAVE' tag!");
 
+        std::advance(itwavbeg, sizeof(uint32_t)); //Skip the fmt chunk's length
         WAVE_fmt_chunk fmtchunk;
         itwavbeg = fmtchunk.Read( itwavbeg, itwavend);
         return fmtchunk; 
@@ -334,6 +338,7 @@ namespace wave
     public:
         typedef _WaveTrait                 trait_t;
         typedef typename trait_t::sample_t sample_t;
+        static_assert(trait_t::BitDepth > 0);
 
         WaveFile( uint32_t samplerate = 44100 )
             :m_samplerate(samplerate)
