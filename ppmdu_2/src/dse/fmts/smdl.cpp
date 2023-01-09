@@ -552,7 +552,8 @@ namespace DSE
                 songchnk.unk4    = SongChunk_v402::DefUnk4;
                 songchnk.unk5    = SongChunk_v402::DefUnk5;
                 songchnk.nbtrks  = static_cast<uint8_t>(m_src.getNbTracks());
-                songchnk.nbchans = static_cast<uint8_t>(existingchan.size());
+                auto highestchan = std::max_element(existingchan.begin(), existingchan.end());
+                songchnk.nbchans = (*highestchan + 1);
                 songchnk.unk6    = SongChunk_v402::DefUnk6;
                 songchnk.unk7    = SongChunk_v402::DefUnk7;
                 songchnk.mainvol = m_src.metadata().mainvol;
@@ -569,7 +570,8 @@ namespace DSE
                 songchnk.unk4    = SongChunk_v415::DefUnk4;
                 songchnk.unk5    = SongChunk_v415::DefUnk5;
                 songchnk.nbtrks  = static_cast<uint8_t>(m_src.getNbTracks());
-                songchnk.nbchans = static_cast<uint8_t>(existingchan.size());
+                auto highestchan = std::max_element(existingchan.begin(), existingchan.end());
+                songchnk.nbchans = *highestchan + 1;
                 songchnk.unk6    = SongChunk_v415::DefUnk6;
                 songchnk.unk7    = SongChunk_v415::DefUnk7;
                 songchnk.unk8    = SongChunk_v415::DefUnk8;
