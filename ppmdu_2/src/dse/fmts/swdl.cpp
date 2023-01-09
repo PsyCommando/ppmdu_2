@@ -217,7 +217,7 @@ namespace DSE
         static const uint32_t DefUnk13 = 0;
         static const uint8_t  DefUnk19 = 1;
         static const uint8_t  DefUnk20 = 3;
-        static const uint16_t DefUnk21 = 0x03FF;
+        static const uint16_t DefUnk21 = 0xFF03;
         static const uint16_t DefUnk22 = 0xFFFF;
         static const uint8_t  DefUnk57 = 0xFF;
 
@@ -513,7 +513,7 @@ namespace DSE
         static const uint8_t  DefUnk5  = 2;
         static const uint8_t  DefUnk19 = 1;
         static const uint8_t  DefUnk20 = 3;
-        static const uint16_t DefUnk21 = 0x03FF;
+        static const uint16_t DefUnk21 = 0xFF03;
         static const uint16_t DefUnk22 = 0xFFFF;
         static const uint8_t  DefUnk57 = 0xFF;
 
