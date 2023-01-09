@@ -97,37 +97,9 @@ namespace DSE
         ima_adpcm3 = 0x300,
     };
 
-    inline eDSESmplFmt IntToDSESmplFmt( uint16_t val )
-    {
-        if( val == static_cast<uint16_t>(eDSESmplFmt::pcm8) )
-            return eDSESmplFmt::pcm8;
-        else if( val == static_cast<uint16_t>(eDSESmplFmt::pcm16) )
-            return eDSESmplFmt::pcm16;
-        else if( val == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm4) )
-            return eDSESmplFmt::ima_adpcm4;
-        else if( val == static_cast<uint16_t>(eDSESmplFmt::ima_adpcm3) )
-            return eDSESmplFmt::ima_adpcm3;
-        else
-            return eDSESmplFmt::invalid;
-    }
+    eDSESmplFmt IntToDSESmplFmt(std::underlying_type_t<eDSESmplFmt> val);
 
-    inline std::string DseSmplFmtToString(eDSESmplFmt fmt)
-    {
-        switch (fmt)
-        {
-        case eDSESmplFmt::pcm8:
-            return "PCM8";
-        case eDSESmplFmt::pcm16:
-            return "PCM16";
-        case eDSESmplFmt::ima_adpcm4:
-            return "IMA ADPCM4";
-        case eDSESmplFmt::ima_adpcm3:
-            return "IMA ADPCM3";
-        };
-        std::array<char, 48> tmpchr{0};
-        snprintf(tmpchr.data(), tmpchr.size(), "Invalid (0x%x)", static_cast<uint16_t>(fmt));
-        return { tmpchr.data() };
-    }
+    std::string DseSmplFmtToString(eDSESmplFmt fmt);
 
     // -------------------------------
     // ------- DSE Version IDs -------

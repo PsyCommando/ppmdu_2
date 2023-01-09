@@ -10,6 +10,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <utility>
 using namespace std;
 using namespace pugi;
 using namespace pugixmlutils;
@@ -117,6 +118,39 @@ namespace DSE
     //    return static_cast<uint32_t>(id);
     //}
 
+    eDSESmplFmt IntToDSESmplFmt(std::underlying_type_t<eDSESmplFmt> val)
+    {
+        using underlying_t = std::underlying_type_t<eDSESmplFmt>;
+        if (val == static_cast<underlying_t>(eDSESmplFmt::pcm8))
+            return eDSESmplFmt::pcm8;
+        else if (val == static_cast<underlying_t>(eDSESmplFmt::pcm16))
+            return eDSESmplFmt::pcm16;
+        else if (val == static_cast<underlying_t>(eDSESmplFmt::ima_adpcm4))
+            return eDSESmplFmt::ima_adpcm4;
+        else if (val == static_cast<underlying_t>(eDSESmplFmt::ima_adpcm3))
+            return eDSESmplFmt::ima_adpcm3;
+        else
+            return eDSESmplFmt::invalid;
+    }
+
+    std::string DseSmplFmtToString(eDSESmplFmt fmt)
+    {
+        switch (fmt)
+        {
+        case eDSESmplFmt::pcm8:
+            return "PCM8";
+        case eDSESmplFmt::pcm16:
+            return "PCM16";
+        case eDSESmplFmt::ima_adpcm4:
+            return "IMA ADPCM4";
+        case eDSESmplFmt::ima_adpcm3:
+            return "IMA ADPCM3";
+        };
+        std::array<char, 48> tmpchr{ 0 };
+        snprintf(tmpchr.data(), tmpchr.size(), "Invalid (0x%x)", static_cast<std::underlying_type_t<eDSESmplFmt>>(fmt));
+        return { tmpchr.data() };
+    }
+
 //=================================================================================================
 //  DurationLookupTable stuff
 //=================================================================================================
@@ -124,23 +158,10 @@ namespace DSE
     int32_t DSEEnveloppeDurationToMSec( int8_t param, int8_t multiplier )
     { 
         param = utils::Clamp( abs(param), 0, 127 ); //Table indices go from 0 to 127
-#if 1
         if( multiplier == 0 )
             return (Duration_Lookup_Table_NullMulti[labs(param)]);
         else
             return (Duration_Lookup_Table[labs(param)] * multiplier);
-#elif 0
-        //The value from the table is multiplied by 1,000
-        static const uint32_t UnitSwitch  = 1000;
-        //..then divided by 10,000, to give us a tick quantity
-        static const uint32_t UnitDivisor = 10000;
-
-        //The 20 below looks like a magic number, but that's because it is ^^;
-        if( multiplier == 0 )
-            return( (Duration_Lookup_Table_NullMulti[param] * UnitSwitch) / UnitDivisor ) * 20;//25; 
-        else
-            return( ( (Duration_Lookup_Table[param] * multiplier) * UnitSwitch) / UnitDivisor ) * 20;//25; 
-#endif
     }
 
 //
