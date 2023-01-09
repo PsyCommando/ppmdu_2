@@ -351,6 +351,7 @@ namespace DSE
         static const uint8_t  DefPoly  = 0xFF;
         static const uint8_t  DefPrio  = 0x08;
         static const uint8_t  DefVcHi  = 0xF;
+        static const uint8_t  DEF_IGNORED = 0xAA; //Value of all bytes when the keygroup is ignored/filler
         static uint32_t size() {return SIZE;}
 
         uint16_t id       = 0;
@@ -360,6 +361,28 @@ namespace DSE
         uint8_t  vchigh   = 0;
         uint8_t  unk50    = 0;
         uint8_t  unk51    = 0;
+
+        bool isFiller()const
+        {
+            return (id == (DEF_IGNORED | (DEF_IGNORED << 8))) &&
+                poly == DEF_IGNORED &&
+                priority == DEF_IGNORED &&
+                vclow == DEF_IGNORED &&
+                vchigh == DEF_IGNORED &&
+                unk50 == DEF_IGNORED &&
+                unk51 == DEF_IGNORED;
+        }
+
+        void makeFiller()
+        {
+            id       = DEF_IGNORED | (DEF_IGNORED << 8);
+            poly     = DEF_IGNORED;
+            priority = DEF_IGNORED;
+            vclow    = DEF_IGNORED;
+            vchigh   = DEF_IGNORED;
+            unk50    = DEF_IGNORED;
+            unk51    = DEF_IGNORED;
+        }
 
         template<class _outit>
             _outit WriteToContainer( _outit itwriteto )const
