@@ -725,13 +725,19 @@ namespace DSE
             jdksmidi::MIDITrack& outtrack)
         {
             using namespace jdksmidi;
+            //Write it as json
             stringstream evmark;
-            evmark << TXT_DSE_Event << "_Chan:0x" << hex << uppercase << trkno
-                << "_ID:0x" << static_cast<unsigned short>(ev.evcode) << nouppercase;
+            evmark << "{\"" << TXT_DSE_Event <<"\": 1, \"chan\": " <<dec << static_cast<unsigned short>(trkno)
+                << ", \"id\": " << static_cast<unsigned short>(ev.evcode) <<", \"params\": [ ";
 
             //Then Write any parameters
-            for (const auto& param : ev.params)
-                evmark << ", 0x" << hex << uppercase << static_cast<unsigned short>(param) << nouppercase;
+            for (size_t i = 0; i < ev.params.size(); ++i)
+            {
+                evmark << static_cast<unsigned short>(ev.params[i]);
+                if (i < (ev.params.size() - 1) )
+                    evmark << ", ";
+            }
+            evmark << " ]}";
 
             const string mark = evmark.str();
             outtrack.PutTextEvent(state.ticks_, META_MARKER_TEXT, mark.c_str(), mark.size());

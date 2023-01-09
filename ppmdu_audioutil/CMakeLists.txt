@@ -170,16 +170,16 @@ include_directories(audioutil
 
 find_package(pugixml CONFIG REQUIRED)
 find_package(Poco REQUIRED Foundation)
+find_package(Poco REQUIRED JSON)
 find_package(Poco REQUIRED Util)
 
-#include_directories("../${ppmdu_2_DEPS_DIRNAME}/jdksmidi/include")
-#target_link_libraries(audioutil ppmdu jdksmidi whereami pugixml Poco::Foundation Poco::Util)
 target_link_libraries(audioutil 
     whereami 
     jdksmidi 
     pugixml 
     Poco::Foundation 
     Poco::Util
+    Poco::JSON
 )
 
 

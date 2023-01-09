@@ -1,6 +1,8 @@
 #include <dse/dse_interpreter.hpp>
 #include <dse/dse_to_xml.hpp>
 
+#include <utils/parse_utils.hpp>
+
 #include <jdksmidi/world.h>
 #include <jdksmidi/track.h>
 #include <jdksmidi/multitrack.h>
@@ -11,6 +13,7 @@
 
 #include <Poco/Path.h>
 #include <Poco/File.h>
+#include <Poco/JSON/Parser.h>
 
 #include <stack>
 
@@ -35,6 +38,10 @@ namespace DSE
     class MIDIToDSE
     {
         typedef unsigned long long ticks_t;
+        MusicSequence                   m_seqOut;
+        std::unique_ptr<MIDIMultiTrack> m_miditrks;
+        std::map<uint8_t, MusicTrack>   m_dsetracks;
+        std::map<uint8_t, TrkState>     m_dsetrkstates;
     public:
 
         /*
@@ -55,6 +62,10 @@ namespace DSE
         MusicSequence operator()(MusicSequence&& startseq)
         {
             using namespace jdksmidi;
+            m_seqOut = startseq;
+            m_miditrks.reset(new MIDIMultiTrack);
+            m_dsetracks.clear();
+            m_dsetrkstates.clear();
 
             if (utils::LibWide().isLogOn())
             {
@@ -66,10 +77,8 @@ namespace DSE
 
             //#1 - Load the MIDI
             MIDIFileReadStreamFile rs(m_srcpath.c_str());
-            MIDIMultiTrack         tracks;
-            MIDIFileReadMultiTrack track_loader(&tracks);
+            MIDIFileReadMultiTrack track_loader(m_miditrks.get());
             MIDIFileRead           reader(&rs, &track_loader);
-            MusicSequence          seq(startseq);
 
             if (!reader.Parse()) //Apparently handling errors with exceptions is too much to ask to jdksmidi :P
                 throw runtime_error("JDKSMIDI: File parsing failed. Reason not specified..");
@@ -78,101 +87,92 @@ namespace DSE
             {
                 clog << "MIDI loaded! :\n"
                     << "\t" << m_srcpath << "\n"
-                    << "\t\t" << "NbTracks : " << tracks.GetNumTracksWithEvents() << "\n"
-                    << "\t\t" << "NbEvents : " << tracks.GetNumEvents() << "\n"
+                    << "\t\t" << "NbTracks : " << m_miditrks->GetNumTracksWithEvents() << "\n"
+                    << "\t\t" << "NbEvents : " << m_miditrks->GetNumEvents() << "\n"
                     << "\n";
                 ;
             }
 
             //#2 - Convert the MIDI to a sequence
-            if(seq.metadata().fname.empty())
-                seq.metadata().fname = utils::GetBaseNameOnly(m_srcpath);
-            if(seq.metadata().origfname.empty())
-                seq.metadata().origfname = Poco::Path::transcode(Poco::Path(seq.metadata().fname).setExtension("smd").toString()); //#TODO: Maybe try grabbing the original fname from the midi's metadata or something?
-            seq.metadata().createtime.SetTimeToNow();
+            if(m_seqOut.metadata().fname.empty())
+                m_seqOut.metadata().fname = utils::GetBaseNameOnly(m_srcpath);
+            if(m_seqOut.metadata().origfname.empty())
+                m_seqOut.metadata().origfname = Poco::Path::transcode(Poco::Path(m_seqOut.metadata().fname).setExtension("smd").toString()); //#TODO: Maybe try grabbing the original fname from the midi's metadata or something?
+            m_seqOut.metadata().createtime.SetTimeToNow();
 
-            ConvertMIDI(seq, tracks);
-            return seq;
+            ConvertMIDI();
+            m_miditrks.release();
+            return std::move(m_seqOut);
         }
 
     private:
         /****************************************************************************************
         ****************************************************************************************/
-        void ConvertMIDI(MusicSequence & seq, const jdksmidi::MIDIMultiTrack& midi)
+        void ConvertMIDI()
         {
             using namespace jdksmidi;
-            map<uint8_t,MusicTrack> tracks;
+            
 
             //Determine if multi-tracks
-            const bool ismultitrk = midi.GetNumTracksWithEvents() > 1;
+            const bool ismultitrk = m_miditrks->GetNumTracksWithEvents() > 1;
 
             if (ismultitrk)
                 throw std::runtime_error("Input midi is multi-track format, which is unsupported!");
-           
 
             //If single track, use the MIDI channel for each events to place them onto a specific track
-            ConvertFromSingleTrackMidi(tracks, midi, seq.metadata());
+            ConvertFromSingleTrackMidi();
 
             //Convert our track map into a track vector
             std::vector<MusicTrack> passedtrk;
             passedtrk.reserve(NB_DSETracks);
             uint8_t cntchan = 0;
-            for (auto& entry : tracks)
+            for (auto& entry : m_dsetracks)
             {
                 entry.second.SetMidiChannel(cntchan++);
                 if (((size_t)entry.first + 1) > passedtrk.size())
                     passedtrk.resize((size_t)entry.first + 1);
                 passedtrk[entry.first] = std::move(entry.second);
             }
-            seq.setTracks(std::move(passedtrk));
-        }
-
-        /****************************************************************************************
-            ConvertFromMultiTracksMidi
-        ****************************************************************************************/
-        void ConvertFromMultiTracksMidi(vector<MusicTrack>& tracks,
-            const jdksmidi::MIDIMultiTrack& midi,
-            DSE::DSE_MetaDataSMDL& dseMeta)
-        {
-            using namespace jdksmidi;
-            cerr << "Not implemented!\n";
-            assert(false);
+            m_seqOut.setTracks(std::move(passedtrk));
         }
 
         /****************************************************************************************
             ConvertFromSingleTrackMidi
         ****************************************************************************************/
-        void ConvertFromSingleTrackMidi(map<uint8_t,MusicTrack>& tracks, const jdksmidi::MIDIMultiTrack& midi, DSE::DSE_MetaDataSMDL& dseMeta)
+        void ConvertFromSingleTrackMidi()
         {
             using namespace jdksmidi;
-            if (midi.GetTrack(0) == nullptr)
+            const MIDITrack* mtrack = m_miditrks->GetTrack(0);
+            if (mtrack == nullptr)
                 throw std::runtime_error("ConvertFromSingleTrackMidi(): JDKSMIDI: jdksmidi returned a null track ! wtf..");
 
             //Maintain a global tick count
-            ticks_t              ticks = 0;
-            const MIDITrack& mtrack = *(midi.GetTrack(0));
-            const int            nbev = mtrack.GetNumEvents();
-            map<uint8_t, TrkState> trkstates;
-            //vector<TrkState>     trkstates;
-            //trkstates.reserve(NB_DSETracks);//Pre-emptively pre-alloc all midi channels
+            ticks_t                ticks = 0;
+            const int              nbev = mtrack->GetNumEvents();
 
             //Iterate through events
             for (int cntev = 0; cntev < nbev; ++cntev)
             {
-                const MIDITimedBigMessage* ptrev = mtrack.GetEvent(cntev);
+                const MIDITimedBigMessage* ptrev = mtrack->GetEvent(cntev);
                 if (ptrev == nullptr)
                     continue;
 
-                if (ptrev->IsEndOfTrack())
-                    HandleEoT(*ptrev, trkstates, tracks, ticks);
-                else if (ptrev->IsMetaEvent())
-                    HandleUnsupportedEvents(*ptrev, trkstates, tracks, dseMeta, ticks);
-                else if (ptrev->IsTempo())
-                    HandleSetTempo(*ptrev, trkstates, tracks, ticks); //Tempo can only go on track 0
-                else
-                    HandleSingleTrackEvent(*ptrev, tracks[ptrev->GetChannel()], trkstates[ptrev->GetChannel()], ticks);
+                try
+                {
+                    HandleSingleTrackEvent(*ptrev, ticks);
+                }
+                catch (...)
+                {
+                    std::string txtbuff;
+                    txtbuff.resize(256); //The MsgToText function requires a buffer of 64 characters. Because its really dumb..
+                    ptrev->MsgToText(&txtbuff.front());
+                    stringstream sstr;
+                    sstr << "Error parsing midi message at " << std::to_string(ptrev->GetTime()) << "midi clk, channel #" << (int)(ptrev->GetChannel()) << ", (0x"
+                        << uppercase << hex << setw(2) << setfill('0') << std::to_string((int)(ptrev->GetByte1())) << ", 0x" << setw(2) << std::to_string((int)(ptrev->GetByte2())) << "): "
+                        << txtbuff;
+                    std::throw_with_nested(std::runtime_error(sstr.str()));
+                }
             }
-
         }
 
         /****************************************************************************************
@@ -181,21 +181,25 @@ namespace DSE
             Its used to properly pad events with silences if required, and properly
             calculate the delta time of each events on each separate tracks.
         ****************************************************************************************/
-        void HandleSingleTrackEvent(const jdksmidi::MIDITimedBigMessage& mev,
-            MusicTrack& trk,
-            TrkState& state,
-            ticks_t& globalticks)
+        void HandleSingleTrackEvent(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
         {
-            ticks_t trktickdiff = (globalticks - state.ticks_); //The difference in ticks between the track's last tick and the current global tick
-            ticks_t evtglobaltick = mev.GetTime(); //The global absolute tick of the event
+            ticks_t     evtglobaltick = mev.GetTime(); //The global absolute tick of the event
+            unsigned char channel = (!mev.IsSystemExclusive() && !mev.IsMetaEvent())? mev.GetChannel() : 0; //Meta and sysex don't really have a channel
+            TrkState& curstate = m_dsetrkstates[channel];
+            MusicTrack& curtrk = m_dsetracks[channel];
 
             //Insert a pause if needed
-            ticks_t delta = (evtglobaltick - state.ticks_);
+            ticks_t delta = (evtglobaltick >= curstate.ticks_)? (evtglobaltick - curstate.ticks_) : 0; //If the event time is 0, we wanna avoid overflows
             if (delta != 0)
-                HandlePauses(mev, state, trk, globalticks, delta);
+                HandlePauses(mev, curstate, curtrk, globalticks, delta);
 
-            //After the delay was handled, deal with the event
-            HandleEvent(mev, state, trk, globalticks);
+            //After the pause was handled, deal with the event
+            if (mev.IsSystemExclusive())
+                HandleSysExEvents(mev, globalticks);
+            else if (mev.IsMetaEvent())
+                HandleMetaEvents(mev, globalticks);
+            else
+                HandleEvent(mev, curstate, curtrk, globalticks);
         }
 
 
@@ -363,7 +367,7 @@ namespace DSE
                 HandleNoteOn(mev, state, trk);
             else if (mev.IsNoteOff())
                 HandleNoteOff(mev, state, trk);
-            else if (!mev.IsEndOfTrack())
+            else
             {
                 std::string txtbuff;
                 txtbuff.resize(64); //The MsgToText function requires a buffer of 64 characters. Because its really dumb..
@@ -373,9 +377,7 @@ namespace DSE
 
         /****************************************************************************************
         ****************************************************************************************/
-        void HandleNoteOn(const jdksmidi::MIDITimedBigMessage& mev,
-            TrkState& state,
-            MusicTrack& trk)
+        void HandleNoteOn(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
         {
             NoteOnData noteoninf;
             uint8_t      vel = mev.GetVelocity();
@@ -403,9 +405,7 @@ namespace DSE
 
         /****************************************************************************************
         ****************************************************************************************/
-        void HandleNoteOff(const jdksmidi::MIDITimedBigMessage& mev,
-            TrkState& state,
-            MusicTrack& trk)
+        void HandleNoteOff(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
         {
             //Ignore orphanned notes off events
             if (!state.noteson_.empty())
@@ -444,103 +444,145 @@ namespace DSE
 
         }
 
+        void HandleSysExEvents(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
+        {
+            //using namespace jdksmidi;
+            //const MIDISystemExclusive * sysex = mev.GetSysEx();
+            //assert(false);
+        }
+
+        void HandleMetaEvents(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
+        {
+            using namespace jdksmidi;
+            switch (mev.GetMetaType())
+            {
+            case META_MARKER_TEXT:
+                HandleUnsupportedEvents(mev, globalticks);
+                break;
+
+            case META_TRACK_LOOP:
+                HandleLoopPoint(mev, globalticks);
+                break;
+
+            case META_END_OF_TRACK:
+                HandleEoT(mev, globalticks);
+                break;
+
+            case META_TEMPO:
+                HandleSetTempo(mev, globalticks);
+                break;
+
+            case META_CHANNEL_PREFIX:
+                assert(false); //#TODO: Implement channel prefix messages. (Makes a bunch of messages have their channel set without specifying on each events)
+                break;
+
+            case META_TIMESIG: //#TODO: This changes the midi tick rate
+            //The following are meaningless to us
+            case META_SEQUENCE_NUMBER:
+            case META_GENERIC_TEXT:
+            case META_COPYRIGHT:
+            case META_TRACK_NAME:
+            case META_INSTRUMENT_NAME:
+            case META_LYRIC_TEXT:
+            case META_CUE_POINT:
+            case META_PROGRAM_NAME:
+            case META_DEVICE_NAME:
+            case META_GENERIC_TEXT_A:
+            case META_GENERIC_TEXT_B:
+            case META_GENERIC_TEXT_C:
+            case META_GENERIC_TEXT_D:
+            case META_GENERIC_TEXT_E:
+            case META_GENERIC_TEXT_F:
+            case META_OUTPUT_CABLE:
+            case META_SMPTE:
+            case META_KEYSIG:
+            case META_SEQUENCER_SPECIFIC:
+            default:
+                {
+                    std::string buf;
+                    buf.resize(128);
+                    mev.MsgToText(&(buf.front()));
+                    clog <<mev.GetTime() <<" unsupported midi event " << buf;
+                    break;
+                }
+            };
+        }
 
         /****************************************************************************************
             HandleUnsupportedEvents
                 Handles parsing MIDI text events for obtaining the DSE event stored in them.
         *****************************************************************************************/
-        void HandleUnsupportedEvents(const jdksmidi::MIDITimedBigMessage& mev,
-            map<uint8_t, TrkState>& states,
-            map<uint8_t, MusicTrack>& trks,
-            DSE_MetaDataSMDL& dsemeta,
-            ticks_t& globalticks)
+        void HandleUnsupportedEvents(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
         {
             using namespace jdksmidi;
+            using namespace Poco::JSON;
+            using Poco::Dynamic::Var;
 
             //If its a marker text meta-event, with a sysex, we try parsing what's inside for possible text DSE events
-            if (mev.GetMetaType() == META_MARKER_TEXT && mev.GetSysEx() != nullptr && mev.GetSysEx()->GetLength() > 0)
+            if (mev.GetMetaType() != META_MARKER_TEXT || mev.GetSysEx() == nullptr || mev.GetSysEx()->GetLength() <= 0)
+                return;
+
+            //First, copy the text data from the event's sysex
+            const MIDISystemExclusive& txtdat = *(mev.GetSysEx());
+            string                      evtxt;
+            copy_n(txtdat.GetBuf(), txtdat.GetLength(), back_inserter(evtxt));
+
+            //Try to see if its a DSE event in text form. If it is, parse it!
+            size_t found = evtxt.find(TXT_DSE_Event);
+            if (found == string::npos)
+                return;
+
+            //Parse the event's JSON
+            Object::Ptr jsonobj = Parser().parse(evtxt).extract<Object::Ptr>();
+            if (!jsonobj || !jsonobj->has(TXT_DSE_Event) || !jsonobj->has("id"))
+                return;
+            uint8_t    evid = static_cast<uint8_t>(jsonobj->getValue<unsigned int>("id"));
+            uint8_t    evchan = jsonobj->has("chan")? static_cast<uint8_t>(jsonobj->getValue<unsigned int>("chan")) : 0xFFui8;
+            Array::Ptr args   = jsonobj->getArray("params");
+            
+            DSE::TrkEvent dsev;
+            dsev.evcode = evid;
+            if (args)
             {
-                //First, copy the text data from the event's sysex
-                const MIDISystemExclusive& txtdat = *(mev.GetSysEx());
-                string                      evtxt;
-                auto                        itins = back_inserter(evtxt);
-                copy_n(txtdat.GetBuf(), txtdat.GetLength(), itins);
-
-                //Try to see if its a DSE event in text form. If it is, parse it!
-                auto found = evtxt.find(TXT_DSE_Event);
-                if (found != string::npos)
+                for (Var entry : *args)
                 {
-                    //Find all values in the text string
-                    vector<uint8_t> values;
-                    auto            itstrend = end(evtxt);
-                    for (auto itstr = begin(evtxt); itstr != itstrend; ++itstr)
-                    {
-                        auto itnext = (itstr + 1);
-                        if ((*itstr) == '0' && itnext != itstrend && (*itnext) == 'x')
-                        {
-                            uint32_t     value = 0;
-                            stringstream sstrparse(string(itstr, itstrend));
-                            sstrparse >> hex >> value;
-                            values.push_back(value);
-                        }
-                    }
-
-                    //If we found at least 2 values, interpret them
-                    if (values.size() >= 2)
-                    {
-                        static const unsigned int ParamBegPos = 2; //The index at which params begin
-                        DSE::TrkEvent dsev;
-                        uint8_t       evchan = values.at(0); //Event channel
-                        dsev.evcode = values.at(1); //Event id
-
-                        //Validate channel id
-                        if (evchan >= NB_DSETracks)
-                        {
-                            clog << "<!>- Ignored text DSE event because channel/track specified was invalid!! (" << static_cast<uint16_t>(evchan) << ") :\n"
-                                << "\t" << evtxt << "\n";
-                            return;
-                        }
-
-                        //Copy parameters
-                        for (size_t i = ParamBegPos; i < values.size(); ++i)
-                            dsev.params.push_back(values[i]);
-
-                        //Insert parsed event
-                        trks.at(evchan).push_back(dsev);
-                    }
-                    else
-                    {
-                        clog << "<!>- Ignored text DSE event because it was lacking a channel ID or/and even ID!! :\n"
-                            << "\t" << evtxt << "\n";
-                    }
+                    if (!entry.isInteger())
+                        throw std::runtime_error("Encountered a bad arg type while parsing a DSE event. Event string: \"" + evtxt + "\"");
+                    dsev.params.push_back(entry.convert<uint8_t>());
                 }
             }
+
+            //Validate channel id
+            if (evchan >= NB_DSETracks)
+            {
+                clog << "<!>- Ignored text DSE event because channel/track specified was invalid!! (" << static_cast<uint16_t>(evchan) << ") :\n"
+                    << "\t" << evtxt << "\n";
+                return;
+            }
+
+            //Insert parsed event
+            m_dsetracks[evchan].push_back(dsev);
         }
 
         /****************************************************************************************
             HandleEoT
                 Inserts the end of track marker.
         ****************************************************************************************/
-        void HandleEoT(const jdksmidi::MIDITimedBigMessage& mev,
-            map<uint8_t, TrkState>& states,
-            map<uint8_t, MusicTrack>& trks,
-            ticks_t& globalticks)
+        void HandleEoT(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
         {
-
-            for (size_t cnttrk = 0; cnttrk < trks.size(); ++cnttrk)
+            for (size_t cnttrk = 0; cnttrk < m_dsetracks.size(); ++cnttrk)
             {
-                ticks_t trktickdiff = (globalticks - states[cnttrk].ticks_); //The difference in ticks between the track's last tick and the current global tick
+                ticks_t trktickdiff = (globalticks - m_dsetrkstates[cnttrk].ticks_); //The difference in ticks between the track's last tick and the current global tick
                 ticks_t evtglobaltick = mev.GetTime(); //The global absolute tick of the event
 
                 //Insert a pause if needed
-                ticks_t delta = (evtglobaltick - states[cnttrk].ticks_);
+                ticks_t delta = (evtglobaltick - m_dsetrkstates[cnttrk].ticks_);
                 if (delta != 0)
-                    HandlePauses(mev, states[cnttrk], trks[cnttrk], globalticks, delta);
+                    HandlePauses(mev, m_dsetrkstates[cnttrk], m_dsetracks[cnttrk], globalticks, delta);
 
-                InsertDSEEvent(trks[cnttrk], eTrkEventCodes::EndOfTrack);
+                InsertDSEEvent(m_dsetracks[cnttrk], eTrkEventCodes::EndOfTrack);
             }
         }
-
 
         void HandleControlChanges(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
         {
@@ -555,8 +597,7 @@ namespace DSE
                 break;
             case C_BALANCE:
             case C_PAN:
-                state.trkpan_ = mev.GetByte2();
-                InsertDSEEvent(trk, eTrkEventCodes::SetChanPan, state.trkpan_);
+                HandlePanChanges(mev, state, trk);
                 break;
             case C_EXPRESSION:
                 InsertDSEEvent(trk, eTrkEventCodes::SetExpress, mev.GetByte2());
@@ -626,29 +667,25 @@ namespace DSE
 
         /****************************************************************************************
         ****************************************************************************************/
-        void HandleSetTempo(const jdksmidi::MIDITimedBigMessage& mev,
-            map<uint8_t, TrkState>& states,
-            map<uint8_t, MusicTrack>& trks,
-            ticks_t& globalticks)
+        void HandleSetTempo(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
         {
             // ticks_t trktickdiff   = (globalticks - states[0].ticks); //The difference in ticks between the track's last tick and the current global tick
             ticks_t evtglobaltick = mev.GetTime(); //The global absolute tick of the event
 
             //Insert a pause if needed
-            ticks_t delta = (evtglobaltick - states[0].ticks_);
+            ticks_t delta = (evtglobaltick - m_dsetrkstates[0].ticks_);
             if (delta != 0)
-                HandlePauses(mev, states[0], trks[0], globalticks, delta);
+                HandlePauses(mev, m_dsetrkstates[0], m_dsetracks[0], globalticks, delta);
 
             //
             uint8_t tempo = static_cast<uint8_t>(ConvertMicrosecPerQuarterNoteToBPM(mev.GetTempo()));
-            InsertDSEEvent(trks[0], eTrkEventCodes::SetTempo, { tempo });
+            InsertDSEEvent(m_dsetracks[0], eTrkEventCodes::SetTempo, { tempo });
         }
 
-        void HandlePanChanges(const jdksmidi::MIDITimedBigMessage& mev,
-            TrkState& state,
-            MusicTrack& trk)
+        void HandlePanChanges(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
         {
-            InsertDSEEvent(trk, eTrkEventCodes::SetChanPan, mev.GetByte1());
+            InsertDSEEvent(trk, eTrkEventCodes::SetChanPan, mev.GetByte2());
+            state.trkpan_ = mev.GetByte2();
         }
 
         void HandlePitchBend(const jdksmidi::MIDITimedBigMessage& mev,
@@ -665,6 +702,14 @@ namespace DSE
             InsertDSEEvent(trk, eTrkEventCodes::SetPreset, mev.GetPGValue());
         }
 
+        void HandleLoopPoint(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
+        {
+            const unsigned char chan = mev.GetChannel();
+            DSE::MusicTrack& trk = m_dsetracks[chan];
+            TrkState& state = m_dsetrkstates[chan];
+            InsertDSEEvent(trk, eTrkEventCodes::LoopPointSet);
+            state.looppoint_ = trk.size();
+        }
 
     private:
 
