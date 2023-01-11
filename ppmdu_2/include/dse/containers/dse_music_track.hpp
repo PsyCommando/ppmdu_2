@@ -15,7 +15,6 @@ namespace DSE
         typedef std::vector<DSE::TrkEvent>::iterator       iterator;
         typedef std::vector<DSE::TrkEvent>::const_iterator const_iterator;
 
-
         MusicTrack()noexcept :m_midichan(0) {}
 
         DSE::TrkEvent& operator[](size_t index) { return m_events[index]; }
@@ -35,7 +34,6 @@ namespace DSE
         void   shrink_to_fit() { m_events.shrink_to_fit(); }
 
         void push_back(DSE::TrkEvent&& ev) { m_events.push_back(ev); }
-        //void push_back(DSE::TrkEvent ev) { m_events.push_back(std::move(ev)); }
 
         /*
             Get the DSE events for this track

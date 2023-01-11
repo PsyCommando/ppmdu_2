@@ -392,24 +392,104 @@ namespace DSE
         "B",
      }};
 
+    const std::array<eTrkDelays, NbTrkDelayValues> TrkDelayCodesTbl
+    { {
+        eTrkDelays::_half,
+        eTrkDelays::_dotqtr,
+        eTrkDelays::_two3rdsofahalf,
+        eTrkDelays::_qtr,
+        eTrkDelays::_dot8th,
+        eTrkDelays::_two3rdsofqtr,
+        eTrkDelays::_8th,
+        eTrkDelays::_dot16th,
+        eTrkDelays::_two3rdsof8th,
+        eTrkDelays::_16th,
+        eTrkDelays::_dot32nd,
+        eTrkDelays::_two3rdsof16th,
+        eTrkDelays::_32nd,
+        eTrkDelays::_dot64th,
+        eTrkDelays::_two3rdsof32th,
+        eTrkDelays::_64th,
+    } };
+
+    const std::map<uint8_t, eTrkDelays> TicksToTrkDelayID
+    { {
+        { static_cast<uint8_t>(eTrkDelays::_half),            eTrkDelays::_half             },
+        { static_cast<uint8_t>(eTrkDelays::_dotqtr),          eTrkDelays::_dotqtr           },
+        { static_cast<uint8_t>(eTrkDelays::_two3rdsofahalf),  eTrkDelays::_two3rdsofahalf   },
+        { static_cast<uint8_t>(eTrkDelays::_qtr),             eTrkDelays::_qtr              },
+        { static_cast<uint8_t>(eTrkDelays::_dot8th),          eTrkDelays::_dot8th           },
+        { static_cast<uint8_t>(eTrkDelays::_two3rdsofqtr),    eTrkDelays::_two3rdsofqtr     },
+        { static_cast<uint8_t>(eTrkDelays::_8th),             eTrkDelays::_8th              },
+        { static_cast<uint8_t>(eTrkDelays::_dot16th),         eTrkDelays::_dot16th          },
+        { static_cast<uint8_t>(eTrkDelays::_two3rdsof8th),    eTrkDelays::_two3rdsof8th     },
+        { static_cast<uint8_t>(eTrkDelays::_16th),            eTrkDelays::_16th             },
+        { static_cast<uint8_t>(eTrkDelays::_dot32nd),         eTrkDelays::_dot32nd          },
+        { static_cast<uint8_t>(eTrkDelays::_two3rdsof16th),   eTrkDelays::_two3rdsof16th    },
+        { static_cast<uint8_t>(eTrkDelays::_32nd),            eTrkDelays::_32nd             },
+        { static_cast<uint8_t>(eTrkDelays::_dot64th),         eTrkDelays::_dot64th          },
+        { static_cast<uint8_t>(eTrkDelays::_two3rdsof32th),   eTrkDelays::_two3rdsof32th    },
+        { static_cast<uint8_t>(eTrkDelays::_64th),            eTrkDelays::_64th             },
+    } };
+
+    const std::map<eTrkDelays, uint8_t> TrkDelayToEvID
+    { {
+        { eTrkDelays::_half,            0x80 },
+        { eTrkDelays::_dotqtr,          0x81 },
+        { eTrkDelays::_two3rdsofahalf,  0x82 },
+        { eTrkDelays::_qtr,             0x83 },
+        { eTrkDelays::_dot8th,          0x84 },
+        { eTrkDelays::_two3rdsofqtr,    0x85 },
+        { eTrkDelays::_8th,             0x86 },
+        { eTrkDelays::_dot16th,         0x87 },
+        { eTrkDelays::_two3rdsof8th,    0x88 },
+        { eTrkDelays::_16th,            0x89 },
+        { eTrkDelays::_dot32nd,         0x8A },
+        { eTrkDelays::_two3rdsof16th,   0x8B },
+        { eTrkDelays::_32nd,            0x8C },
+        { eTrkDelays::_dot64th,         0x8D },
+        { eTrkDelays::_two3rdsof32th,   0x8E },
+        { eTrkDelays::_64th,            0x8F },
+    } };
+
+    const std::map<uint8_t, eTrkDelays> TrkDelayCodeVals
+    { {
+        { 0x80, eTrkDelays::_half           },
+        { 0x81, eTrkDelays::_dotqtr         },
+        { 0x82, eTrkDelays::_two3rdsofahalf },
+        { 0x83, eTrkDelays::_qtr            },
+        { 0x84, eTrkDelays::_dot8th         },
+        { 0x85, eTrkDelays::_two3rdsofqtr   },
+        { 0x86, eTrkDelays::_8th            },
+        { 0x87, eTrkDelays::_dot16th        },
+        { 0x88, eTrkDelays::_two3rdsof8th   },
+        { 0x89, eTrkDelays::_16th           },
+        { 0x8A, eTrkDelays::_dot32nd        },
+        { 0x8B, eTrkDelays::_two3rdsof16th  },
+        { 0x8C, eTrkDelays::_32nd           },
+        { 0x8D, eTrkDelays::_dot64th        },
+        { 0x8E, eTrkDelays::_two3rdsof32th  },
+        { 0x8F, eTrkDelays::_64th           },
+    } };
+
 //====================================================================================================
 // Utility
 //====================================================================================================
-    std::pair<bool,TrkEventInfo> GetEventInfo( eTrkEventCodes ev )
+    std::optional<TrkEventInfo> GetEventInfo( eTrkEventCodes ev )
     {
         for( const auto & entry : TrkEventsTable )
         {
             if( ( entry.evcodeend != eTrkEventCodes::Invalid     ) && 
                 ( ev >= entry.evcodebeg && ev <= entry.evcodeend ) )
             {
-                return move( make_pair(true, entry ) );
+                return make_optional(entry );
             }
             else if( entry.evcodebeg == ev )
             {
-                return move( make_pair( true, entry ) );
+                return make_optional(entry);
             }
         }
-        return move( make_pair(false, InvalidEventInfo ) );
+        return nullopt;
     }
 
     eTrkEventCodes StringToEventCode(const std::string& str)
@@ -444,34 +524,10 @@ namespace DSE
         return itfound->second;
     }
 
-    /*****************************************************************
-        ParsePlayNoteParam1
-            This interpret and returns the 3 values that are 
-            stored in the playnote event's first parameter.
-    *****************************************************************/
-    //void ProcPlayNoteParam1(  uint8_t   noteparam1, 
-    //                           uint8_t & inout_curoctave, 
-    //                           uint8_t & out_param2len, 
-    //                           uint8_t & out_midinote )
-    //{
-    //    //1. Get param2's len
-    //    out_param2len = ( ( noteparam1 & NoteEvParam1NbParamsMask ) >> 6 ) & 0x3; //(0011) just to be sure no sign bits slip through somehow
-
-    //    //2. Get and apply the octave modifiere
-    //    int8_t octavemod = ( ( (noteparam1 & NoteEvParam1PitchMask) >> 4 ) & 0x3 ) - NoteEvOctaveShiftRange;
-    //    inout_curoctave  = static_cast<int8_t>(inout_curoctave) + octavemod; 
-
-    //    //3. Get the midi note
-    //    out_midinote = ( inout_curoctave * static_cast<uint8_t>(eNote::nbNotes) ) + (noteparam1 & 0xF);
-    //}
-
-    void ParsePlayNoteParam1( uint8_t  noteparam1,
-                              int8_t   & out_octdiff,
-                              uint8_t  & out_notedur,
-                              uint8_t  & out_key )
+    void ParsePlayNoteParam1( uint8_t noteparam1, int8_t& out_octdiff, uint8_t& out_param2len, uint8_t& out_key )
     {
         //1. Get param2's len
-        out_notedur = ( ( noteparam1 & NoteEvParam1NbParamsMask ) >> 6 ) & 0x3; //(0011) just to be sure no sign bits slip through somehow
+        out_param2len = ( ( noteparam1 & NoteEvParam1NbParamsMask ) >> 6 ) & 0x3; //(0011) just to be sure no sign bits slip through somehow
 
         //2. Get and apply the octave modifiere
         out_octdiff = ( ( (noteparam1 & NoteEvParam1PitchMask) >> 4 ) & 0x3 ) - NoteEvOctaveShiftRange;
@@ -480,7 +536,7 @@ namespace DSE
         out_key = (noteparam1 & 0xF);
     }
 
-    ev_play_note ParsePlayNote(const TrkEvent& ev, uint8_t curoctave, uint32_t lasthold)
+    ev_play_note ParsePlayNote(const TrkEvent& ev, uint8_t curoctave)
     {
         ev_play_note plev;
         ParsePlayNoteParam1(ev.params.front(), plev.octmod, plev.param2len, plev.parsedkey);
@@ -503,7 +559,7 @@ namespace DSE
         return plev;
     }
 
-    std::string MidiNoteIdToText( uint8_t midinote )
+    std::string MidiNoteIdToText(midinote_t midinote )
     {
         stringstream sstr;
         uint16_t     key    = midinote % static_cast<uint8_t>(eNote::nbNotes);
@@ -512,10 +568,33 @@ namespace DSE
         return std::move(sstr.str());
     }
 
-    void LogEventToClog( const TrkEvent & ev )
+    std::optional<eTrkDelays>  FindClosestTrkDelayID(uint8_t delayticks)
     {
-        clog << ev;
+        for (size_t i = 0; i < TrkDelayCodesTbl.size(); ++i)
+        {
+            if ((uint8_t)TrkDelayCodesTbl[i] == delayticks)
+                return std::make_optional(TrkDelayCodesTbl[i]);
+            else if ((i + 1) < (TrkDelayCodesTbl.size() - 1))
+            {
+                //Check if the next value is smaller than the delay. If it is, we can't get a value any closer to "delayticks".
+                if (delayticks > static_cast<uint8_t>(TrkDelayCodesTbl[i + 1]))
+                {
+                    //Compare this value and the next and see which one we're closest to
+                    uint8_t diff = static_cast<uint8_t>(TrkDelayCodesTbl[i]) - static_cast<uint8_t>(TrkDelayCodesTbl[i + 1]);
+
+                    if (delayticks < (diff / 2))
+                        return std::make_optional(TrkDelayCodesTbl[i + 1]); //The closest value in this case is the next one
+                    else
+                        return std::make_optional(TrkDelayCodesTbl[i]); //The closest value in this case is the current one
+                }
+            }
+        }
+
+        //If everything fails, return a null opt
+        std::clog << "FindClosestTrkDelayID(): No closer delay found for " << static_cast<uint16_t>(delayticks) << " ticks !!\n";
+        return std::nullopt; //Couldn't find something below the longest pause!
     }
+
 //====================================================================================================
 //====================================================================================================
 

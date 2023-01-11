@@ -27,8 +27,8 @@ namespace DSE
     const static DSESmplFmtInfo              DSEInvalidSmplFmtData { eDSESmplFmt::invalid, 0, 0, 0, 0 };
     const static std::vector<DSESmplFmtInfo> DSESmplFmtData
     {{
-        { eDSESmplFmt::pcm8,      1, 4,  8, 1 },
-        { eDSESmplFmt::pcm16,     1, 2, 16, 2 },
+        { eDSESmplFmt::pcm8,       1, 4,  8, 1 },
+        { eDSESmplFmt::pcm16,      1, 2, 16, 2 },
         { eDSESmplFmt::ima_adpcm4, 9, 8,  4, 1 },
         //Idk if there are any other formats.
     }};
@@ -37,33 +37,6 @@ namespace DSE
 //===============================================================================
 //  SWDL_Header
 //===============================================================================
-    /*
-        DoesSWDLContainsSamples
-            Returns true if the swdl contains sample data.
-
-        #FIXME : This isn't going to work in every cases! Especially with Version 0x402 DSE
-    */
-    //bool SWDL_Header::DoesContainsSamples()const
-    //{
-    //    return (pcmdlen > 0) && 
-    //           ((pcmdlen & SWDL_PCMDSpecialSizeMask) != SWDL_PCMDSpecialSize);
-    //}
-
-    /*
-        IsSWDLSampleBankOnly
-            Returns true if the swdl is only a sample bank, without program info.
-    */
-    //bool SWDL_Header::IsSampleBankOnly()const
-    //{
-    //    return (pcmdlen > 0) &&                                                  // #FIXME : This isn't going to work in every cases! Especially with Version 0x402 DSE
-    //           ((pcmdlen & SWDL_PCMDSpecialSizeMask) != SWDL_PCMDSpecialSize) && // #FIXME : This isn't going to work in every cases! Especially with Version 0x402 DSE
-    //           (nbprgislots == 0);
-    //}
-
-
-
-
-
     SWDL_HeaderData & SWDL_HeaderData::operator=( const SWDL_Header_v402 & other )
     {
         this->unk18           =  other.unk18;
@@ -2734,8 +2707,8 @@ namespace DSE
                                     std::vector<uint8_t>::const_iterator itend )
     {
         SWDL_HeaderData hdrdata;
-        auto            itbefread = itbeg;
-        uint32_t        magicn = utils::ReadIntFromBytes<uint32_t>( itbeg, itend, false );
+        std::vector<uint8_t>::const_iterator itbefread = itbeg;
+        uint32_t                             magicn    = utils::ReadIntFromBytes<uint32_t>( itbeg, itend, false );
 
         if( magicn == static_cast<uint32_t>(eDSEContainers::swdl) )
         {

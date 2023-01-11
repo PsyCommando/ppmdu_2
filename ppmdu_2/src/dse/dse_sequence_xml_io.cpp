@@ -163,9 +163,9 @@ namespace DSE
                 throw std::runtime_error("Delay event is missing its duration attribute!");
             uint8_t ticks = (uint8_t)adur.as_uint();
             auto    found = FindClosestTrkDelayID(ticks);
-            if(!found.second)
+            if(!found)
                 throw std::runtime_error("Delay event has an invalid duration attribute!");
-            outev.evcode = TrkDelayToEvID.at(found.first);
+            outev.evcode = TrkDelayToEvID.at(*found);
             return outev;
         }
 
@@ -610,7 +610,10 @@ namespace DSE
             using namespace MusicSeqXML;
             const eTrkEventCodes code     = static_cast<eTrkEventCodes>(ev.evcode);
             xml_node             waitnode = AppendChildNode(parent, NODE_Wait);
-            const TrkEventInfo   info     = GetEventInfo(code).second;
+            auto                 evinfo   = GetEventInfo(code);
+            if (!evinfo)
+                throw std::runtime_error("Couldn't get matching event info for event number #\"" + std::to_string((uint8_t)code) + "\"");
+            const TrkEventInfo   info     = *evinfo;
             AppendAttribute(waitnode, ATTR_Type, info.evlbl);
 
             if (code == eTrkEventCodes::RepeatLastPause)
@@ -640,7 +643,10 @@ namespace DSE
             using namespace MusicSeqXML;
             const eTrkEventCodes code = static_cast<eTrkEventCodes>(ev.evcode);
             xml_node             evnode = AppendChildNode(parent, NODE_Event);
-            const TrkEventInfo   info = GetEventInfo(code).second;
+            auto                 evinfo = GetEventInfo(code);
+            if (!evinfo)
+                throw std::runtime_error("Couldn't get matching event info for event number #\"" + std::to_string((uint8_t)code) + "\"");
+            const TrkEventInfo   info = *evinfo;
             AppendAttribute(evnode, ATTR_Type, info.evlbl);
 
             switch (code)

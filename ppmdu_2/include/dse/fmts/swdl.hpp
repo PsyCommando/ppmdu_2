@@ -8,9 +8,6 @@ Description: Utilities for handling Pokemon Mystery Dungeon: Explorers of Sky/Ti
 
 License: Creative Common 0 ( Public Domain ) https://creativecommons.org/publicdomain/zero/1.0/
 All wrongs reversed, no crappyrights :P
-
-    #TODO: Move this to DSE folder + remove as many dependencies on PMD2 as possible !!!
-
 */
 #include <dse/dse_common.hpp>
 #include <dse/containers/dse_preset_bank.hpp>
@@ -33,6 +30,12 @@ All wrongs reversed, no crappyrights :P
 namespace DSE
 {
 //====================================================================================================
+//  Forward Declarations
+//====================================================================================================
+    struct SWDL_Header_v402;
+    struct SWDL_Header_v415;
+
+//====================================================================================================
 //  Constants
 //====================================================================================================
     static const uint32_t SWDL_MagicNumber     = static_cast<uint32_t>(eDSEContainers::swdl);//0x7377646C; //"swdl"
@@ -43,17 +46,12 @@ namespace DSE
     static const uint16_t SWDL_Version402      = 0x402;
 
 //====================================================================================================
-// Structs
+// SWDL_HeaderData
 //====================================================================================================
-    
-    struct SWDL_Header_v402;
-    struct SWDL_Header_v415;
 
-
-    /****************************************************************************************
-        SWDL_HeaderData
-            A common container for header data parsed from DSE SWDL files.
-    ****************************************************************************************/
+    /// <summary>
+    /// A version independant struct to contain SWDL header data.
+    /// </summary>
     struct SWDL_HeaderData
     {
         static const uint32_t FNameLen = 16;
@@ -93,10 +91,13 @@ namespace DSE
         operator SWDL_Header_v415();
     };
 
-    /****************************************************************************************
-        SWDL_Header_v402
-            The header of the version 0x402 SWDL file.
-    ****************************************************************************************/
+//====================================================================================================
+// SWDL_Header_v402
+//====================================================================================================
+
+    /// <summary>
+    /// The header of the version 0x402 SWDL file.
+    /// </summary>
     struct SWDL_Header_v402
     {
         static const uint32_t Size     = 80;
@@ -141,8 +142,7 @@ namespace DSE
         uint8_t  nbprgislots     = 0;
         uint8_t  nbkeygroups     = 0;
 
-        template<class _outit>
-            _outit WriteToContainer( _outit itwriteto )const
+        template<class _outit> _outit WriteToContainer( _outit itwriteto )const
         {
             itwriteto = utils::WriteIntToBytes   ( SWDL_MagicNumber, itwriteto, false ); //Write constant magic number, to avoid bad surprises
             itwriteto = utils::WriteIntToBytes   ( unk18,            itwriteto );
@@ -181,8 +181,7 @@ namespace DSE
         }
 
 
-        template<class _init>
-            _init ReadFromContainer( _init itReadfrom, _init itEnd )
+        template<class _init> _init ReadFromContainer( _init itReadfrom, _init itEnd )
         {
             itReadfrom = utils::ReadIntFromBytes( magicn,       itReadfrom, itEnd, false ); //iterator is incremented
             itReadfrom = utils::ReadIntFromBytes( unk18,        itReadfrom, itEnd );
@@ -262,10 +261,13 @@ namespace DSE
         }
     };
 
-    /****************************************************************************************
-        SWDL_Header_v415
-            The header of the version 0x415 SWDL file.
-    ****************************************************************************************/
+//====================================================================================================
+// SWDL_Header_v415
+//====================================================================================================
+
+    /// <summary>
+    /// The SWDL header of the version 0x415 SWDL file.
+    /// </summary>
     struct SWDL_Header_v415
     {
         static const uint32_t Size     = 80;
@@ -312,8 +314,7 @@ namespace DSE
         uint16_t wavilen         = 0;
 
 
-        template<class _outit>
-            _outit WriteToContainer( _outit itwriteto )const
+        template<class _outit> _outit WriteToContainer( _outit itwriteto )const
         {
             itwriteto = utils::WriteIntToBytes   ( SWDL_MagicNumber, itwriteto, false ); //Write constant magic number, to avoid bad surprises
             itwriteto = utils::WriteIntToBytes   ( unk18,            itwriteto );
@@ -348,8 +349,7 @@ namespace DSE
         }
 
 
-        template<class _init>
-            _init ReadFromContainer( _init itReadfrom, _init itEnd )
+        template<class _init> _init ReadFromContainer( _init itReadfrom, _init itEnd )
         {
             itReadfrom = utils::ReadIntFromBytes( magicn,       itReadfrom, itEnd, false ); //iterator is incremented
             itReadfrom = utils::ReadIntFromBytes( unk18,        itReadfrom, itEnd );
@@ -422,27 +422,48 @@ namespace DSE
 // Functions
 //====================================================================================================
 
-    PresetBank ParseSWDL( const std::string & filename );
-    void       WriteSWDL( const std::string & filename, const PresetBank & audiodata );
+    /// <summary>
+    /// Reads only the SWDL header from the SWDL file at filepath, and returns the parsed header.
+    /// </summary>
+    /// <param name="filepath">Path to the file we should parse the header of.</param>
+    /// <returns>The SWDL header for the file at filepath.</returns>
+    SWDL_HeaderData ReadSwdlHeader(const std::string& filepath);
 
-    //Parse from a range.
-    PresetBank ParseSWDL( std::vector<uint8_t>::const_iterator itbeg, 
-                          std::vector<uint8_t>::const_iterator itend );
+    /// <summary>
+    /// Parse only the header of the SWDL file raw data within the given range, and returns the parsed header.
+    /// </summary>
+    /// <param name="itbeg">Begining of the SWDL file data to parse.</param>
+    /// <param name="itend">End of the SWDL file data to parse.</param>
+    /// <returns>The SWDL header parsed from the raw data.</returns>
+    SWDL_HeaderData ReadSwdlHeader(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend);
 
-    /*
-        ReadSwdlHeader
-            Reads only the SWDL header from a file.
-    */
-    SWDL_HeaderData ReadSwdlHeader( const std::string & filename );
-    SWDL_HeaderData ReadSwdlHeader( std::vector<uint8_t>::const_iterator itbeg, 
-                                    std::vector<uint8_t>::const_iterator itend );
+    /// <summary>
+    /// Parse a SWDL file, and returns the result into a PresetBank object.
+    /// </summary>
+    /// <param name="filepath">The path to the SWDL file to parse.</param>
+    /// <returns>The parsed SWDL as a PresetBank object.</returns>
+    PresetBank ParseSWDL( const std::string& filepath);
 
+    /// <summary>
+    /// Parse raw SWDL file data into a PresetBank object.
+    /// </summary>
+    /// <param name="itbeg">Start of the SWDL data to be parsed.</param>
+    /// <param name="itend">End of the SWDL data to be parsed.</param>
+    /// <returns>The parsed SWDL as a PresetBank object.</returns>
+    PresetBank ParseSWDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend);
+
+    /// <summary>
+    /// Write a SWDL file from the given PresetBank, into a new SWDL file located at filepath.
+    /// </summary>
+    /// <param name="filepath">The path to the SWDL file that will be created.</param>
+    /// <param name="out_audiodata">The PresetBank object to write into the new SWDL file.</param>
+    void WriteSWDL( const std::string& filepath, const PresetBank& out_audiodata );
 
     /*
         GetDSEHeaderLen
             Returns the length of the SWDL header for the version of DSE specified
     */
-    constexpr size_t GetDSEHeaderLen(eDSEVersion ver)
+    constexpr size_t GetDSEHeaderLen(eDSEVersion ver) //#FIXME: Is this needed? Because both versions have the same length?
     {
         if(ver == eDSEVersion::V415)
             return SWDL_Header_v415::Size;

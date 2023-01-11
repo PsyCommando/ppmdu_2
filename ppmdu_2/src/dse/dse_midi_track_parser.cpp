@@ -232,9 +232,11 @@ namespace DSE
                 }
                 else
                 {
-                    auto closesttrkdelay = DSE::FindClosestTrkDelayID(static_cast<uint8_t>(delta));
-                    pauseev.evcode = DSE::TrkDelayToEvID.at(closesttrkdelay.first);
-                    newdelta = static_cast<uint8_t>(closesttrkdelay.first);
+                    auto closest = DSE::FindClosestTrkDelayID(static_cast<uint8_t>(delta));
+                    if (!closest)
+                        throw std::runtime_error("Couldn't find the closest matching delay for duration \"" + std::to_string((unsigned int)delta) + "\" ticks.");
+                    pauseev.evcode = DSE::TrkDelayToEvID.at(*closest);
+                    newdelta = static_cast<uint8_t>(*closest);
                 }
 
                 //Find out what delta we went for in the end!

@@ -103,12 +103,11 @@ namespace DSE
 
     const int SizeADPCMPreambleWords = ::audio::IMA_ADPCM_PreambleLen / sizeof(int32_t);
 
-
-    const std::string DSE_SmplFmt_PCM16 = "PCM16"s;
-    const std::string DSE_SmplFmt_PCM8 = "PCM8"s;
-    const std::string DSE_SmplFmt_ADPCM4 = "ADPCM4"s;
-    const std::string DSE_SmplFmt_ADPCM3 = "ADPCM3"s;
-    const std::string DSE_SmplFmt_PSG = "PSG"s;
+    const std::string DSE_SmplFmt_PCM16   = "PCM16"s;
+    const std::string DSE_SmplFmt_PCM8    = "PCM8"s;
+    const std::string DSE_SmplFmt_ADPCM4  = "ADPCM4"s;
+    const std::string DSE_SmplFmt_ADPCM3  = "ADPCM3"s;
+    const std::string DSE_SmplFmt_PSG     = "PSG"s;
     const std::string DSE_SmplFmt_INVALID = "Invalid"s;
 
     const std::unordered_map<std::string, eDSESmplFmt> StrToDseSmplFmtHashTbl
@@ -119,22 +118,6 @@ namespace DSE
         std::make_pair(DSE_SmplFmt_ADPCM3, eDSESmplFmt::ima_adpcm3),
         std::make_pair(DSE_SmplFmt_INVALID, eDSESmplFmt::invalid),
     };
-
-
-    //inline eDSEChunks IntToChunkID( uint32_t value )
-    //{
-    //    for( auto cid : DSEChunksList )
-    //    {
-    //        if( value == static_cast<uint32_t>(cid) )
-    //            return cid;
-    //    }
-    //    return eDSEChunks::invalid;
-    //}
-    //
-    //inline uint32_t ChunkIDToInt( eDSEChunks id )
-    //{
-    //    return static_cast<uint32_t>(id);
-    //}
 
     eDSESmplFmt IntToDSESmplFmt(std::underlying_type_t<eDSESmplFmt> val)
     {
@@ -191,7 +174,7 @@ namespace DSE
     }
 
 //
-//
+// DSE_MetaDataSEDL
 //
     void DSE_MetaDataSEDL::setFromHeader(const DSE::SEDL_Header& hdr)
     {
@@ -215,9 +198,8 @@ namespace DSE
         unk8 = hdr.unk8;
     }
 
-
 //
-//
+// SeqInfoXml
 //
 
     namespace SeqInfoXml
@@ -531,41 +513,29 @@ std::ostream& operator<<(std::ostream& strm, const DSE::TrkEvent& ev)
     using namespace DSE;
     auto info = GetEventInfo(static_cast<eTrkEventCodes>(ev.evcode));
 
-    //strm
-    //     <<setfill(' ') <<setw(6) <<right << static_cast<unsigned short>(ev.dt) <<"t : ";
-
-    if (info.first)
+    if (info)
     {
         strm << "(0x" << setfill('0') << setw(2) << hex << uppercase << right << static_cast<unsigned short>(ev.evcode) << ") : "
-            << nouppercase << dec << setfill(' ') << setw(16) << left << info.second.evlbl;
+            << nouppercase << dec << setfill(' ') << setw(16) << left << info->evlbl;
 
         if (!ev.params.empty())
         {
+            strm << hex << uppercase << "( ";
+            for (size_t i = 0; i < ev.params.size(); ++i)
             {
-                strm << hex << uppercase << "( ";
-                for (size_t i = 0; i < ev.params.size(); ++i)
-                {
-                    strm << "0x" << setfill('0') << setw(2) << right << static_cast<unsigned short>(ev.params[i]);
-                    if (i != (ev.params.size() - 1))
-                        strm << ", ";
-                }
-                strm << dec << nouppercase << " )";
+                strm << "0x" << setfill('0') << setw(2) << right << static_cast<unsigned short>(ev.params[i]);
+                if (i != (ev.params.size() - 1))
+                    strm << ", ";
             }
+            strm << dec << nouppercase << " )";
         }
         else if (ev.evcode >= static_cast<uint8_t>(eTrkEventCodes::Delay_HN) && ev.evcode <= static_cast<uint8_t>(eTrkEventCodes::Delay_64N))
-        {
             strm << dec << static_cast<unsigned short>(TrkDelayCodeVals.at(ev.evcode)) << " ticks";
-        }
         else
-        {
             strm << "N/A";
-        }
     }
     else
-    {
         strm << "ERROR EVENT CODE " << uppercase << hex << static_cast<unsigned short>(ev.evcode) << dec << nouppercase;
-    }
-
     return strm;
 }
 

@@ -13,25 +13,30 @@ Description: Contains utilities to deal with DSE event tracks. Or anything withi
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <optional>
 
 namespace DSE
 {
+    //Forward Decl
+    struct TrkEventInfo;
+
 //====================================================================================================
 //  Typedefs / Enums / Constants
 //====================================================================================================
 
-    //Default tick rate of the Digital Sound Element Sound Driver for sequence playback.
-    const uint16_t     DefaultTickRte   = 48;                //Possibly in ticks per quartner notes
-    const unsigned int NbTrkDelayValues = 16;                //The nb of track delay prefixes in the DSE format
-    const uint32_t     TrkParam1Default = 0x01000000;        //The default value for the parameter 1 value in the trk chunk header!
-    const uint32_t     TrkParam2Default = 0x0000FF04;        //The default value for the parameter 2 value in the trk chunk header!
+    const uint16_t     DefaultTickRte           = 48;                //Default tick rate per quarter note of the Digital Sound Element Sound Driver for sequence playback.
+    const unsigned int NbTrkDelayValues         = 16;                //The nb of track delay prefixes in the DSE format
+    const uint32_t     TrkParam1Default         = 0x01000000;        //The default value for the parameter 1 value in the trk chunk header!
+    const uint32_t     TrkParam2Default         = 0x0000FF04;        //The default value for the parameter 2 value in the trk chunk header!
+    const uint8_t      NoteEvParam1NoteMask     = 0b0000'1111;       //The id of the note "eDSENote" is stored in the lower nybble
+    const uint8_t      NoteEvParam1PitchMask    = 0b0011'0000;       //The value of those 2 bits in the "param1" of a NoteOn event indicate if/how to modify the track's current pitch.
+    const uint8_t      NoteEvParam1NbParamsMask = 0b1100'0000;       //The value of those two bits indicates the amount of bytes to be parsed as parameters for the note on event
+    const int8_t       NoteEvOctaveShiftRange   = 2;                 //The Nb of octave the note event can modify the track's current octave
 
-//  Track Events Specifics Constants
-
-    /****************************************************************************
-        eTrkDelays
-            The tick values of each of the 16 possible delay prefix for events.
-    ****************************************************************************/
+    /// <summary>
+    /// An enum of all the 16 possible delay events supported in DSE.
+    /// The underlying value is the amount of ticks the associated event lasts.
+    /// </summary>
     enum struct eTrkDelays : uint8_t
     {
         _half           = 96, // 1/2 note
@@ -52,207 +57,14 @@ namespace DSE
         _64th           =  2, // 1/64 note          #NOTE: Its not truly a 64th note, because the game seems to round the duration, so its not identical to the last one.
     };
 
-
-    /****************************************************************************
-        TrkDelayCodeVals
-            Lookup table for the value of the delay prefix codes used by events 
-            in a track chunk.
-    ****************************************************************************/
-    static const std::map<uint8_t, eTrkDelays> TrkDelayCodeVals
-    {{
-        { 0x80, eTrkDelays::_half           },
-        { 0x81, eTrkDelays::_dotqtr         },
-        { 0x82, eTrkDelays::_two3rdsofahalf },
-        { 0x83, eTrkDelays::_qtr            },
-        { 0x84, eTrkDelays::_dot8th         },
-        { 0x85, eTrkDelays::_two3rdsofqtr   },
-        { 0x86, eTrkDelays::_8th            },
-        { 0x87, eTrkDelays::_dot16th        },
-        { 0x88, eTrkDelays::_two3rdsof8th   },
-        { 0x89, eTrkDelays::_16th           },
-        { 0x8A, eTrkDelays::_dot32nd        },
-        { 0x8B, eTrkDelays::_two3rdsof16th  },
-        { 0x8C, eTrkDelays::_32nd           },
-        { 0x8D, eTrkDelays::_dot64th        },
-        { 0x8E, eTrkDelays::_two3rdsof32th  },
-        { 0x8F, eTrkDelays::_64th           },
-    }};
-
-
-    /****************************************************************************
-        TrkDelayToEvID
-            This is for finding what pause event matches a tick value.
-    ****************************************************************************/
-    static const std::map<eTrkDelays, uint8_t> TrkDelayToEvID
-    {{
-        { eTrkDelays::_half,            0x80 },
-        { eTrkDelays::_dotqtr,          0x81 },
-        { eTrkDelays::_two3rdsofahalf,  0x82 },
-        { eTrkDelays::_qtr,             0x83 },
-        { eTrkDelays::_dot8th,          0x84 },
-        { eTrkDelays::_two3rdsofqtr,    0x85 },
-        { eTrkDelays::_8th,             0x86 },
-        { eTrkDelays::_dot16th,         0x87 },
-        { eTrkDelays::_two3rdsof8th,    0x88 },
-        { eTrkDelays::_16th,            0x89 },
-        { eTrkDelays::_dot32nd,         0x8A },
-        { eTrkDelays::_two3rdsof16th,   0x8B },
-        { eTrkDelays::_32nd,            0x8C },
-        { eTrkDelays::_dot64th,         0x8D },
-        { eTrkDelays::_two3rdsof32th,   0x8E },
-        { eTrkDelays::_64th,            0x8F },
-    }};
-
-
-    /****************************************************************************
-        TicksToTrkDelayID
-
-    ****************************************************************************/
-    static const std::map<uint8_t, eTrkDelays> TicksToTrkDelayID
-    {{
-        { static_cast<uint8_t>(eTrkDelays::_half),            eTrkDelays::_half             },
-        { static_cast<uint8_t>(eTrkDelays::_dotqtr),          eTrkDelays::_dotqtr           },
-        { static_cast<uint8_t>(eTrkDelays::_two3rdsofahalf),  eTrkDelays::_two3rdsofahalf   },
-        { static_cast<uint8_t>(eTrkDelays::_qtr),             eTrkDelays::_qtr              },
-        { static_cast<uint8_t>(eTrkDelays::_dot8th),          eTrkDelays::_dot8th           },
-        { static_cast<uint8_t>(eTrkDelays::_two3rdsofqtr),    eTrkDelays::_two3rdsofqtr     },
-        { static_cast<uint8_t>(eTrkDelays::_8th),             eTrkDelays::_8th              },
-        { static_cast<uint8_t>(eTrkDelays::_dot16th),         eTrkDelays::_dot16th          },
-        { static_cast<uint8_t>(eTrkDelays::_two3rdsof8th),    eTrkDelays::_two3rdsof8th     },
-        { static_cast<uint8_t>(eTrkDelays::_16th),            eTrkDelays::_16th             },
-        { static_cast<uint8_t>(eTrkDelays::_dot32nd),         eTrkDelays::_dot32nd          },
-        { static_cast<uint8_t>(eTrkDelays::_two3rdsof16th),   eTrkDelays::_two3rdsof16th    },
-        { static_cast<uint8_t>(eTrkDelays::_32nd),            eTrkDelays::_32nd             },
-        { static_cast<uint8_t>(eTrkDelays::_dot64th),         eTrkDelays::_dot64th          },
-        { static_cast<uint8_t>(eTrkDelays::_two3rdsof32th),   eTrkDelays::_two3rdsof32th    },
-        { static_cast<uint8_t>(eTrkDelays::_64th),            eTrkDelays::_64th             },
-    }};
-
-    /****************************************************************************
-        TickDelayToTrkDelayCodes
-            The track delay values from eTrkDelays, but in an map to 
-            facilitate getting the corred DSE track Delay code from 
-            a delay in ticks!
-    ****************************************************************************/
-    static const std::array<uint8_t, NbTrkDelayValues> TickDelayToTrkDelayCodes
-    {{
-        static_cast<uint8_t>(eTrkDelays::_half),
-        static_cast<uint8_t>(eTrkDelays::_dotqtr),
-        static_cast<uint8_t>(eTrkDelays::_two3rdsofahalf),
-
-        static_cast<uint8_t>(eTrkDelays::_qtr),
-        static_cast<uint8_t>(eTrkDelays::_dot8th),
-        static_cast<uint8_t>(eTrkDelays::_two3rdsofqtr),
-
-        static_cast<uint8_t>(eTrkDelays::_8th),
-        static_cast<uint8_t>(eTrkDelays::_dot16th),
-        static_cast<uint8_t>(eTrkDelays::_two3rdsof8th),
-
-        static_cast<uint8_t>(eTrkDelays::_16th),
-        static_cast<uint8_t>(eTrkDelays::_dot32nd),
-        static_cast<uint8_t>(eTrkDelays::_two3rdsof16th),
-
-        static_cast<uint8_t>(eTrkDelays::_32nd),
-        static_cast<uint8_t>(eTrkDelays::_dot64th),
-        static_cast<uint8_t>(eTrkDelays::_two3rdsof32th),
-
-        static_cast<uint8_t>(eTrkDelays::_64th),
-    }};
-
-
-
-    static const std::array<eTrkDelays, NbTrkDelayValues> TrkDelayCodesTbl
-    {{
-        eTrkDelays::_half,
-        eTrkDelays::_dotqtr,
-        eTrkDelays::_two3rdsofahalf,
-        eTrkDelays::_qtr,
-        eTrkDelays::_dot8th,
-        eTrkDelays::_two3rdsofqtr,
-        eTrkDelays::_8th,
-        eTrkDelays::_dot16th,
-        eTrkDelays::_two3rdsof8th,
-        eTrkDelays::_16th,
-        eTrkDelays::_dot32nd,
-        eTrkDelays::_two3rdsof16th,
-        eTrkDelays::_32nd,
-        eTrkDelays::_dot64th,
-        eTrkDelays::_two3rdsof32th,
-        eTrkDelays::_64th,
-    }};
-
-    /*
-        FindClosestTrkDelayID
-            Find the closest delay event code for a given number of ticks.
-            Returns a pair with the closest pause event found, and a boolean indicating if it could find a 
-            delai below eTrkDelays::_half (96) ticks.
-    */
-    static std::pair<eTrkDelays,bool>  FindClosestTrkDelayID( uint8_t delayticks )
-    {
-        for( size_t i = 0; i < TrkDelayCodesTbl.size(); ++i )
-        {
-            if ((uint8_t)TrkDelayCodesTbl[i] == delayticks)
-                return std::move(std::make_pair(TrkDelayCodesTbl[i], true));
-            else if( (i + 1) < (TrkDelayCodesTbl.size()-1) )
-            {
-                //Check if the next value is smaller than the delay. If it is, we can't get a value any closer to "delayticks".
-                if( delayticks > static_cast<uint8_t>(TrkDelayCodesTbl[i+1]) )
-                {
-                    //Compare this value and the next and see which one we're closest to
-                    uint8_t diff = static_cast<uint8_t>(TrkDelayCodesTbl[i]) - static_cast<uint8_t>(TrkDelayCodesTbl[i+1]);
-
-                    if( delayticks < (diff/2) )
-                        return std::move( std::make_pair( TrkDelayCodesTbl[i+1], true ) ); //The closest value in this case is the next one
-                    else
-                        return std::move( std::make_pair( TrkDelayCodesTbl[i],   true ) ); //The closest value in this case is the current one
-                }
-            }
-        }
-
-        //If all else fails, return the last!
-        std::clog << "FindClosestTrkDelayID(): No closer delay found for " <<static_cast<uint16_t>(delayticks) <<" ticks !!\n";
-        return std::make_pair( eTrkDelays::_half, false ); //Couldn't find something below the longest pause!
-    }
-
-    //static uint8_t FindClosestTrkDelayCode( uint8_t delayticks )
-    //{
-    //    for( size_t i = 0; i < TickDelayToTrkDelayCodes.size(); ++i )
-    //    {
-    //        if( delayticks == TickDelayToTrkDelayCodes[i] ) //Exact match
-    //        {
-    //            return TickDelayToTrkDelayCodes[i];
-    //        }
-    //        else if( (i + 1) < (TickDelayToTrkDelayCodes.size()-1) )
-    //        {
-    //            //Check if the next value is smaller than the delay. If it is, we can't get a value any closer to "delayticks".
-    //            if( delayticks > TickDelayToTrkDelayCodes[i+1] )
-    //            {
-    //                //Compare this value and the next and see which one we're closest to
-    //                uint8_t diff = TickDelayToTrkDelayCodes[i] - TickDelayToTrkDelayCodes[i+1];
-
-    //                if( delayticks < (diff/2) )
-    //                    return TickDelayToTrkDelayCodes[i+1]; //The closest value in this case is the next one
-    //                else
-    //                    return TickDelayToTrkDelayCodes[i];   //The closest value in this case is the current one
-    //            }
-    //        }
-    //    }
-
-    //    //If all else fails, return the last!
-    //    return TickDelayToTrkDelayCodes.back();
-    //}
-
-
-    //Nb of track events in the event enum
-    //static const uint32_t NB_Track_Events = 18;
-
-    /************************************************************************
-        eTrkEventCodes
-            Codes for each different events stored in a smdl track chunk.
-    ************************************************************************/
+    /// <summary>
+    /// Enum for all the possible DSE sequence events or ranges of events.
+    /// The underlying value is the event code corresponding to the event in a DSE track.
+    /// All event codes missing from the ranges or values covered in the enum should be considered a bad event that will stop playback.
+    /// </summary>
     enum struct eTrkEventCodes : uint8_t
     {
-        Invalid         = 0x00,
+        Invalid         = 0x00, //#TODO: check if this is true at all times, because I remember seeing some tracks that used these and not as an end of track marker of sort
 
         //Reserved range for NoteOn + Velocity
         NoteOnBeg       = 0x01, //The first event code reserved for play note events.
@@ -275,11 +87,6 @@ namespace DSE
         Delay_D64N      = 0x8D, // dotted 1/64 note
         Delay_32N3      = 0x8E, // (1/32 note)/3 * 2
         Delay_64N       = 0x8F, // 1/64 note
-
-        ////Reserved range for discriminating against delays prefixes
-        //DelayBeg        = Delay_HN,  //The first value reserved for Delay prefixes
-        //DelayEnd        = Delay_64N, //The last value reserved for Delay prefixes
-
 
         //Non-play note events
         RepeatLastPause = 0x90, //Repeat the last silence
@@ -370,16 +177,12 @@ namespace DSE
         Unk_0xF6        = 0xF6, //Unknown //#TODO
 
         SkipNext2Bytes2 = 0xF8, //Skip processing the next 2 bytes
-
     };
 
-    /****************************************************************************
-        eNote
-            Values indicating each notes that can be represented in a NoteOn 
-            event.
-
-            *NOTE : 0xF isn't in here, because it serve a special purpose.
-    ****************************************************************************/
+    /// <summary>
+    /// Enum list of the 12 notes from a single octave matching their value from the note event.
+    /// *NOTE : 0xF is valid and used in some circumstances, but isn't in here, because more data is needed.
+    /// </summary>
     enum struct eNote : uint8_t
     {
         C  = 0x0,
@@ -398,28 +201,37 @@ namespace DSE
         Invalid,
     };
     
-    /****************************************************************************
-        NoteNames
-            A textual representation of each note.
-    ****************************************************************************/
+    /// <summary>
+    /// A map of the delay event codes (0x80-0x8F) matching a particular track delay enum value.
+    /// </summary>
+    extern const std::map<uint8_t, eTrkDelays> TrkDelayCodeVals;
+
+    /// <summary>
+    /// A map of each delay enum values, to their event code equivalents in a DSE sequence (0x80-0x8F).
+    /// </summary>
+    extern const std::map<eTrkDelays, uint8_t> TrkDelayToEvID;
+
+    /// <summary>
+    /// For a given amount of ticks, returns the matching track delay ID.
+    /// DEPRECATED: Prefer using the function FindClosestTrkDelayID instead.
+    /// </summary>
+    [[deprecated]]
+    extern const std::map<uint8_t, eTrkDelays> TicksToTrkDelayID;
+
+    /// <summary>
+    /// Array of all the track delay enum values from largest to lowest delay.
+    /// </summary>
+    extern const std::array<eTrkDelays, NbTrkDelayValues> TrkDelayCodesTbl;
+
+    /// <summary>
+    /// An array of strings representation of a note in order matching the values in the eNote enum.
+    /// Only represents the 12 valid notes. Anything above 0xB isn't in this array.
+    /// </summary>
     extern const std::array<std::string, static_cast<uint8_t>(eNote::nbNotes)> NoteNames;
 
-//Bitmasks
-    static const uint8_t NoteEvParam1NoteMask     = 0x0F; //( 0000 1111 ) The id of the note "eDSENote" is stored in the lower nybble
-    static const uint8_t NoteEvParam1PitchMask    = 0x30; //( 0011 0000 ) The value of those 2 bits in the "param1" of a NoteOn event indicate if/how to modify the track's current pitch.
-    static const uint8_t NoteEvParam1NbParamsMask = 0xC0; //( 1100 0000 ) The value of those two bits indicates the amount of bytes to be parsed as parameters for the note on event
-    static const int8_t  NoteEvOctaveShiftRange   =    2; //The Nb of octave the note event can modify the track's current octave
-
-    static const uint8_t EventDelayMask           = 0xF0; // Apply this to get the part where the delay code is
-    static const uint8_t EventDelayCode           = 0x80; // Compare the result after applying the above mask to this to know if its a prefixed delay
-
-
-
-    /************************************************************************
-        TrkEventsTable
-            Contains details specifics on how to parse all event codes.
-    ************************************************************************/
-    struct TrkEventInfo;
+    /// <summary>
+    /// Contains details specifics on how to parse all event codes.
+    /// </summary>
     extern const std::vector<TrkEventInfo> TrkEventsTable;
 
 //====================================================================================================
@@ -427,12 +239,10 @@ namespace DSE
 //====================================================================================================
     class DSESequenceToMidi;
 
-    /************************************************************************
-        TrkEventInfo
-            Contains details specifics on how to parse an event codes.
-
-            **Used only for the event lookup table!**
-    ************************************************************************/
+    /// <summary>
+    /// Contains details specifics on how to parse an event codes.
+    ///  **Used only for the event lookup table!**
+    /// </summary>
     struct TrkEventInfo
     {
         //Event code range
@@ -443,50 +253,46 @@ namespace DSE
         std::string    evlbl;       //text label for the event, mainly for logging/debugging
     };
 
-    /************************************************************************
-        GetEventInfo
-            If boolean in pair is true, the event code in the second member
-            of the pair is the correct TrkEventInfo.
-            Otherwise, if the boolean is false, the second member is invalid.
-    ************************************************************************/
-    std::pair<bool,TrkEventInfo> GetEventInfo( eTrkEventCodes ev );
-
-    eTrkEventCodes StringToEventCode(const std::string& str);
-
-    eNote StringToNote(const std::string& str);
+    /// <summary>
+    /// Helper struct for containing the data parsed from a raw playnote event.
+    /// </summary>
+    struct ev_play_note
+    {
+        midinote_t mnoteid   = 0; //If applicable, the midi note id obtained when combining the note parsed, and the current track octave + octmod.
+        uint8_t    param2len = 0; //length in bytes of the optional duration parameter following the playnote event.
+        int8_t     octmod    = 0; //The value to be added to the current track octave.
+        uint8_t    parsedkey = 0; //The note from 0x0 to 0xF from the playnote event.
+        uint32_t   holdtime  = 0; //The optional duration to hold the note for.
+    };
 
 //====================================================================================================
 // Track Data
 //====================================================================================================
 
-    /************************************************************************
-        TrkEvent
-            Represent a raw track event used in the SEDL and SMDL format!
-    ************************************************************************/
+    /// <summary>
+    /// Represent a raw track event used in the SEDL and SMDL format!
+    /// </summary>
     struct TrkEvent
     {
         uint8_t              evcode = 0;
         std::vector<uint8_t> params;
     };
 
-    /************************************************************************
-        TrkPreamble
-            First 4 bytes of data of a trk chunk. Contains track-specific
-            info such as its trackID and its MIDI channel number.
-    ************************************************************************/
+    /// <summary>
+    /// First 4 bytes of data of a trk chunk. Contains track-specific info such as its trackID and its MIDI channel number.
+    /// </summary>
     struct TrkPreamble
     {
-        static const uint32_t Size = 4; //bytes
-
-        static uint32_t size(){return Size;}
-
+        static constexpr uint32_t size() {return 4;}
         uint8_t trkid  = 0;
         uint8_t chanid = 0;
         uint8_t unk1   = 0;
         uint8_t unk2   = 0;
 
-        template<class _outit>
-            _outit WriteToContainer( _outit itwriteto )const
+        /// <summary>
+        /// 
+        /// </summary>
+        template<class _outit> _outit WriteToContainer( _outit itwriteto )const
         {
             itwriteto = utils::WriteIntToBytes( trkid,  itwriteto );
             itwriteto = utils::WriteIntToBytes( chanid, itwriteto );
@@ -495,8 +301,10 @@ namespace DSE
             return itwriteto;
         }
 
-        template<class _init>
-            _init ReadFromContainer( _init itReadfrom, _init itPastEnd )
+        /// <summary>
+        /// 
+        /// </summary>
+        template<class _init> _init ReadFromContainer( _init itReadfrom, _init itPastEnd )
         {
             trkid  = utils::ReadIntFromBytes<decltype(trkid)> ( itReadfrom, itPastEnd );
             chanid = utils::ReadIntFromBytes<decltype(chanid)>( itReadfrom, itPastEnd );
@@ -507,110 +315,65 @@ namespace DSE
     };
 
 //====================================================================================================
-// EventParser
-//====================================================================================================
-    /*
-        EventParser
-            Pass the bytes of an event track, after the preamble, 
-            and it will eat bytes and turn them into events within 
-            the container refered to by the iterator !
-    */
-    template<class _outit>
-        class EventParser
-    {
-    public:
-        typedef _outit outit_t;
-
-        EventParser( _outit itout )
-            :m_itDest(itout), m_hasBegun(false), m_bytesToRead(0)
-        {}
-
-        //Feed bytes to this 
-        void operator()( uint8_t by )
-        {
-            if( !m_hasBegun ) //If we haven't begun parsing an event
-            {
-                //if( isDelayCode(by) )   //If we read a delay code, just put it in our upcoming event
-                //    m_curEvent.dt = by;
-                //else
-                beginNewEvent(by);
-            }
-            else
-                fillEvent(by);
-        }
-
-    private:
-        //static inline bool isDelayCode( uint8_t by ) { return ( (by & EventDelayMask) == EventDelayCode ); }
-
-        void beginNewEvent( uint8_t by )
-        {
-            auto einfo = GetEventInfo( static_cast<eTrkEventCodes>(by) );
-
-            if( ! einfo.first ) //If the event was not found
-            {
-                std::stringstream sstr;
-                sstr << "EventParser::beginNewEvent(): Unknown event type 0x" <<std::hex <<static_cast<uint16_t>(by) <<std::dec 
-                     <<" encountered! Cannot continue due to unknown parameter length and possible resulting mis-alignment..";
-                throw std::runtime_error( sstr.str() );
-            }
-
-            m_curEventInf     = einfo.second;
-            m_curEvent.evcode = by;
-
-            if( m_curEventInf.nbreqparams == 0 )
-                endEvent(); //If its an event with 0 parameters end it now
-            else
-            {
-                m_bytesToRead     = m_curEventInf.nbreqparams; //Parse the required params first
-                m_hasBegun        = true;
-            }
-        }
-        
-        //This reads the parameter bytes for a given event. And reduce the nb of bytes to read counter
-        void fillEvent( uint8_t by )
-        {
-            m_curEvent.params.push_back(by);
-
-            if( m_curEvent.params.size() == 1 && (m_curEventInf.evcodebeg == eTrkEventCodes::NoteOnBeg) )
-                m_bytesToRead += (m_curEvent.params.front() & NoteEvParam1NbParamsMask) >> 6; //For play notes events, the nb of extra bytes of data to read is contained in bits 7 and 8
-
-            --m_bytesToRead;
-
-            if( m_bytesToRead == 0 )
-                endEvent();
-        }
-
-        void endEvent()
-        {
-            //if( utils::LibWide().isLogOn() )
-            //    LogEventToClog(m_curEvent);
-
-            (*m_itDest) = std::move( m_curEvent );
-            ++m_itDest;
-            m_curEvent = TrkEvent(); //Re-init object state after move
-            m_bytesToRead = 0;
-            m_hasBegun = false;
-        }
-
-    private:
-        outit_t      m_itDest;      // Output for assembled events
-        bool         m_hasBegun;    // Whether we're working on an event right now
-        uint32_t     m_bytesToRead; // this contains the amount of bytes to read before the event is fully parsed
-        TrkEvent     m_curEvent;    // The event being assembled currently.
-        TrkEventInfo m_curEventInf; // Info on the current event type
-    };
-
-//====================================================================================================
 // Functions
 //====================================================================================================
 
-    /*****************************************************************
-        ParseTrkChunk
-            This function can be used to parse a track of DSE events 
-            into a vector of track events, and a track preamble.
-    *****************************************************************/
-    template<class _itin>
-        std::pair<std::vector<TrkEvent>,TrkPreamble> ParseTrkChunk( _itin beg, _itin end )
+    /// <summary>
+    /// This interpret and returns the 3 values that are stored in the playnote event's first parameter.
+    /// </summary>
+    /// <param name="noteparam1">The first parameter byte of a raw playnote event to parse.</param>
+    /// <param name="out_octdiff">The parsed octave modifier from the parameter.</param>
+    /// <param name="out_param2len">The parsed duration/param2 bytes length from the parameter.</param>
+    /// <param name="out_key">The parsed note (0x0-0xF) id from the parameter.</param>
+    void ParsePlayNoteParam1(uint8_t  noteparam1, int8_t& out_octdiff, uint8_t& out_param2len, uint8_t& out_key);
+
+    /// <summary>
+    /// Parses a raw playnote event and puts the result in a struct.
+    /// </summary>
+    /// <param name="ev">The raw play note event.</param>
+    /// <param name="curoctave">The octave the track is at currently, or 0. The octave modifier of the note will be added to this value in the resulting struct.</param>
+    ev_play_note ParsePlayNote(const TrkEvent& ev, uint8_t curoctave = 0);
+
+    /// <summary>
+    /// Find the closest delay event code for a given number of ticks.
+    /// </summary>
+    /// <param name="delayticks">A delay duration in ticks to find an existing delay event for.</param>
+    /// <returns>Returns a pair with the closest pause event found, and a boolean indicating if it could find a delay below eTrkDelays::_half(96) ticks.</returns>
+    std::optional<eTrkDelays>  FindClosestTrkDelayID(uint8_t delayticks);
+
+    /// <summary>
+    /// Returns a TrkEventInfo struct for the given event code providing information on a given event/envent range.
+    /// </summary>
+    /// <param name="ev">The event code of the event to get the TrkEventInfo for.</param>
+    /// <returns>Optionally returns a TrkEventInfo struct with the info on the event matching the event code passed as argument. Or nullopt.</returns>
+    std::optional<TrkEventInfo> GetEventInfo(eTrkEventCodes ev);
+
+    /// <summary>
+    /// Convert an event name to an event code.
+    /// </summary>
+    /// <param name="str">The label for an event to be converted back into an event code.</param>
+    /// <returns>The event code matching the string passed as arg, or eTrkEventCodes::Invalid if no matches could be found.</returns>
+    eTrkEventCodes StringToEventCode(const std::string& str);
+
+    /// <summary>
+    /// Convert a string with the symbol of one of the 12 notes into a eNote enum value.
+    /// </summary>
+    /// <param name="str">The symbol of the note to convert into a eNote enum value.</param>
+    /// <returns>The eNote value matching the string symbol. Or a value bigger than eNote::NbNote when no match could be found.</returns>
+    eNote StringToNote(const std::string& str);
+
+    /// <summary>
+    /// Return a textual representation of a midi note id!
+    /// </summary>
+    /// <param name="midinote">A midi note to get a string for..</param>
+    /// <returns>The string representation of the midi note in the format "[NoteName][OctaveNumber]".</returns>
+    std::string MidiNoteIdToText(midinote_t midinote);
+
+    /// <summary>
+    /// This function can be used to parse a track of DSE events 
+    /// into a vector of track events, and a track preamble.
+    /// </summary>
+    template<class _itin> std::pair<std::vector<TrkEvent>,TrkPreamble> ParseTrkChunk( _itin beg, _itin end )
     {
         using namespace std;
         ChunkHeader hdr;
@@ -640,40 +403,6 @@ namespace DSE
     }
 
     /*****************************************************************
-        ParsePlayNoteParam1
-            This interpret and returns the 3 values that are 
-            stored in the playnote event's first parameter.
-    *****************************************************************/
-    //void ProcPlayNoteParam1 (  uint8_t   noteparam1, 
-    //                           uint8_t & inout_curoctave, 
-    //                           uint8_t & out_param2len, 
-    //                           uint8_t & out_midinote );
-
-    void ParsePlayNoteParam1( uint8_t  noteparam1,
-                              int8_t   & out_octdiff,
-                              uint8_t  & out_notedur,
-                              uint8_t  & out_key );
-
-
-    struct ev_play_note 
-    {
-        midinote_t mnoteid   = 0;
-        uint8_t    param2len = 0; //length in bytes of param2
-        int8_t     octmod    = 0;
-        uint8_t    parsedkey = 0;
-        uint32_t   holdtime  = 0;
-    };
-
-    ev_play_note ParsePlayNote(const TrkEvent& ev, uint8_t curoctave = 0, uint32_t lasthold = 0);
-
-
-    /*****************************************************************
-        MidiNoteIdToText
-            Return a textual representation of a midi note id!
-    *****************************************************************/
-    std::string MidiNoteIdToText( uint8_t midinote );
-
-    /*****************************************************************
         WriteTrkChunk
             This function can be used to write a track of DSE events 
             into a container using an insertion iterator. 
@@ -685,8 +414,7 @@ namespace DSE
             - nbenvents : nb of events in the range. Saves a call to std::distance!
 
     *****************************************************************/
-    template<class _backinsit, class _inevit>
-        size_t WriteTrkChunk( _backinsit       & writeit, 
+    template<class _backinsit, class _inevit> size_t WriteTrkChunk( _backinsit       & writeit, 
                                  const TrkPreamble & preamble, 
                                  _inevit             evbeg, 
                                  _inevit             evend,
@@ -701,7 +429,7 @@ namespace DSE
         //Write header
         ChunkHeader hdr;
         hdr.label  = static_cast<uint32_t>(eDSEChunks::trk);
-        hdr.datlen = TrkPreamble::Size + tracklen;   //We don't need to count padding here
+        hdr.datlen = TrkPreamble::size() + tracklen;   //We don't need to count padding here
         hdr.param1 = TrkParam1Default;
         hdr.param2 = TrkParam2Default;
 
@@ -725,8 +453,8 @@ namespace DSE
         return ((size_t)hdr.Size + hdr.datlen);
     }
 
-    template<class _backinsit, class _inevit>
-        _backinsit WriteTrkChunk( _backinsit         writeit, 
+
+    template<class _backinsit, class _inevit> _backinsit WriteTrkChunk( _backinsit         writeit, 
                                  const TrkPreamble & preamble, 
                                  _inevit             evbeg, 
                                  _inevit             evend )
@@ -734,9 +462,91 @@ namespace DSE
         return WriteTrkChunk( writeit, preamble, evbeg, evend, static_cast<size_t>(std::distance( evbeg, evend )) );
     }
 
-    /*
-    */
-    void LogEventToClog( const TrkEvent & ev );
+//====================================================================================================
+// EventParser
+//====================================================================================================
+
+    /// <summary>
+    /// Pass the bytes of an event track, after the preamble,
+    ///  and it will eat bytes and turn them into events within 
+    /// the container refered to by the iterator !
+    /// </summary>
+    template<class _outit> class EventParser
+    {
+    public:
+        typedef _outit outit_t;
+
+        EventParser(_outit itout) :m_itDest(itout), m_hasBegun(false), m_bytesToRead(0) {}
+
+        //Feed bytes to this 
+        void operator()(uint8_t by)
+        {
+            if (!m_hasBegun) //If we haven't begun parsing an event
+            {
+                //if( isDelayCode(by) )   //If we read a delay code, just put it in our upcoming event
+                //    m_curEvent.dt = by;
+                //else
+                beginNewEvent(by);
+            }
+            else
+                fillEvent(by);
+        }
+
+    private:
+        void beginNewEvent(uint8_t by)
+        {
+            auto einfo = GetEventInfo(static_cast<eTrkEventCodes>(by));
+
+            if (!einfo) //If the event was not found
+            {
+                std::stringstream sstr;
+                sstr << "EventParser::beginNewEvent(): Unknown event type 0x" << std::hex << static_cast<uint16_t>(by) << std::dec
+                    << " encountered! Cannot continue due to unknown parameter length and possible resulting mis-alignment..";
+                throw std::runtime_error(sstr.str());
+            }
+
+            m_curEventInf = *einfo;
+            m_curEvent.evcode = by;
+
+            if (m_curEventInf.nbreqparams == 0)
+                endEvent(); //If its an event with 0 parameters end it now
+            else
+            {
+                m_bytesToRead = m_curEventInf.nbreqparams; //Parse the required params first
+                m_hasBegun = true;
+            }
+        }
+
+        //This reads the parameter bytes for a given event. And reduce the nb of bytes to read counter
+        void fillEvent(uint8_t by)
+        {
+            m_curEvent.params.push_back(by);
+
+            if (m_curEvent.params.size() == 1 && (m_curEventInf.evcodebeg == eTrkEventCodes::NoteOnBeg))
+                m_bytesToRead += (m_curEvent.params.front() & NoteEvParam1NbParamsMask) >> 6; //For play notes events, the nb of extra bytes of data to read is contained in bits 7 and 8
+
+            --m_bytesToRead;
+
+            if (m_bytesToRead == 0)
+                endEvent();
+        }
+
+        void endEvent()
+        {
+            (*m_itDest) = std::move(m_curEvent);
+            ++m_itDest;
+            m_curEvent = TrkEvent(); //Re-init object state after move
+            m_bytesToRead = 0;
+            m_hasBegun = false;
+        }
+
+    private:
+        outit_t      m_itDest;      // Output for assembled events
+        bool         m_hasBegun;    // Whether we're working on an event right now
+        uint32_t     m_bytesToRead; // this contains the amount of bytes to read before the event is fully parsed
+        TrkEvent     m_curEvent;    // The event being assembled currently.
+        TrkEventInfo m_curEventInf; // Info on the current event type
+    };
 
 };
 

@@ -95,9 +95,9 @@ namespace DSE
     extern const std::array<eDSEChunks,     NB_DSEChunks>      DSEChunksList;    //Array containing all chunks labels
     extern const std::array<eDSEContainers, NB_DSEContainers>  DSEContainerList; //Array containing all the DSE container's magic number.
 
-    //
-    //
-    //
+    //-------------------------------
+    // Sample Formats
+    //-------------------------------
     enum struct eDSESmplFmt : uint16_t
     {
         invalid    = std::numeric_limits<std::underlying_type_t<eDSESmplFmt>>::max(),
@@ -105,6 +105,7 @@ namespace DSE
         pcm16      = 0x100,
         ima_adpcm4 = 0x200,
         ima_adpcm3 = 0x300, //#FIXME: Fix this because PSG and adpcm3 have the same id
+        //psg       = 0x300,
     };
 
     eDSESmplFmt IntToDSESmplFmt(std::underlying_type_t<eDSESmplFmt> val);
