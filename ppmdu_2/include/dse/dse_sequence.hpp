@@ -181,7 +181,6 @@ namespace DSE
         eTrkDelays::_64th,
     }};
 
-
     /*
         FindClosestTrkDelayID
             Find the closest delay event code for a given number of ticks.
@@ -192,7 +191,9 @@ namespace DSE
     {
         for( size_t i = 0; i < TrkDelayCodesTbl.size(); ++i )
         {
-            if( (i + 1) < (TrkDelayCodesTbl.size()-1) )
+            if ((uint8_t)TrkDelayCodesTbl[i] == delayticks)
+                return std::move(std::make_pair(TrkDelayCodesTbl[i], true));
+            else if( (i + 1) < (TrkDelayCodesTbl.size()-1) )
             {
                 //Check if the next value is smaller than the delay. If it is, we can't get a value any closer to "delayticks".
                 if( delayticks > static_cast<uint8_t>(TrkDelayCodesTbl[i+1]) )
@@ -393,28 +394,15 @@ namespace DSE
         A  = 0x9,
         As = 0xA,
         B  = 0xB,
-        nbNotes, //Must be last
+        nbNotes, //Must be last of valid notes
+        Invalid,
     };
     
     /****************************************************************************
         NoteNames
             A textual representation of each note.
     ****************************************************************************/
-    static const std::array<std::string, static_cast<uint8_t>(eNote::nbNotes)> NoteNames
-    {{
-        "C",
-        "C#",
-        "D",
-        "D#",
-        "E",
-        "F",
-        "F#",
-        "G",
-        "G#",
-        "A",
-        "A#",
-        "B",
-    }};
+    extern const std::array<std::string, static_cast<uint8_t>(eNote::nbNotes)> NoteNames;
 
 //Bitmasks
     static const uint8_t NoteEvParam1NoteMask     = 0x0F; //( 0000 1111 ) The id of the note "eDSENote" is stored in the lower nybble
@@ -452,7 +440,6 @@ namespace DSE
         eTrkEventCodes evcodeend = eTrkEventCodes::Invalid;   //Leave to invalid when is event with single code
         //nb params
         uint32_t       nbreqparams = 0; //if has any required parameters
-        //bool           hasoptparam; //if has optional param  # Only play note events have a variable parameter count!
         std::string    evlbl;       //text label for the event, mainly for logging/debugging
     };
 
@@ -464,30 +451,9 @@ namespace DSE
     ************************************************************************/
     std::pair<bool,TrkEventInfo> GetEventInfo( eTrkEventCodes ev );
 
-    //What do we want to do with our events ?
-    // 1. Get details to parse them
-    // 2. Get details on how to interpret them
-    // 3. Get details on how to write them
-    //What do we have to determine the event type ?
-    // The event code.
+    eTrkEventCodes StringToEventCode(const std::string& str);
 
-    //So we want something that can give us a polymorphic event object by passing event codes,
-    // and something we can pass an event polymorphic object to get a raw event from. Or a midi event.
-
-    /*
-        BaseTrkEvent
-
-    */
-    //class TrkEvent
-    //{
-    //public:
-
-    //    void toMIDI()const;
-    //    void tostring()const;
-
-    //    unsigned int getNbReqBytes()const;
-    //    unsigned int getNbOptBytes( uint8_t evcode, const std::vector<uint8_t> & reqbytes )const;
-    //};
+    eNote StringToNote(const std::string& str);
 
 //====================================================================================================
 // Track Data
@@ -687,6 +653,19 @@ namespace DSE
                               int8_t   & out_octdiff,
                               uint8_t  & out_notedur,
                               uint8_t  & out_key );
+
+
+    struct ev_play_note 
+    {
+        midinote_t mnoteid   = 0;
+        uint8_t    param2len = 0; //length in bytes of param2
+        int8_t     octmod    = 0;
+        uint8_t    parsedkey = 0;
+        uint32_t   holdtime  = 0;
+    };
+
+    ev_play_note ParsePlayNote(const TrkEvent& ev, uint8_t curoctave = 0, uint32_t lasthold = 0);
+
 
     /*****************************************************************
         MidiNoteIdToText

@@ -31,6 +31,7 @@ namespace audioutil
     {
         None,
         Midi_GS, //For now only midi supported
+        XML, //Tracks will be exported to pure xml
     };
 
     /// <summary>
@@ -172,6 +173,7 @@ namespace audioutil
         //Output type
         bool ParseOptionOutputSF2  ( const std::vector<std::string> & optdata );
         bool ParseOptionOutputXML  ( const std::vector<std::string> & optdata );
+        bool ParseOptionForceTrackXML(const std::vector<std::string>& optdata);
         bool ParseOptionForceMidi(const std::vector<std::string>& optdata);
 
         //Processing options

@@ -323,6 +323,32 @@ namespace DSE
             cout << "\n";
         }
 
+        void ExportXMLMusic(const std::string& destdirpath)
+        {
+            const size_t nbfiles = m_mseqs.size();
+            size_t cnt = 0;
+            size_t longestname = 0;
+            cout << "Writing music sequences to XML...\n";
+            for (const auto& entry : m_mseqs)
+            {
+                const MusicSequence& seq = entry.second;
+                Poco::Path fpath(destdirpath);
+                fpath.append(std::to_string(seq.metadata().origloadorder) + "_" + seq.metadata().fname).makeFile().setExtension("xml");
+                fpath.setBaseName(fpath.getBaseName() + "_seq");
+                const std::string curpath  = fpath.toString();
+                const std::string curfname = fpath.getBaseName();
+
+                if (utils::LibWide().isLogOn())
+                    clog << "<*>- Currently exporting smd to " << curpath << "\n";
+                DSE::MusicSequenceToXML(seq, curpath);
+
+                ++cnt;
+                longestname = std::max(curfname.size(), longestname);
+                cout << "\r[" << setfill(' ') << setw(4) << right << cnt << " of " << nbfiles << " written] - " << curfname << std::string(longestname - -curfname.size(), ' ');
+            }
+            cout << "\n";
+        }
+
         void ExportMIDIs(const std::string& destdirpath, sequenceProcessingOptions options)
         {
             const size_t nbmidis = m_mseqs.size();
@@ -493,8 +519,13 @@ namespace DSE
                     {
 
                         //Tell if its a set of sequence or a bank
-                        if (itdir.path().getExtension() == "xml" && IsXMLPresetBank(fpath))
-                            ImportBank(fpath);
+                        if (itdir.path().getExtension() == "xml")
+                        {
+                            if(IsXMLPresetBank(fpath))
+                                ImportBank(fpath);
+                            else if (IsXMLMusicSequence(fpath))
+                                ImportMusicSeq(fpath);
+                        }
                         else if (itdir.path().getExtension() == "mid")
                             ImportMusicSeq(fpath);
                     }
@@ -524,7 +555,14 @@ namespace DSE
 
         DSE::MusicSequence& ImportMusicSeq(const std::string& midipath)
         {
-            DSE::MusicSequence seq = MidiToSequence(midipath);
+            Poco::Path fpath = midipath;
+            DSE::MusicSequence seq;
+            if (fpath.getExtension() == "mid")
+                seq = MidiToSequence(midipath);
+            else if (fpath.getExtension() == "xml")
+                seq = XMLToMusicSequence(midipath);
+            else
+                throw std::runtime_error("Unknown file type!");
             return (m_mseqs[seq.metadata().get_original_file_name_no_ext()] = std::move(seq));
         }
 
@@ -707,6 +745,11 @@ namespace DSE
     void DSELoader::ExportXMLPrograms(const std::string& destpath, bool bConvertSamples)
     {
         m_pimpl->ExportXMLPrograms(destpath, bConvertSamples);
+    }
+
+    void DSELoader::ExportXMLMusic(const std::string& destdirpath)
+    {
+        m_pimpl->ExportXMLMusic(destdirpath);
     }
 
     void DSELoader::ExportMIDIs(const std::string& destdirpath, sequenceProcessingOptions options)

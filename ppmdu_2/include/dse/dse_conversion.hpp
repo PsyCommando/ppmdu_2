@@ -174,6 +174,7 @@ namespace DSE
         SMDLConvInfoDB ExportSoundfont(const std::string& despath, sampleProcessingOptions options, bool bSingleSf2 = true);
 
         void ExportXMLPrograms(const std::string& destpath, bool bConvertSamples = false);
+        void ExportXMLMusic(const std::string& destdirpath);
         void ExportMIDIs(const std::string& destdirpath, sequenceProcessingOptions options);
 
         void ImportChangesToGame(const std::string& swdlpath, std::string smdlpath = {}, std::string sedlpath = {});
@@ -185,7 +186,7 @@ namespace DSE
         * Methods for loading exported data back in
         */
         DSE::PresetBank&           ImportBank          (const std::string& bnkxmlfile);
-        DSE::MusicSequence&        ImportMusicSeq      (const std::string& midipath);
+        DSE::MusicSequence&        ImportMusicSeq      (const std::string& midipath); //Also works with xml sequences
         DSE::SoundEffectSequences& ImportSoundEffectSeq(const std::string& seqdir);
         void                       ImportDirectory     (const std::string& pathdir); //Batch import everything contained in a directory. XML for banks, midi, SE sequences folders
 
@@ -538,12 +539,16 @@ namespace DSE
 //=================================================================================================
     bool IsSESequenceXmlDir(const std::string& destdir);
     bool IsXMLPresetBank   (const std::string& xmlfilepath);
+    bool IsXMLMusicSequence(const std::string& xmlfilepath);
 
-    void PresetBankToXML          (const DSE::PresetBank&           srcbnk, const std::string& bnkxmlfile);
-    void SoundEffectSequencesToXML(const DSE::SoundEffectSequences& srcseq, const std::string& destdir);
+    void PresetBankToXML          (const DSE::PresetBank&           srcbnk,   const std::string& bnkxmlfile);
+    void SoundEffectSequencesToXML(const DSE::SoundEffectSequences& srcseq,   const std::string& destdir);
+    void MusicSequenceToXML       (const DSE::MusicSequence&        seq,      const std::string& filepath);
+    
 
     DSE::PresetBank           XMLToPresetBank     (const std::string& bnkxmlfile);
     DSE::SoundEffectSequences XMLToEffectSequences(const std::string& srcdir);
+    DSE::MusicSequence        XMLToMusicSequence  (const std::string& filepath);
 
 };
 

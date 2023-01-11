@@ -296,6 +296,15 @@ namespace audioutil
             std::bind( &CAudioUtil::ParseOptionOutputXML, &GetInstance(), placeholders::_1 ),
         },
 
+        //force_trk_xml -> Forces tracks to be exported to pure xml
+        {
+            "force_trk_xml",
+            0,
+            "Specifying this will force tracks to be exported to pure xml instead of midi.",
+            "-force_trk_xml",
+            std::bind(&CAudioUtil::ParseOptionForceTrackXML, &GetInstance(), placeholders::_1),
+        },
+
         //bake -> This enable sample enveloppe baking
         {
             "bake",
@@ -722,6 +731,12 @@ namespace audioutil
         return true;
     }
 
+    bool CAudioUtil::ParseOptionForceTrackXML(const std::vector<std::string>& optdata)
+    {
+        m_seqExportFmt = eExportSequenceFormat::XML;
+        return true;
+    }
+
     bool CAudioUtil::ParseOptionForceMidi(const std::vector<std::string>& optdata)
     {
         m_seqExportFmt   = eExportSequenceFormat::Midi_GS;
@@ -1080,6 +1095,24 @@ namespace audioutil
                 }
                 else
                     assert(false);
+            }
+            else if (seqfmt == eExportSequenceFormat::XML)
+            {
+                if (smplfmt == eExportSamplesFormat::XML)
+                {
+                    cout << "<*>- Exporting sample, instruments presets data, and music sequence XML files to " << exportpaths.outpath << "..\n";
+                    m_loader.ExportXMLPrograms(exportpaths.outpath, m_bConvertSamples);
+                }
+                else if (smplfmt == eExportSamplesFormat::None)
+                {
+                    cout << "<*>- Exporting music sequence XML files to " << exportpaths.outpath << "..\n";
+                }
+                else if (smplfmt == eExportSamplesFormat::SF2)
+                    throw std::runtime_error("Imcompatible options selected. When exporting music tracks to xml, soundfont export is disabled!"s);
+                else
+                    assert(false);
+
+                m_loader.ExportXMLMusic(exportpaths.outpath);
             }
             else if(seqfmt == eExportSequenceFormat::None)
             {

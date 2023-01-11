@@ -131,6 +131,7 @@ list(APPEND audioutil_SRC
     "../ppmdu_2/src/dse/dse_preset_bank_xml_io.cpp"
     "../ppmdu_2/src/dse/dse_se_sequence_xml_io.cpp"
     "../ppmdu_2/src/dse/dse_sequence.cpp"
+    "../ppmdu_2/src/dse/dse_sequence_xml_io.cpp"
     "../ppmdu_2/src/dse/sample_processor.cpp"
     "../ppmdu_2/src/dse/dse_to_sf2.cpp"
     "../ppmdu_2/src/dse/dse_to_xml.cpp"

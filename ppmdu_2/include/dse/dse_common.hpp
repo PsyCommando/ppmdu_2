@@ -17,6 +17,7 @@ Description: Common data between several of the Procyon Studio Digital Sound Ele
 #include <cassert>
 #include <limits>
 #include <iostream>
+#include <algorithm>
 
 namespace pugi { class xml_node; };
 
@@ -839,16 +840,40 @@ namespace DSE
 // Utility Functions
 //====================================================================================================
 
+    constexpr int8_t ClampInt8From0(int value)
+    {
+        return (int8_t)std::clamp(value, (int)0, (int)std::numeric_limits<int8_t>::max());
+    }
+
     constexpr int8_t ClampDSEVolume(int vol)
     {
-        return (int8_t)std::clamp(vol, 0, (int)std::numeric_limits<int8_t>::max());
+        return ClampInt8From0(vol);
     }
 
     constexpr int8_t ClampDSEPan(int pan)
     {
-        return (int8_t)std::clamp(pan, 0, (int)std::numeric_limits<int8_t>::max());
+        return ClampInt8From0(pan);
     }
 
+    constexpr int8_t ClampInt8(int value)
+    {
+        return (int8_t)std::clamp(value, (int)std::numeric_limits<int8_t>::min(), (int)std::numeric_limits<int8_t>::max());
+    }
+
+    constexpr uint8_t ClampUInt8(unsigned int value)
+    {
+        return (uint8_t)std::clamp(value, (unsigned int)std::numeric_limits<uint8_t>::min(), (unsigned int)std::numeric_limits<uint8_t>::max());
+    }
+
+    constexpr uint16_t ClampUInt16(unsigned int value)
+    {
+        return (uint16_t)std::clamp(value, (unsigned int)std::numeric_limits<uint16_t>::min(), (unsigned int)std::numeric_limits<uint16_t>::max());
+    }
+
+    constexpr int16_t ClampInt16(int value)
+    {
+        return (int16_t)std::clamp(value, (int)std::numeric_limits<int16_t>::min(), (int)std::numeric_limits<int16_t>::max());
+    }
 
     /************************************************************************
         DSE_ChunkIDLookup

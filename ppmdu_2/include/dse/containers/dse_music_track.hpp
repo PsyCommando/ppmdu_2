@@ -35,7 +35,7 @@ namespace DSE
         void   shrink_to_fit() { m_events.shrink_to_fit(); }
 
         void push_back(DSE::TrkEvent&& ev) { m_events.push_back(ev); }
-        void push_back(DSE::TrkEvent ev) { m_events.push_back(std::move(ev)); }
+        //void push_back(DSE::TrkEvent ev) { m_events.push_back(std::move(ev)); }
 
         /*
             Get the DSE events for this track

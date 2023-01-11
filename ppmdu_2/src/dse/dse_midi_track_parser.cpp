@@ -242,7 +242,7 @@ namespace DSE
                 globalticks += newdelta;
                 state.ticks_ += newdelta;
                 state.lastpause_ = newdelta;
-                trk.push_back(pauseev);
+                trk.push_back( std::move(pauseev) );
             }
             else
                 HandleLongPauseEvents(mev, state, trk, globalticks, delta); //If delta time is too long, use a longer pause event!
@@ -266,7 +266,7 @@ namespace DSE
                 globalticks += state.lastpause_;
                 state.ticks_ += state.lastpause_;
 
-                trk.push_back(pauseev);
+                trk.push_back(std::move(pauseev));
             }
             else if ((delta < ((ticks_t)state.lastpause_ + std::numeric_limits<uint8_t>::max())) && (delta > state.lastpause_)) //Check if our last pause is shorter than the required delay, so we can just add to it
             {
@@ -278,7 +278,7 @@ namespace DSE
                 globalticks += (ticks_t)state.lastpause_ + addpauseev.params.front();
                 state.ticks_ += state.lastpause_ + addpauseev.params.front();
                 state.lastpause_ = state.lastpause_ + addpauseev.params.front();
-                trk.push_back(addpauseev);
+                trk.push_back(std::move(addpauseev));
             }
             else if (delta < std::numeric_limits<uint8_t>::max())
             {
@@ -291,7 +291,7 @@ namespace DSE
                 globalticks += delta;
                 state.ticks_ += delta;
                 state.lastpause_ = delta;
-                trk.push_back(shortpauseev);
+                trk.push_back(std::move(shortpauseev));
             }
             else if (delta < std::numeric_limits<uint16_t>::max())
             {
@@ -305,7 +305,7 @@ namespace DSE
                 globalticks += delta;
                 state.ticks_ += delta;
                 state.lastpause_ = delta;
-                trk.push_back(longpauseev);
+                trk.push_back(std::move(longpauseev));
             }
             else 
             {
@@ -329,7 +329,7 @@ namespace DSE
                         globalticks    += pauseleft;
                         state.ticks_   += pauseleft;
                         state.lastpause_ = pauseleft;
-                        trk.push_back( shortpauseev );
+                        trk.push_back(std::move(shortpauseev) );
 
                         pauseleft = 0;
                     }
@@ -347,7 +347,7 @@ namespace DSE
                         globalticks    += curpause;
                         state.ticks_   += curpause;
                         state.lastpause_ = curpause;
-                        trk.push_back( longpauseev );
+                        trk.push_back(std::move(longpauseev) );
 
                         //Use long pause
                         pauseleft -= curpause;
@@ -400,7 +400,7 @@ namespace DSE
             uint8_t key = (note % NbMidiKeysInOctave);
             noteonev.evcode = vel & 0x7F;
             noteonev.params.push_back(((octmod & 3) << 4) | (key & 0xF)); //Put the param1 without the parameter lenght for now!
-            trk.push_back(noteonev);
+            trk.push_back(std::move(noteonev));
         }
 
         /****************************************************************************************
@@ -425,7 +425,7 @@ namespace DSE
                         paramlenby = 3;
                     else if ((noteduration & 0x0000FF00) > 0)
                         paramlenby = 2;
-                    else if ((noteduration & 0x0000FF00) > 0)
+                    else if ((noteduration & 0x000000FF) > 0)
                         paramlenby = 1;
 
                     state.lasthold_ = static_cast<uint32_t>(noteduration); //Update last note duration
@@ -561,7 +561,7 @@ namespace DSE
             }
 
             //Insert parsed event
-            m_dsetracks[evchan].push_back(dsev);
+            m_dsetracks[evchan].push_back(std::move(dsev));
         }
 
         /****************************************************************************************
@@ -718,7 +718,7 @@ namespace DSE
             DSE::TrkEvent dsev;
             dsev.evcode = static_cast<uint8_t>(evcode);
             dsev.params = std::move(params);
-            trk.push_back(dsev);
+            trk.push_back(std::move(dsev));
         }
 
         static void InsertDSEEvent(MusicTrack& trk, DSE::eTrkEventCodes evcode, uint8_t param)
@@ -726,14 +726,14 @@ namespace DSE
             DSE::TrkEvent dsev;
             dsev.evcode = static_cast<uint8_t>(evcode);
             dsev.params.push_back(param);
-            trk.push_back(dsev);
+            trk.push_back(std::move(dsev));
         }
 
         static void InsertDSEEvent(MusicTrack& trk, DSE::eTrkEventCodes evcode)
         {
             DSE::TrkEvent dsev;
             dsev.evcode = static_cast<uint8_t>(evcode);
-            trk.push_back(dsev);
+            trk.push_back(std::move(dsev));
         }
 
         void InsertSetOctaveEvent(MusicTrack& trk, TrkState& state, uint8_t newoctave)

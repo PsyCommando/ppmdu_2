@@ -1,5 +1,6 @@
 #include <dse/dse_conversion.hpp>
 #include <dse/dse_to_xml.hpp>
+#include <dse/dse_common.hpp>
 
 #include <ext_fmts/adpcm.hpp>
 
@@ -23,26 +24,6 @@ using namespace std;
 
 namespace DSE
 {
-    constexpr int8_t ClampInt8From0(int value)
-    {
-        return (int8_t)std::clamp(value, (int)0, (int)numeric_limits<int8_t>::max());
-    }
-
-    constexpr int8_t ClampInt8(int value)
-    {
-        return (int8_t)std::clamp(value, (int)numeric_limits<int8_t>::min(), (int)numeric_limits<int8_t>::max());
-    }
-
-    constexpr uint8_t ClampUInt8(unsigned int value)
-    {
-        return (uint8_t)std::clamp(value, (unsigned int)numeric_limits<uint8_t>::min(), (unsigned int)numeric_limits<uint8_t>::max());
-    }
-
-    constexpr uint16_t ClampUInt16(unsigned int value)
-    {
-        return (uint16_t)std::clamp(value, (unsigned int)numeric_limits<uint16_t>::min(), (unsigned int)numeric_limits<uint16_t>::max());
-    }
-
 //====================================================================================================
 //  Constants
 //====================================================================================================
