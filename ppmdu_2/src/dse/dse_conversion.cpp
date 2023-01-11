@@ -1468,7 +1468,7 @@ namespace DSE
                     {
                         wave::PCM8WaveFile fl;
                         fl.ReadWave(fdat.begin(), fdat.end());
-                        auto samples = fl.GetSamples().front(); //Always one channel only
+                        auto & samples = fl.GetSamples().front(); //Always one channel only
 
                         //#TODO: Check wtf is going on here?
                         for (auto& asample : samples)
@@ -1481,7 +1481,7 @@ namespace DSE
                     {
                         wave::PCM16sWaveFile fl;
                         fl.ReadWave(fdat.begin(), fdat.end());
-                        auto samples = fl.GetSamples().front(); //Always one channel only
+                        auto & samples = fl.GetSamples().front(); //Always one channel only
                         samplebank->setSampleData(entry.first, utils::PCM16VecToRawBytes(&samples));
                         psmplinfo->smplfmt = eDSESmplFmt::pcm16;
                     }
