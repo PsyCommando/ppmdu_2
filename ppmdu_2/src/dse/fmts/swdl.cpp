@@ -2507,7 +2507,7 @@ namespace DSE
             return chunklen;
         }
 
-        void WriteWaviEntry(DSE::WavInfo wavientry, writeit_t & itout, std::streampos beftbl, size_t entryindex, size_t pcmdsmploffset )
+        void WriteWaviEntry(DSE::WavInfo wavientry /*Copy is intended!*/, writeit_t& itout, std::streampos beftbl, size_t entryindex, size_t pcmdsmploffset)
         {
             streampos entryoffset = m_tgtcn.tellp();
             wavientry.smplpos = pcmdsmploffset; //Set the pcmd chunk relative sample offset
@@ -2545,6 +2545,8 @@ namespace DSE
             if( ptrpresbnk == nullptr )
                 return;
             const auto & prgbnk = ptrpresbnk->PrgmInfo();
+            if (prgbnk.empty())
+                return;
 
             const streampos befprgi = m_tgtcn.tellp();
             //Reserve header
@@ -2651,6 +2653,8 @@ namespace DSE
             if( ptrpresbnk == nullptr )
                 return;
             const DSE::KeyGroupList & kgrplist = ptrpresbnk->Keygrps();
+            if (kgrplist.empty())
+                return;
 
             //Reserve header
             streampos befhdr = m_tgtcn.tellp();
