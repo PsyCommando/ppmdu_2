@@ -23,6 +23,26 @@ using namespace std;
 
 namespace DSE
 {
+    constexpr int8_t ClampInt8From0(int value)
+    {
+        return (int8_t)std::clamp(value, (int)0, (int)numeric_limits<int8_t>::max());
+    }
+
+    constexpr int8_t ClampInt8(int value)
+    {
+        return (int8_t)std::clamp(value, (int)numeric_limits<int8_t>::min(), (int)numeric_limits<int8_t>::max());
+    }
+
+    constexpr uint8_t ClampUInt8(unsigned int value)
+    {
+        return (uint8_t)std::clamp(value, (unsigned int)numeric_limits<uint8_t>::min(), (unsigned int)numeric_limits<uint8_t>::max());
+    }
+
+    constexpr uint16_t ClampUInt16(unsigned int value)
+    {
+        return (uint16_t)std::clamp(value, (unsigned int)numeric_limits<uint16_t>::min(), (unsigned int)numeric_limits<uint16_t>::max());
+    }
+
 //====================================================================================================
 //  Constants
 //====================================================================================================
@@ -95,6 +115,8 @@ namespace DSE
         const string ATTR_KGrpPrio     = "priority"s;
         const string ATTR_KGrVcLow     = "voice_chan_low"s;
         const string ATTR_KGrVcHi      = "voice_chan_high"s;
+        const string ATTR_KGrUnk50     = "unk50";
+        const string ATTR_KGrUnk51     = "unk51";
 
         const string NODE_Sample       = "Sample"s;
         const string PROP_SmplUnk5     = "Unk5"s;
@@ -160,32 +182,34 @@ namespace DSE
         for (xml_attribute node : envnode.attributes())
         {
             const string nodename(node.name());
+
             if(nodename == ATTR_On)
-                utils::parseHexaValToValue(node.value(), out_envon);
+                out_envon = node.as_bool();
             else if (nodename == ATTR_EnvMulti)
-                utils::parseHexaValToValue(node.value(), env.envmulti);
+                env.envmulti = ClampInt8(node.as_int());
             else
                 clog << "Unsupported envelope attribute \"" << nodename << "\"\n";
         }
 
         for (xml_node node : envnode.children())
         {
-            const string nodename(node.name());
-            const string value = node.text().get();
+            const string   nodename(node.name());
+            const xml_text value = node.text();
+
             if (nodename == PROP_EnvAtkVol)
-                utils::parseHexaValToValue(value, env.atkvol);
+                env.atkvol = ClampDSEVolume(value.as_int());
             else if (nodename == PROP_EnvAtk)
-                utils::parseHexaValToValue(value, env.attack);
+                env.attack = ClampInt8From0(value.as_int());
             else if (nodename == PROP_EnvDecay)
-                utils::parseHexaValToValue(value, env.decay);
+                env.decay = ClampInt8From0(value.as_int());
             else if (nodename == PROP_EnvSustain)
-                utils::parseHexaValToValue(value, env.sustain);
+                env.sustain = ClampDSEVolume(value.as_int());
             else if (nodename == PROP_EnvHold)
-                utils::parseHexaValToValue(value, env.hold);
+                env.hold = ClampInt8From0(value.as_int());
             else if (nodename == PROP_EnvDecay2)
-                utils::parseHexaValToValue(value, env.decay2);
+                env.decay2 = ClampInt8From0(value.as_int());
             else if (nodename == PROP_EnvRelease)
-                utils::parseHexaValToValue(value, env.release);
+                env.release = ClampInt8From0(value.as_int());
             else
                 clog << "Unsupported envelope node \"" << nodename << "\"\n";
         }
@@ -257,7 +281,12 @@ private:
         xml_node rootnode = doc.child(ROOT_Programs.c_str());
         //Parse programs
         for (auto curnode : rootnode.children(NODE_Program.c_str()))
-            prgmbank.push_back(ParseAProgram(curnode));
+        {
+            std::unique_ptr<ProgramInfo> info = ParseAProgram(curnode);
+            if (info->id >= prgmbank.size())
+                prgmbank.resize(info->id + 1); //Program info in the table have to be inserted at the index matching their ID!
+            prgmbank[info->id] = std::move(info);
+        }
     }
 
     //Parse a single program from the xml document
@@ -270,30 +299,59 @@ private:
         for (xml_attribute entry : programnode.attributes())
         {
             const string nodename(entry.name());
+
             if (nodename == ATTR_ID)
-                utils::parseHexaValToValue(entry.value(), info->id);
+                info->id = ClampUInt16(entry.as_uint());
             else if (nodename == ATTR_Volume)
-                utils::parseHexaValToValue(entry.value(), info->prgvol);
+                info->prgvol = ClampDSEVolume(entry.as_int());
             else if (nodename == ATTR_Pan)
-                utils::parseHexaValToValue(entry.value(), info->prgpan);
+                info->prgpan = ClampDSEPan(entry.as_int());
             else if (nodename == ATTR_PrgmUnkPoly)
-                utils::parseHexaValToValue(entry.value(), info->unkpoly);
+                info->unkpoly = ClampUInt8(entry.as_uint());
             else if (nodename == ATTR_PrgmUnk4)
-                utils::parseHexaValToValue(entry.value(), info->unk4);
+                info->unk4 = ClampUInt16(entry.as_uint());
             else
                 clog << "Unsupported program data node \"" << nodename << "\"\n";
         }
 
         //Grab subnodes
         xml_node lfotbl = programnode.child(NODE_LFOTable.c_str());
-        for(xml_node lfo : lfotbl)
+        for (xml_node lfo : lfotbl)
+        {
             info->m_lfotbl.push_back(ParseALFO(lfo));
+        }
 
+        int cntsplits = 0;
         xml_node splittbl = programnode.child(NODE_SplitTable.c_str());
-        for(xml_node split : splittbl.children(NODE_Split.c_str()))
-            info->m_splitstbl.push_back(ParseASplit(split));
+        for (xml_node split : splittbl.children(NODE_Split.c_str()))
+        {
+            SplitEntry spl = ParseASplit(split);
+            if ((spl.id - cntsplits) > 1)
+            {
+                clog << "<!!!!>- Found a split with an id that was out of order! " << spl.id << ", but expected " << (cntsplits + 1) << "\n";
+#ifdef _DEBUG
+                assert(false);
+#endif
+            }
+            cntsplits = spl.id;
+            if (spl.id >= info->m_splitstbl.size())
+                info->m_splitstbl.resize(spl.id + 1);
+            info->m_splitstbl[spl.id] = std::move(spl);
+        }
 
         return info; //Should move
+    }
+
+    uint8_t parseLfoDest(xml_attribute attr)
+    {
+        //#TODO: Implement enum checks here to validate destination
+        return  (uint8_t)std::clamp(attr.as_uint(), (unsigned int)numeric_limits<uint8_t>::min(), (unsigned int)numeric_limits<uint8_t>::max());
+    }
+
+    uint8_t parseLfoWaveShape(xml_attribute attr)
+    {
+        //#TODO: Implement enum checks here to validate destination
+        return  (uint8_t)std::clamp(attr.as_uint((unsigned int)LFOTblEntry::eLFOWaveShape::Square), (unsigned int)numeric_limits<uint8_t>::min(), (unsigned int)numeric_limits<uint8_t>::max());
     }
 
     LFOTblEntry ParseALFO(xml_node lfonode)
@@ -304,24 +362,25 @@ private:
         for (xml_attribute node : lfonode.attributes())
         {
             const string nodename(node.name());
+
             if (nodename == ATTR_LFOEnabled)
-                utils::parseHexaValToValue(node.value(), lfoentry.unk52);
+                lfoentry.unk52 = ClampUInt8(node.as_uint());
             else if (nodename == ATTR_LFOModDest)
-                utils::parseHexaValToValue(node.value(), lfoentry.dest);
+                lfoentry.dest = parseLfoDest(node);
             else if (nodename == ATTR_LFOWaveShape)
-                utils::parseHexaValToValue(node.value(), lfoentry.wshape);
+                lfoentry.wshape = parseLfoWaveShape(node);
             else if (nodename == ATTR_LFORate)
-                utils::parseHexaValToValue(node.value(), lfoentry.rate);
+                lfoentry.rate = ClampUInt16(node.as_uint());
             else if (nodename == ATTR_LFOUnk29)
-                utils::parseHexaValToValue(node.value(), lfoentry.unk29);
+                lfoentry.unk29 = ClampUInt16(node.as_uint());
             else if (nodename == ATTR_LFODepth)
-                utils::parseHexaValToValue(node.value(), lfoentry.depth);
+                lfoentry.depth = ClampUInt16(node.as_uint());
             else if (nodename == ATTR_LFODelay)
-                utils::parseHexaValToValue(node.value(), lfoentry.delay);
+                lfoentry.delay = ClampUInt16(node.as_uint());
             else if (nodename == ATTR_LFOUnk32)
-                utils::parseHexaValToValue(node.value(), lfoentry.unk32);
+                lfoentry.unk32 = ClampUInt16(node.as_uint());
             else if (nodename == ATTR_LFOUnk33)
-                utils::parseHexaValToValue(node.value(), lfoentry.unk33);
+                lfoentry.unk33 = ClampUInt16(node.as_uint());
             else
                 clog << "Unsupported lfo node \"" << nodename << "\"\n";
         }
@@ -338,9 +397,9 @@ private:
         {
             const string nodename(node.name());
             if (nodename == ATTR_ID)
-                utils::parseHexaValToValue(node.value(), splitentry.id);
+                splitentry.id = (uint8_t)node.as_uint();
             else if (nodename == ATTR_SmplID)
-                utils::parseHexaValToValue(node.value(), splitentry.smplid);
+                splitentry.smplid = (sampleid_t)node.as_uint();
             else
                 clog << "Unsupported split attribute \"" << nodename << "\"\n";
         }
@@ -360,41 +419,58 @@ private:
                 if (!smplid)
                     throw std::runtime_error("A sample ID hasn't been defined in the xml for a split entry, from the xml file: \"" + m_path + "\"");
                 utils::parseHexaValToValue(smplid.value(), splitentry.smplid);
+                splitentry.smplid = (sampleid_t)smplid.as_uint();
 
                 for (xml_node samplenode : node.children())
                 {
-                    const string smplnodeval = samplenode.text().get();
-                    if (nodename == PROP_Volume)
-                        utils::parseHexaValToValue(smplnodeval, splitentry.smplvol);
-                    else if(nodename == PROP_Pan)
-                        utils::parseHexaValToValue(smplnodeval, splitentry.smplpan);
-                    else if (nodename == PROP_BendRng)
-                        utils::parseHexaValToValue(smplnodeval, splitentry.bendrange);
-                    else if (nodename == PROP_RootKey)
-                        utils::parseHexaValToValue(smplnodeval, splitentry.rootkey);
-                    else if (nodename == PROP_FTune)
-                        utils::parseHexaValToValue(smplnodeval, splitentry.ftune);
-                    else if (nodename == PROP_CTune)
-                        utils::parseHexaValToValue(smplnodeval, splitentry.ctune);
-                    else if (nodename == PROP_KeyTrans)
-                        utils::parseHexaValToValue(smplnodeval, splitentry.ktps);
+                    const string samplenodename = samplenode.name();
+                    const xml_text smplnodeval = samplenode.text();
+
+                    if (samplenodename == PROP_Volume)
+                        splitentry.smplvol = ClampDSEVolume(smplnodeval.as_int());
+                    else if(samplenodename == PROP_Pan)
+                        splitentry.smplpan = ClampDSEPan(smplnodeval.as_int());
+                    else if (samplenodename == PROP_BendRng)
+                        splitentry.bendrange = ClampUInt8(smplnodeval.as_uint());
+                    else if (samplenodename == PROP_RootKey)
+                        splitentry.rootkey = ClampInt8From0(smplnodeval.as_int());
+                    else if (samplenodename == PROP_FTune)
+                        splitentry.ftune = ClampInt8(smplnodeval.as_int());
+                    else if (samplenodename == PROP_CTune)
+                        splitentry.ctune = ClampInt8(smplnodeval.as_int());
+                    else if (samplenodename == PROP_KeyTrans)
+                        splitentry.ktps = ClampInt8(smplnodeval.as_int());
                 }
             }
             else if (nodename == NODE_Keys)
             {
                 for (xml_node keynode : node.children())
                 {
-                    const string keynodeval = keynode.text().get();
-                    if (nodename == PROP_LowKey)
-                        utils::parseHexaValToValue(keynodeval, splitentry.lowkey);
-                    else if (nodename == PROP_HighKey)
-                        utils::parseHexaValToValue(keynodeval, splitentry.hikey);
-                    else if (nodename == PROP_LowVel)
-                        utils::parseHexaValToValue(keynodeval, splitentry.lovel);
-                    else if (nodename == PROP_HighVel)
-                        utils::parseHexaValToValue(keynodeval, splitentry.hivel);
-                    else if (nodename == NODE_KGrp)
-                        utils::parseHexaValToValue(keynodeval, splitentry.kgrpid);
+                    const string   keynodename = keynode.name();
+                    const xml_text keynodeval = keynode.text();
+
+                    if (keynodename == PROP_LowKey)
+                    {
+                        splitentry.lowkey = ClampInt8From0(keynodeval.as_int());
+                        splitentry.lowkey2 = splitentry.lowkey;
+                    }
+                    else if (keynodename == PROP_HighKey)
+                    {
+                        splitentry.hikey = ClampInt8From0(keynodeval.as_int());
+                        splitentry.hikey2 = splitentry.hikey;
+                    }
+                    else if (keynodename == PROP_LowVel)
+                    {
+                        splitentry.lovel = ClampInt8From0(keynodeval.as_int());
+                        splitentry.lovel2 = splitentry.lovel;
+                    }
+                    else if (keynodename == PROP_HighVel)
+                    {
+                        splitentry.hivel = ClampInt8From0(keynodeval.as_int());
+                        splitentry.hivel2 = splitentry.hivel;
+                    }
+                    else if (keynodename == NODE_KGrp)
+                        splitentry.kgrpid = (uint8_t)keynodeval.as_uint();
                 }
             }
             else if (nodename == PROP_SplitUnk25)
@@ -413,12 +489,19 @@ private:
         xml_node      rootnode = doc.child(ROOT_WavInfo.c_str());
 
         for (auto node : rootnode.children(NODE_Sample.c_str()))
-            sampledata.push_back(ParseASample(node));
+        {
+            SampleBank::SampleBlock blk = ParseASample(node);
+            const sampleid_t sampleid = blk.pinfo_->id;
+            if (sampleid >= sampledata.size())
+                sampledata.resize(sampleid + 1); //Sample info in the table have to be inserted at the index matching their ID!
+            sampledata[sampleid] = std::move(blk);
+        }
     }
 
     SampleBank::SampleBlock ParseASample(xml_node samplenode)
     {
         using namespace PrgmXML;
+        using std::numeric_limits;
         SampleBank::SampleBlock smpl;
         SampleBank::wavinfoptr_t wavinf(new WavInfo);
         utils::parseHexaValToValue(samplenode.attribute(ATTR_ID.c_str()).value(), wavinf->id);
@@ -426,37 +509,35 @@ private:
         for (xml_node node : samplenode.children())
         {
             const string nodename(node.name());
-            const string value = node.text().get();
+            const xml_text value = node.text();
 
             if (nodename == PROP_FTune)
-                utils::parseHexaValToValue(value, wavinf->ftune);
+                wavinf->ftune = ClampInt8(value.as_int());
             else if (nodename == PROP_CTune)
-                utils::parseHexaValToValue(value, wavinf->ctune);
+                wavinf->ctune = ClampInt8(value.as_int());
             else if (nodename == PROP_RootKey)
-                utils::parseHexaValToValue(value, wavinf->rootkey);
+                wavinf->rootkey = ClampInt8From0(value.as_uint());
             else if (nodename == PROP_KeyTrans)
-                utils::parseHexaValToValue(value, wavinf->ktps);
+                wavinf->ktps = ClampInt8(value.as_int());
             else if (nodename == PROP_Volume)
-                utils::parseHexaValToValue(value, wavinf->vol);
+                wavinf->vol = ClampDSEVolume(value.as_int(DSE_DefaultVol));
             else if (nodename == PROP_Pan)
-                utils::parseHexaValToValue(value, wavinf->pan);
-            else if (nodename == PROP_SmplLoop)
-                utils::parseValToValue(value, wavinf->smplloop);
+                wavinf->pan = ClampDSEPan(value.as_int(DSE_DefaultPan));
             else if (nodename == PROP_SmplRate)
-                utils::parseValToValue(value, wavinf->smplrate);
+                wavinf->smplrate = value.as_uint();
             else if (nodename == PROP_SmplFmt)
-                wavinf->smplfmt = static_cast<eDSESmplFmt>(utils::parseHexaValToValue<std::underlying_type_t<eDSESmplFmt>>(value));
+                wavinf->smplfmt = StringToDseSmplFmt(value.as_string());
             else if (nodename == NODE_Loop)
             {
-                utils::parseValToValue(node.attribute(ATTR_On.c_str()).value(), wavinf->smplloop);
+                wavinf->smplloop = node.attribute(ATTR_On.c_str()).as_bool();
                 for (xml_node loopnode : node.children())
                 {
                     const string nodename(loopnode.name());
-                    const string loopvalue = loopnode.text().get();
+                    const xml_text loopvalue = loopnode.text();
                     if (nodename == PROP_LoopBeg)
-                        utils::parseHexaValToValue(loopvalue, wavinf->loopbeg);
+                        wavinf->loopbeg = loopvalue.as_uint();
                     else if (nodename == PROP_LoopLen)
-                        utils::parseHexaValToValue(loopvalue, wavinf->looplen);
+                        wavinf->looplen = loopvalue.as_uint();
                 }
             }
             else if (nodename == NODE_Envelope)
@@ -469,35 +550,45 @@ private:
         return smpl;
     }
 
-    void ParseKeygroups( vector<KeyGroup> & kgrp, xml_document& doc)
+    void ParseKeygroups( vector<KeyGroup> & kgrps, xml_document& doc)
     {
         using namespace PrgmXML;
         //Check version info and etc..
         xml_node rootnode = doc.child(NODE_KeyGroups.c_str());
 
         //Parse keygroups
-        for (auto curnode : rootnode.children(NODE_KGrp.c_str()))
-            kgrp.push_back(ParseAKeygroup(curnode));
+        for (xml_node curnode : rootnode.children(NODE_KGrp.c_str()))
+        {
+            KeyGroup kg = ParseAKeygroup(curnode);
+            if(kg.id >= kgrps.size())
+                kgrps.resize(kg.id + 1); //Keygroup nodes must be inserted at their id in the table
+            kgrps[kg.id] = std::move(kg);
+        }
     }
 
     KeyGroup ParseAKeygroup(xml_node keygroupnode)
     {
         using namespace PrgmXML;
+        using std::numeric_limits;
         KeyGroup kgrp;
 
         for (xml_attribute attr : keygroupnode.attributes())
         {
-            string nodename = attr.name();
+            const string nodename = attr.name();
             if (nodename == ATTR_ID)
-                utils::parseHexaValToValue(attr.value(), kgrp.id);
+                kgrp.id = (uint16_t)attr.as_uint();
             else if (nodename == ATTR_KGrpPoly)
-                utils::parseHexaValToValue(attr.value(), kgrp.poly);
+                kgrp.poly = ClampUInt8(attr.as_uint());
             else if (nodename == ATTR_KGrpPrio)
-                utils::parseHexaValToValue(attr.value(), kgrp.priority);
+                kgrp.priority = ClampUInt8(attr.as_uint());
             else if (nodename == ATTR_KGrVcLow)
-                utils::parseHexaValToValue(attr.value(), kgrp.vclow);
+                kgrp.vclow = ClampUInt8(attr.as_uint());
             else if (nodename == ATTR_KGrVcHi)
-                utils::parseHexaValToValue(attr.value(), kgrp.vchigh);
+                kgrp.vchigh = ClampUInt8(attr.as_uint());
+            else if (nodename == ATTR_KGrUnk50)
+                kgrp.unk50 = ClampUInt8(attr.as_uint());
+            else if (nodename == ATTR_KGrUnk51)
+                kgrp.unk51 = ClampUInt8(attr.as_uint());
             else
                 clog << "Unsupported keygroup attribute \"" << nodename << "\"\n";
         }
@@ -585,19 +676,16 @@ private:
     void WriteALFO( xml_node & parent, const LFOTblEntry & curlfo )
     {
         using namespace PrgmXML;
-        if( curlfo.isLFONonDefault() )
-        {
-            xml_node lfoentry = AppendChildNode(parent, NODE_LFOEntry);
-            AppendAttribute( lfoentry, ATTR_LFOEnabled,    curlfo.unk52  );
-            AppendAttribute( lfoentry, ATTR_LFOModDest,    curlfo.dest   );
-            AppendAttribute( lfoentry, ATTR_LFOWaveShape,  curlfo.wshape );
-            AppendAttribute( lfoentry, ATTR_LFORate,       curlfo.rate   );
-            AppendAttribute( lfoentry, ATTR_LFOUnk29,      curlfo.unk29  );
-            AppendAttribute( lfoentry, ATTR_LFODepth,      curlfo.depth  );
-            AppendAttribute( lfoentry, ATTR_LFODelay,      curlfo.delay  );
-            AppendAttribute( lfoentry, ATTR_LFOUnk32,      curlfo.unk32  );
-            AppendAttribute( lfoentry, ATTR_LFOUnk33,      curlfo.unk33  );
-        }
+        xml_node lfoentry = AppendChildNode(parent, NODE_LFOEntry); //Always leave at least the empty node, so we can tell how many lfos there are
+        AppendAttribute( lfoentry, ATTR_LFOEnabled,    curlfo.unk52  );
+        AppendAttribute( lfoentry, ATTR_LFOModDest,    curlfo.dest   );
+        AppendAttribute( lfoentry, ATTR_LFOWaveShape,  curlfo.wshape );
+        AppendAttribute( lfoentry, ATTR_LFORate,       curlfo.rate   );
+        AppendAttribute( lfoentry, ATTR_LFOUnk29,      curlfo.unk29  );
+        AppendAttribute( lfoentry, ATTR_LFODepth,      curlfo.depth  );
+        AppendAttribute( lfoentry, ATTR_LFODelay,      curlfo.delay  );
+        AppendAttribute( lfoentry, ATTR_LFOUnk32,      curlfo.unk32  );
+        AppendAttribute( lfoentry, ATTR_LFOUnk33,      curlfo.unk33  );
     }
 
     void WriteASplit( xml_node & parent, const SplitEntry & cursplit )
@@ -611,6 +699,13 @@ private:
 
         {
             xml_node keys = AppendChildNode(splitnode, NODE_Keys);
+#ifdef _DEBUG
+            //Research helper to see if those ever are different from eachothers
+            assert(cursplit.lowkey == cursplit.lowkey2);
+            assert(cursplit.hikey  == cursplit.hikey2);
+            assert(cursplit.lovel  == cursplit.lovel2);
+            assert(cursplit.hivel  == cursplit.hivel2);
+#endif
             WriteNodeWithValue(keys, PROP_LowKey,  cursplit.lowkey);
             WriteNodeWithValue(keys, PROP_HighKey, cursplit.hikey);
             WriteNodeWithValue(keys, PROP_LowVel,  cursplit.lovel);
@@ -657,6 +752,8 @@ private:
         AppendAttribute( kgrpnode, ATTR_KGrpPrio,  grp.priority );
         AppendAttribute( kgrpnode, ATTR_KGrVcLow,  grp.vclow );
         AppendAttribute( kgrpnode, ATTR_KGrVcHi,   grp.vchigh );
+        AppendAttribute( kgrpnode, ATTR_KGrUnk50,  grp.unk50);
+        AppendAttribute( kgrpnode, ATTR_KGrUnk51,  grp.unk51);
     }
 
 
@@ -690,7 +787,7 @@ private:
         WriteNodeWithValue(infonode, PROP_Volume, winfo.vol);
         WriteNodeWithValue(infonode, PROP_Pan, winfo.pan);
         WriteCommentNode( infonode, "Tuning Data" );
-        WriteNodeWithValue( infonode, PROP_SmplFmt,     static_cast<std::underlying_type_t<eDSESmplFmt>>(winfo.smplfmt));
+        WriteNodeWithValue( infonode, PROP_SmplFmt,     DseSmplFmtToString(winfo.smplfmt));
         WriteNodeWithValue( infonode, PROP_FTune,       winfo.ftune );
         WriteNodeWithValue( infonode, PROP_CTune,       winfo.ctune );
         WriteNodeWithValue( infonode, PROP_RootKey,     winfo.rootkey );

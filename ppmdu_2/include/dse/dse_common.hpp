@@ -37,6 +37,15 @@ namespace DSE
     const uint8_t       InvalidMIDIKey     = std::numeric_limits<uint8_t>::max(); //The default value for the MIDI key
     const uint8_t       DSE_MaxOctave      = 9; //The maximum octave value possible to handle
 
+    const int8_t        DSE_DefaultPan = 64; //The default pan value
+    const int8_t        DSE_DefaultVol = 127; //The default vol value
+
+    extern const std::string DSE_SmplFmt_PCM16;
+    extern const std::string DSE_SmplFmt_PCM8;
+    extern const std::string DSE_SmplFmt_ADPCM4;
+    extern const std::string DSE_SmplFmt_ADPCM3;
+    extern const std::string DSE_SmplFmt_PSG;
+
 //====================================================================================================
 //  Constants
 //====================================================================================================
@@ -88,18 +97,18 @@ namespace DSE
     //
     //
     //
-    enum struct eDSESmplFmt : uint16_t 
+    enum struct eDSESmplFmt : uint16_t
     {
         invalid    = std::numeric_limits<std::underlying_type_t<eDSESmplFmt>>::max(),
         pcm8       = 0x000,
         pcm16      = 0x100,
         ima_adpcm4 = 0x200,
-        ima_adpcm3 = 0x300,
+        ima_adpcm3 = 0x300, //#FIXME: Fix this because PSG and adpcm3 have the same id
     };
 
     eDSESmplFmt IntToDSESmplFmt(std::underlying_type_t<eDSESmplFmt> val);
-
     std::string DseSmplFmtToString(eDSESmplFmt fmt);
+    eDSESmplFmt StringToDseSmplFmt(const char * str);
 
     // -------------------------------
     // ------- DSE Version IDs -------
@@ -354,13 +363,13 @@ namespace DSE
         static const uint8_t  DEF_IGNORED = 0xAA; //Value of all bytes when the keygroup is ignored/filler
         static uint32_t size() {return SIZE;}
 
-        uint16_t id       = 0;
-        uint8_t  poly     = 0;
-        uint8_t  priority = 0;
-        uint8_t  vclow    = 0;
-        uint8_t  vchigh   = 0;
-        uint8_t  unk50    = 0;
-        uint8_t  unk51    = 0;
+        uint16_t id       = DEF_IGNORED | (DEF_IGNORED << 8);; //Init to filler
+        uint8_t  poly     = DEF_IGNORED;
+        uint8_t  priority = DEF_IGNORED;
+        uint8_t  vclow    = DEF_IGNORED;
+        uint8_t  vchigh   = DEF_IGNORED;
+        uint8_t  unk50    = DEF_IGNORED;
+        uint8_t  unk51    = DEF_IGNORED;
 
         bool isFiller()const
         {
@@ -447,7 +456,7 @@ namespace DSE
         uint8_t  unk34  = 0;
         uint8_t  unk52  = 0;
         uint8_t  dest   = 0;
-        uint8_t  wshape = 0;
+        uint8_t  wshape = (uint8_t)eLFOWaveShape::Square;
         uint16_t rate   = 0;
         uint16_t unk29  = 0;
         uint16_t depth  = 0;
@@ -545,7 +554,7 @@ namespace DSE
         uint16_t unk4    = 0;
         uint8_t  padbyte = 0;
 
-        std::vector<LFOTblEntry> m_lfotbl;
+        std::vector<LFOTblEntry> m_lfotbl; //Should be 4 usually
         std::vector<SplitEntry>  m_splitstbl;
     };
 
@@ -821,7 +830,7 @@ namespace DSE
             Sample loop position and loop lenght are stored in nb of 32 bits integers. Not in bytes or samples.
             This functions handles the conversion.
     */
-    inline uint32_t DSESampleLoopOffsetToBytes( uint32_t loopoffset )
+    constexpr uint32_t DSESampleLoopOffsetToBytes( uint32_t loopoffset )
     {
         return (loopoffset * sizeof(uint32_t));
     }
@@ -829,6 +838,17 @@ namespace DSE
 //====================================================================================================
 // Utility Functions
 //====================================================================================================
+
+    constexpr int8_t ClampDSEVolume(int vol)
+    {
+        return (int8_t)std::clamp(vol, 0, (int)std::numeric_limits<int8_t>::max());
+    }
+
+    constexpr int8_t ClampDSEPan(int pan)
+    {
+        return (int8_t)std::clamp(pan, 0, (int)std::numeric_limits<int8_t>::max());
+    }
+
 
     /************************************************************************
         DSE_ChunkIDLookup

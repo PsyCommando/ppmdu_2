@@ -103,6 +103,24 @@ namespace DSE
 
     const int SizeADPCMPreambleWords = ::audio::IMA_ADPCM_PreambleLen / sizeof(int32_t);
 
+
+    const std::string DSE_SmplFmt_PCM16 = "PCM16"s;
+    const std::string DSE_SmplFmt_PCM8 = "PCM8"s;
+    const std::string DSE_SmplFmt_ADPCM4 = "ADPCM4"s;
+    const std::string DSE_SmplFmt_ADPCM3 = "ADPCM3"s;
+    const std::string DSE_SmplFmt_PSG = "PSG"s;
+    const std::string DSE_SmplFmt_INVALID = "Invalid"s;
+
+    const std::unordered_map<std::string, eDSESmplFmt> StrToDseSmplFmtHashTbl
+    {
+        std::make_pair(DSE_SmplFmt_PCM8,   eDSESmplFmt::pcm8),
+        std::make_pair(DSE_SmplFmt_PCM16,  eDSESmplFmt::pcm16     ),
+        std::make_pair(DSE_SmplFmt_ADPCM4, eDSESmplFmt::ima_adpcm4),
+        std::make_pair(DSE_SmplFmt_ADPCM3, eDSESmplFmt::ima_adpcm3),
+        std::make_pair(DSE_SmplFmt_INVALID, eDSESmplFmt::invalid),
+    };
+
+
     //inline eDSEChunks IntToChunkID( uint32_t value )
     //{
     //    for( auto cid : DSEChunksList )
@@ -138,17 +156,25 @@ namespace DSE
         switch (fmt)
         {
         case eDSESmplFmt::pcm8:
-            return "PCM8";
+            return DSE_SmplFmt_PCM8;
         case eDSESmplFmt::pcm16:
-            return "PCM16";
+            return DSE_SmplFmt_PCM16;
         case eDSESmplFmt::ima_adpcm4:
-            return "IMA ADPCM4";
+            return DSE_SmplFmt_ADPCM4;
         case eDSESmplFmt::ima_adpcm3:
-            return "IMA ADPCM3";
+            return DSE_SmplFmt_ADPCM3;
         };
         std::array<char, 48> tmpchr{ 0 };
         snprintf(tmpchr.data(), tmpchr.size(), "Invalid (0x%x)", static_cast<std::underlying_type_t<eDSESmplFmt>>(fmt));
         return { tmpchr.data() };
+    }
+
+    eDSESmplFmt StringToDseSmplFmt(const char* str)
+    {
+        auto itfound = StrToDseSmplFmtHashTbl.find(str);
+        if (itfound != StrToDseSmplFmtHashTbl.end())
+            return itfound->second;
+        return eDSESmplFmt::invalid;
     }
 
 //=================================================================================================
