@@ -113,7 +113,7 @@ namespace DSE
         SetBankHighByte = 0xA9, //Sets bank id's high byte.
         SetBankLowByte  = 0xAA, //Set bank id's low byte.
         SkipNextByte    = 0xAB, //Skip processing the next byte!
-        SetPreset       = 0xAC, //Sets the instrument preset to use
+        SetProgram      = 0xAC, //Sets the instrument preset to use
 
         FadeSongVolume  = 0xAF, //Sweep the song's volume. First arg is the rate, second is the target volume.
         DisableEnvelope = 0xB0, //Disable envelope

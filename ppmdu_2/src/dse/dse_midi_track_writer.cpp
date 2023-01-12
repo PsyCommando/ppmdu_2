@@ -620,7 +620,7 @@ namespace DSE
 
 
                 //------------------ Program bank related events ------------------
-                case eTrkEventCodes::SetPreset:
+                case eTrkEventCodes::SetProgram:
                 {
                     mess.SetTime(state.ticks_);
                     HandleSetPreset(ev, trkno, trkchan, state, mess, outtrack);
@@ -1273,9 +1273,9 @@ namespace DSE
                 bool prioritize = false;
                 for (size_t cntev = 0; cntev < m_seq[cnttrk].size(); ++cntev)
                 {
-                    if (m_seq[cnttrk][cntev].evcode == static_cast<uint8_t>(eTrkEventCodes::SetPreset))
+                    if (m_seq[cnttrk][cntev].evcode == static_cast<uint8_t>(eTrkEventCodes::SetProgram))
                     {
-                        //When we get a SetPreset event, check if it matches one of the presets we're looking for.
+                        //When we get a SetProgram event, check if it matches one of the presets we're looking for.
                         for (const auto& apreset : presetswithchanremaps)
                         {
                             if (m_seq[cnttrk][cntev].params.front() == apreset)
@@ -1365,7 +1365,7 @@ namespace DSE
             {
                 for (size_t cntev = 0; cntev < m_seq[cnttrk].size(); ++cntev)
                 {
-                    if (m_seq[cnttrk][cntev].evcode == static_cast<uint8_t>(eTrkEventCodes::SetPreset) &&
+                    if (m_seq[cnttrk][cntev].evcode == static_cast<uint8_t>(eTrkEventCodes::SetProgram) &&
                         m_seq[cnttrk][cntev].params.front() == 0x7F)
                     {
                         drumusingchans.push_back(make_pair(cnttrk, m_seq[cnttrk].GetMidiChannel()));

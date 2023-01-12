@@ -701,7 +701,7 @@ namespace DSE
             TrkState& state,
             MusicTrack& trk)
         {
-            InsertDSEEvent(trk, eTrkEventCodes::SetPreset, mev.GetPGValue());
+            InsertDSEEvent(trk, eTrkEventCodes::SetProgram, mev.GetPGValue());
         }
 
         void HandleLoopPoint(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)

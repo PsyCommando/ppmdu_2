@@ -328,7 +328,7 @@ namespace DSE
                 break;
             }
 
-            case eTrkEventCodes::SetPreset:
+            case eTrkEventCodes::SetProgram:
             {
                 outev.params.push_back(ClampInt8From0(ev.attribute(ATTR_Program.c_str()).as_uint()));
                 break;
@@ -677,7 +677,7 @@ namespace DSE
                 AppendAttribute(evnode, ATTR_BankLo, ev.params[0]);
                 break;
 
-            case eTrkEventCodes::SetPreset:
+            case eTrkEventCodes::SetProgram:
                 AppendAttribute(evnode, ATTR_Program, ev.params[0]);
                 break;
 

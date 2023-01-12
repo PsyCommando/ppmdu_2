@@ -32,7 +32,7 @@ namespace DSE
         { eTrkEventCodes::SetBankHighByte,      "SetBankHighByte"       },
         { eTrkEventCodes::SetBankLowByte,       "SetBankLowByte"        },
         { eTrkEventCodes::SkipNextByte,         "SkipNextByte"          },
-        { eTrkEventCodes::SetPreset,            "SetPreset"             },
+        { eTrkEventCodes::SetProgram,           "SetProgram"            },
         { eTrkEventCodes::FadeSongVolume,       "FadeSongVolume"        },
         { eTrkEventCodes::DisableEnvelope,      "DisableEnvelope"       },
         { eTrkEventCodes::SetEnvAtkLvl,         "SetEnvAtkLvl"          },
@@ -163,8 +163,8 @@ namespace DSE
         //0xAB - SkipNextByte
         { eTrkEventCodes::SkipNextByte,     eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SkipNextByte) },
 
-        //0xAC - SetPreset
-        { eTrkEventCodes::SetPreset,        eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetPreset) },
+        //0xAC - SetProgram
+        { eTrkEventCodes::SetProgram,        eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetProgram) },
 
         //0xAF - FadeSongVolume 
         { eTrkEventCodes::FadeSongVolume,   eTrkEventCodes::Invalid, 3, EvCodeToEvNames.at(eTrkEventCodes::FadeSongVolume) },
@@ -327,7 +327,7 @@ namespace DSE
         { EvCodeToEvNames.at(eTrkEventCodes::SetBankHighByte  ), eTrkEventCodes::SetBankHighByte     },
         { EvCodeToEvNames.at(eTrkEventCodes::SetBankLowByte   ), eTrkEventCodes::SetBankLowByte      },
         { EvCodeToEvNames.at(eTrkEventCodes::SkipNextByte     ), eTrkEventCodes::SkipNextByte        },
-        { EvCodeToEvNames.at(eTrkEventCodes::SetPreset        ), eTrkEventCodes::SetPreset           },
+        { EvCodeToEvNames.at(eTrkEventCodes::SetProgram        ), eTrkEventCodes::SetProgram           },
         { EvCodeToEvNames.at(eTrkEventCodes::FadeSongVolume   ), eTrkEventCodes::FadeSongVolume      },
         { EvCodeToEvNames.at(eTrkEventCodes::DisableEnvelope  ), eTrkEventCodes::DisableEnvelope     },
         { EvCodeToEvNames.at(eTrkEventCodes::SetEnvAtkLvl     ), eTrkEventCodes::SetEnvAtkLvl        },
