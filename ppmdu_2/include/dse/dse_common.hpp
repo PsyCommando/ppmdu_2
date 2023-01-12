@@ -1075,7 +1075,9 @@ namespace DSE
 //Stream operators
 //
 std::ostream& operator<<(std::ostream& strm, const DSE::eDSEContainers cnty);
+std::stringstream& operator<<(std::stringstream& ss, const DSE::DateTime& obj);
 std::ostream& operator<<(std::ostream& os,   const DSE::DateTime&      obj);
+std::istream& operator>>(std::istream& is,   DSE::DateTime&            obj);
 std::ostream& operator<<(std::ostream& strm, const DSE::KeyGroup&      other);
 std::ostream& operator<<(std::ostream& strm, const DSE::ProgramInfo&   other);
 std::ostream& operator<<(std::ostream& strm, const DSE::WavInfo&       other);

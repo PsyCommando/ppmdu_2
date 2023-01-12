@@ -23,6 +23,7 @@ namespace DSE
         const std::string ATTR_DSE_InternalFname = "internal_filename"s;
         const std::string ATTR_DSE_OrigFname     = "original_filename"s;
         const std::string ATTR_DSE_OrigLoadOrder = "original_load_order"s;
+        const std::string ATTR_DSE_OrigTime      = "original_timestamp"s;
         const std::string ATTR_DSE_Unk17         = "unk17"s;
         const std::string ATTR_DSE_Vol           = "vol"s;
         const std::string ATTR_DSE_Pan           = "pan"s;
@@ -50,12 +51,13 @@ namespace DSE
     void DSE::DSE_MetaData::WriteXml(xml_node dsei)const
     {
         using namespace XmlConstants;
-        AppendAttribute(dsei, ATTR_DSE_Version, DseVerToInt(origversion));
-        AppendAttribute(dsei, ATTR_DSE_BankLow, bankid_coarse);
-        AppendAttribute(dsei, ATTR_DSE_BankHigh, bankid_fine);
+        AppendAttribute(dsei, ATTR_DSE_Version,       DseVerToInt(origversion));
+        AppendAttribute(dsei, ATTR_DSE_BankLow,       bankid_coarse);
+        AppendAttribute(dsei, ATTR_DSE_BankHigh,      bankid_fine);
         AppendAttribute(dsei, ATTR_DSE_InternalFname, fname);
-        AppendAttribute(dsei, ATTR_DSE_OrigFname, origfname);
+        AppendAttribute(dsei, ATTR_DSE_OrigFname,     origfname);
         AppendAttribute(dsei, ATTR_DSE_OrigLoadOrder, origloadorder);
+        AppendAttribute(dsei, ATTR_DSE_OrigTime,      static_cast<std::string>(createtime));
     }
 
     void DSE::DSE_MetaData::ParseXml(xml_node dsei)
@@ -76,6 +78,12 @@ namespace DSE
                 origfname = std::string(att.as_string());
             else if(att_name == ATTR_DSE_InternalFname)
                 fname = std::string(att.as_string());
+            else if (att_name == ATTR_DSE_OrigTime)
+            {
+                const string timestamp = att.as_string();
+                stringstream ssin(timestamp);
+                ssin >> createtime;
+            }
         }
     }
 
@@ -160,14 +168,39 @@ namespace DSE
     void WriteSequenceInfo(pugi::xml_node parent, const std::vector<DSE::seqinfo_table>& sequences)
     {
         using namespace SeqInfoXml;
-        xml_node sequencesnode = AppendChildNode(parent, NODE_Sequences);
+        //Append or create a sequences node
+        xml_node sequencesnode = (parent.name() == NODE_Sequences)? parent : parent.child(NODE_Sequences.c_str());
+        if (!sequencesnode)
+            sequencesnode = AppendChildNode(parent, NODE_Sequences);
+
+        //Then append or get a sequence node for each of the contained sequences
+        auto rangeseqs = sequencesnode.children(NODE_Sequence.c_str());
+        auto itbegsubseq = rangeseqs.begin();
+        auto itendsubseq = rangeseqs.end();
         for (const seqinfo_table& inf : sequences)
+        {
+            //Grab sequence nodes if we have them, or create new ones if we're missing any
+            xml_node subseqnode;
+            if (itbegsubseq != itendsubseq)
+            {
+                subseqnode = *itbegsubseq;
+                ++itbegsubseq;
+            }
+            else
+                subseqnode = AppendChildNode(sequencesnode, NODE_Sequences);
             WriteSequenceInfo(sequencesnode, inf);
+        }
     }
     void WriteSequenceInfo(pugi::xml_node parent, const DSE::seqinfo_table& seq)
     {
         using namespace SeqInfoXml;
-        seq.WriteXml(AppendChildNode(AppendChildNode(parent, NODE_Sequences), NODE_Sequence));
+        //Grab or create a sequence parent node
+        xml_node seqnode = (parent.name() == NODE_Sequence)? parent : parent.child(NODE_Sequence.c_str());
+        if (!seqnode)
+            seqnode = AppendChildNode(parent, NODE_Sequence);
+
+        //Write the sequence info table
+        seq.WriteXml(seqnode);
     }
 
 };

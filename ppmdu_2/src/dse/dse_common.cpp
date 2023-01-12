@@ -204,49 +204,53 @@ namespace DSE
 
     namespace SeqInfoXml
     {
-        const std::string PROP_;
+        const std::string NODE_SeqInfo = "Info"s;
     };
     void seqinfo_table::WriteXml(pugi::xml_node seqnode)const
     {
         using namespace SeqInfoXml;
-        WriteNumberVarToXml(unk30, seqnode);
-        WriteNumberVarToXml(unk16, seqnode);
-        WriteNumberVarToXml(nbtrks, seqnode);
-        WriteNumberVarToXml(nbchans, seqnode);
-        WriteNumberVarToXml(unk19, seqnode);
-        WriteNumberVarToXml(unk20, seqnode);
-        WriteNumberVarToXml(unk21, seqnode);
-        WriteNumberVarToXml(unk22, seqnode);
-        WriteNumberVarToXml(unk23, seqnode);
-        WriteNumberVarToXml(unk24, seqnode);
-        WriteNumberVarToXml(unk25, seqnode);
-        WriteNumberVarToXml(unk26, seqnode);
-        WriteNumberVarToXml(unk27, seqnode);
-        WriteNumberVarToXml(unk28, seqnode);
-        WriteNumberVarToXml(unk29, seqnode);
-        WriteNumberVarToXml(unk31, seqnode);
-        WriteNumberVarToXml(unk12, seqnode);
+        xml_node infonode = AppendChildNode(seqnode, NODE_SeqInfo);
+        WriteNumberVarToXml(unk30,   infonode);
+        WriteNumberVarToXml(unk16,   infonode);
+        WriteNumberVarToXml(nbtrks,  infonode);
+        WriteNumberVarToXml(nbchans, infonode);
+        WriteNumberVarToXml(unk19,   infonode);
+        WriteNumberVarToXml(unk20,   infonode);
+        WriteNumberVarToXml(unk21,   infonode);
+        WriteNumberVarToXml(unk22,   infonode);
+        WriteNumberVarToXml(unk23,   infonode);
+        WriteNumberVarToXml(unk24,   infonode);
+        WriteNumberVarToXml(unk25,   infonode);
+        WriteNumberVarToXml(unk26,   infonode);
+        WriteNumberVarToXml(unk27,   infonode);
+        WriteNumberVarToXml(unk28,   infonode);
+        WriteNumberVarToXml(unk29,   infonode);
+        WriteNumberVarToXml(unk31,   infonode);
+        WriteNumberVarToXml(unk12,   infonode);
     }
     void seqinfo_table::ParseXml(pugi::xml_node seqnode)
     {
         using namespace SeqInfoXml;
-        ParseNumberVarFromXml(unk30,   seqnode);
-        ParseNumberVarFromXml(unk16,   seqnode);
-        ParseNumberVarFromXml(nbtrks,  seqnode);
-        ParseNumberVarFromXml(nbchans, seqnode);
-        ParseNumberVarFromXml(unk19,   seqnode);
-        ParseNumberVarFromXml(unk20,   seqnode);
-        ParseNumberVarFromXml(unk21,   seqnode);
-        ParseNumberVarFromXml(unk22,   seqnode);
-        ParseNumberVarFromXml(unk23,   seqnode);
-        ParseNumberVarFromXml(unk24,   seqnode);
-        ParseNumberVarFromXml(unk25,   seqnode);
-        ParseNumberVarFromXml(unk26,   seqnode);
-        ParseNumberVarFromXml(unk27,   seqnode);
-        ParseNumberVarFromXml(unk28,   seqnode);
-        ParseNumberVarFromXml(unk29,   seqnode);
-        ParseNumberVarFromXml(unk31,   seqnode);
-        ParseNumberVarFromXml(unk12,   seqnode);
+        xml_node infonode = seqnode.child(NODE_SeqInfo.c_str());
+        if (!infonode)
+            return;
+        ParseNumberVarFromXml(unk30,   infonode);
+        ParseNumberVarFromXml(unk16,   infonode);
+        ParseNumberVarFromXml(nbtrks,  infonode);
+        ParseNumberVarFromXml(nbchans, infonode);
+        ParseNumberVarFromXml(unk19,   infonode);
+        ParseNumberVarFromXml(unk20,   infonode);
+        ParseNumberVarFromXml(unk21,   infonode);
+        ParseNumberVarFromXml(unk22,   infonode);
+        ParseNumberVarFromXml(unk23,   infonode);
+        ParseNumberVarFromXml(unk24,   infonode);
+        ParseNumberVarFromXml(unk25,   infonode);
+        ParseNumberVarFromXml(unk26,   infonode);
+        ParseNumberVarFromXml(unk27,   infonode);
+        ParseNumberVarFromXml(unk28,   infonode);
+        ParseNumberVarFromXml(unk29,   infonode);
+        ParseNumberVarFromXml(unk31,   infonode);
+        ParseNumberVarFromXml(unk12,   infonode);
     }
 
 };
@@ -255,15 +259,24 @@ namespace DSE
 //  StreamOperators
 //==========================================================================================
     //Global stream operator
+
+std::stringstream& operator<<(std::stringstream& ss, const DSE::DateTime& obj)
+{
+    ss << static_cast<std::string>(obj);
+    return ss;
+}
+
 std::ostream& operator<<(std::ostream& os, const DSE::DateTime& obj)
 {
-    os  << static_cast<unsigned long>(obj.year) << "/"
-        << static_cast<unsigned long>(obj.month) + 1 << "/"
-        << static_cast<unsigned long>(obj.day) + 1 << "-"
-        << static_cast<unsigned long>(obj.hour) << "h"
-        << static_cast<unsigned long>(obj.minute) << "m"
-        << static_cast<unsigned long>(obj.second) << "s";
-    return os;
+    return os << static_cast<std::string>(obj);
+}
+
+std::istream& operator>>(std::istream& is, DSE::DateTime& obj)
+{
+    std::tm myt{};
+    is >> std::get_time(&myt, "%Y/%m/%e-%Hh%Mm%Ss");
+    obj = myt;
+    return is;
 }
 
 std::ostream& operator<<(std::ostream& strm, const DSE::KeyGroup& other)

@@ -541,6 +541,7 @@ namespace DSE
             xml_document doc;
             WriteDSEXmlNode(doc, &m_seq.metadata());
             xml_node seqnode = AppendChildNode(doc, NODE_Sequence);
+            WriteSequenceInfo(seqnode, m_seq.seqinfo());
 
             for (size_t cnttrk = 0; cnttrk < m_seq.getNbTracks(); ++cnttrk)
             {
