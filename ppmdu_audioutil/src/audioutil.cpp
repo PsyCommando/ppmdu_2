@@ -1169,8 +1169,10 @@ namespace audioutil
                 if (fext == "xml")
                 {
                     //A single xml file is usually a bank
-                    if(IsXMLPresetBank(path))
+                    if (IsXMLPresetBank(path))
                         m_loader.ImportBank(path);
+                    else if (IsXMLMusicSequence(path))
+                        m_loader.ImportMusicSeq(path);
                     else
                         throw std::runtime_error("Unknown XML file:\""s + path + "\""s);
                 }
