@@ -13,17 +13,37 @@ Description:
 #include <codecvt>
 #include <locale>
 #include <sstream>
+#include <charconv>
+#include <cassert>
 #include <utils/parse_utils.hpp>
 
 //Helper macro to write xml nodes named after variables and not having to make a million constants
 #define WriteStringVarToXml(VARNAME, NODE) pugixmlutils::WriteNodeWithValue(NODE, #VARNAME, VARNAME)
 #define WriteNumberVarToXml(VARNAME, NODE) pugixmlutils::WriteNodeWithValue(NODE, #VARNAME, VARNAME)
+#define WriteHexNumberVarToXml(VARNAME, NODE) pugixmlutils::WriteNodeWithHexNumber(NODE, #VARNAME, VARNAME)
 
 #define ParseStringVarFromXml(VARNAME, NODE) NODE.child(#VARNAME).text().as_string()
 #define ParseNumberVarFromXml(VARNAME, NODE) utils::parseHexaValToValue( ParseStringVarFromXml(VARNAME, NODE) , VARNAME )
 
 namespace pugixmlutils
 {
+    template<class T> inline pugi::xml_node WriteNodeWithHexNumber(pugi::xml_node parentnode, const pugi::string_t& name, T value)
+    {
+        using namespace pugi;
+        using namespace std;
+        array<char, 66> buf{0};
+        buf[0] = '0';
+        buf[1] = 'x';
+        to_chars_result res = to_chars(buf.data() + 2, buf.data() + buf.size(), (unsigned long long)value, 16);
+        if (res.ec == std::errc{})
+        {
+            xml_node newnode = parentnode.append_child(name.c_str()).append_child(node_pcdata);
+            newnode.set_value(buf.data());
+            return newnode;
+        }
+        else
+            return xml_node();
+    }
 
     /***************************************************************************************
         WriteCommentNode
