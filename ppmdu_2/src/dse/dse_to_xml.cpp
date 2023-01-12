@@ -31,6 +31,7 @@ namespace DSE
         const std::string ATTR_DSE_Unk6 = "unk6"s;
         const std::string ATTR_DSE_Unk7 = "unk7"s;
         const std::string ATTR_DSE_Unk8 = "unk8"s;
+        const std::string ATTR_DSE_NbPrgmSlots = "prgi_slots"s;
     };
 
     void ParseDSEXmlNode(pugi::xml_node parent, DSE::DSE_MetaData* meta)
@@ -95,12 +96,14 @@ namespace DSE
         using namespace XmlConstants;
         DSE_MetaData::WriteXml(dsei);
         AppendAttribute(dsei, ATTR_DSE_Unk17, unk17);
+        AppendAttribute(dsei, ATTR_DSE_NbPrgmSlots, nbprgislots);
     }
     void DSE::DSE_MetaDataSWDL::ParseXml(pugi::xml_node dsei)
     {
         using namespace XmlConstants;
         DSE_MetaData::ParseXml(dsei);
         utils::parseHexaValToValue(dsei.attribute(ATTR_DSE_Unk17.c_str()).value(), unk17);
+        nbprgislots = (uint16_t)dsei.attribute(ATTR_DSE_Unk17.c_str()).as_uint();
     }
 
     //
