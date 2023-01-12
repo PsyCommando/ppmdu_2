@@ -40,7 +40,7 @@ namespace DSE
         DSE::seqinfo_table& seqinfo() { return m_seqinfo; }
         const DSE::seqinfo_table& seqinfo()const { return m_seqinfo; }
         void                      setSeqinfo(const DSE::seqinfo_table& sinfo) { m_seqinfo = sinfo; }
-        void                      setSeqinfo(DSE::seqinfo_table& sinfo) { m_seqinfo = sinfo; }
+        void                      setSeqinfo(DSE::seqinfo_table&& sinfo) { m_seqinfo = sinfo; }
 
         size_t getNbTracks()const { return m_tracks.size(); }
         void setNbTracks(size_t newsize) { m_tracks.resize(newsize); }
