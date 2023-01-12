@@ -1,6 +1,9 @@
 #include <dse/fmts/smdl.hpp>
 #include <dse/dse_sequence.hpp>
+#include <dse/fmts/dse_fmt_common.hpp>
+
 #include <utils/library_wide.hpp>
+
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -41,108 +44,38 @@ namespace DSE
     class SongChunk_v415
     {
     public:
-        static const uint32_t SizeNoPadd    = 48; //bytes
-        static const uint32_t LenMaxPadding = 16; //bytes
+        static constexpr size_t size() { return 16 + SeqInfoChunk_v415::size(); }
         //Default Values
         static const uint32_t DefUnk1       = 0x1000000;
         static const uint32_t DefUnk2       = 0xFF10;
         static const uint32_t DefUnk3       = 0xFFFFFFB0;
-        static const uint16_t DefUnk4       = 0x1;
-        static const uint16_t DefUnk5       = 0xFF01;
-        static const uint32_t DefUnk6       = 0xF000000;
-        static const uint32_t DefUnk7       = 0xFFFFFFFF;
-        static const uint32_t DefUnk8       = 0x40000000;
-        static const uint32_t DefUnk9       = 0x404000;
-        static const uint16_t DefUnk10      = 0x200;
-        static const uint16_t DefUnk11      = 0x800;
-        static const uint32_t DefUnk12      = 0xFFFFFF00;
 
-
-        unsigned int size()const { return SizeNoPadd + unkpad.size(); }
-
-        uint32_t label   = 0;
-        uint32_t unk1    = 0;
-        uint32_t unk2    = 0;
-        uint32_t unk3    = 0;
-        //#TODO: Update this so the stuff below is moved to its own struct since it's a seqinfo chunk
-        uint16_t unk4    = 0;
-        uint16_t offnext = 0x30; //Usually always 0x30
-        uint16_t unk5    = 0;
-        uint8_t  nbtrks  = 0;
-        uint8_t  nbchans = 0;
-        uint32_t unk6    = 0;
-        uint32_t unk7    = 0;
-        uint32_t unk8    = 0;
-        uint32_t unk9    = 0;
-        uint16_t unk10   = 0;
-        uint16_t unk11   = 0;
-        uint32_t unk12   = 0;
-        std::vector<uint8_t> unkpad;
+        uint32_t          label   = (uint32_t)eDSEChunks::song;
+        uint32_t          unk1    = DefUnk1;
+        uint32_t          unk2    = DefUnk2;
+        uint32_t          unk3    = DefUnk3;
+        SeqInfoChunk_v415 seqinfo {}; //A song chunk is always followed with a seqinfo chunk
 
         //
-        template<class _outit>
-            _outit WriteToContainer( _outit itwriteto )const
+        template<class _outit> _outit WriteToContainer( _outit itwriteto )const
         {
             itwriteto = utils::WriteIntToBytes( static_cast<uint32_t>(eDSEChunks::song), itwriteto, false ); //Force this, to avoid bad surprises
             itwriteto = utils::WriteIntToBytes( unk1,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk2,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk3,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk4,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( offnext, itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk5,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( nbtrks,  itwriteto );
-            itwriteto = utils::WriteIntToBytes( nbchans, itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk6,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk7,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk8,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk9,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk10,   itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk11,   itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk12,   itwriteto );
-            itwriteto = std::copy( unkpad.begin(), unkpad.end(), itwriteto );
+            itwriteto = seqinfo.WriteToContainer(itwriteto);
             return itwriteto;
         }
 
         //
-        template<class _init>
-            _init ReadFromContainer( _init itReadfrom, _init itPastEnd )
+        template<class _init> _init ReadFromContainer( _init itReadfrom, _init itPastEnd )
         {
             itReadfrom = utils::ReadIntFromBytes( label,    itReadfrom, itPastEnd, false ); //iterator is incremented
             itReadfrom = utils::ReadIntFromBytes( unk1,     itReadfrom, itPastEnd ); 
             itReadfrom = utils::ReadIntFromBytes( unk2,     itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk3,     itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk4,     itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( offnext,  itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk5,     itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( nbtrks,   itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( nbchans,  itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk6,     itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk7,     itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk8,     itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk9,     itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk10,    itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk11,    itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk12,    itReadfrom, itPastEnd );
-
-            for( uint32_t i = 0; i < LenMaxPadding; ++i, ++itReadfrom )
-            {
-                if( *itReadfrom == 0xFF )
-                    unkpad.push_back( 0xFF ); //save on dereferencing the iterator when we already know its value..
-                else
-                    break;
-            }
-
+            itReadfrom = seqinfo.ReadFromContainer(itReadfrom, itPastEnd);
             return itReadfrom;
-        }
-
-        operator SongData()
-        {
-            SongData sdat;
-            sdat.nbtrks  = nbtrks;
-            sdat.nbchans = nbchans;
-            sdat.mainvol = 127;
-            sdat.mainpan = 64;
-            return move(sdat);
         }
     };
 
@@ -153,41 +86,19 @@ namespace DSE
     class SongChunk_v402
     {
     public:
-        static const uint32_t Size = 32; //bytes
+        static constexpr size_t size() { return 16 + SeqInfoChunk_v402::size(); }
 
         //Default Values
-        static const uint32_t DefUnk1       = 0x1000000;
-        static const uint32_t DefUnk2       = 0xFF10;
-        static const uint32_t DefUnk3       = 0xFFFFFFB0;
-        static const uint16_t DefUnk4       = 0x1;
-        static const uint16_t DefTPQN       = 48;
-        static const uint8_t  DefUnk5       = 0x1;
-        static const uint8_t  DefUnk6       = 0x2;
-        static const uint16_t DefUnk7       = 0x8;
-        static const uint8_t  DefMVol       = 127;
-        static const uint8_t  DefMPan       = 64;
-        static const uint32_t DefUnk8       = 0x0F000000;
+        static const uint32_t DefUnk1 = 0x1000000;
+        static const uint32_t DefUnk2 = 0xFF10;
+        static const uint32_t DefUnk3 = 0xFFFFFFB0;
 
-        uint32_t size()const { return Size; }
+        uint32_t label   = static_cast<uint32_t>(eDSEChunks::song);
+        uint32_t unk1    = DefUnk1;
+        uint32_t unk2    = DefUnk2;
+        uint32_t unk3    = DefUnk3;
+        SeqInfoChunk_v402 seqinfo{};
 
-        uint32_t label   = 0;
-        uint32_t unk1    = 0;
-        uint32_t unk2    = 0;
-        uint32_t unk3    = 0;
-
-        //#TODO: Update this so the stuff below is moved to its own struct since it's a seqinfo chunk
-        uint16_t unk4    = 0;
-        uint16_t offnext = 0x30;
-        uint8_t  nbtrks  = 0;
-        uint8_t  nbchans = 0;
-        uint8_t  unk5    = 0;
-        uint8_t  unk6    = 0;
-        uint16_t unk7    = 0;
-        int8_t   mainvol = 0;
-        int8_t   mainpan = 0;
-        uint32_t unk8    = 0;
-
-        //
         template<class _outit>
             _outit WriteToContainer( _outit itwriteto )const
         {
@@ -195,20 +106,10 @@ namespace DSE
             itwriteto = utils::WriteIntToBytes( unk1,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk2,    itwriteto );
             itwriteto = utils::WriteIntToBytes( unk3,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk4,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( offnext, itwriteto );
-            itwriteto = utils::WriteIntToBytes( nbtrks,  itwriteto );
-            itwriteto = utils::WriteIntToBytes( nbchans, itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk5,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk6,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk7,    itwriteto );
-            itwriteto = utils::WriteIntToBytes( mainvol, itwriteto );
-            itwriteto = utils::WriteIntToBytes( mainpan, itwriteto );
-            itwriteto = utils::WriteIntToBytes( unk8,    itwriteto );
+            itwriteto = seqinfo.WriteToContainer(itwriteto);
             return itwriteto;
         }
 
-        //
         template<class _init>
             _init ReadFromContainer( _init itReadfrom, _init itPastEnd )
         {
@@ -216,28 +117,10 @@ namespace DSE
             itReadfrom = utils::ReadIntFromBytes( unk1,    itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk2,    itReadfrom, itPastEnd );
             itReadfrom = utils::ReadIntFromBytes( unk3,    itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk4,    itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( offnext, itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( nbtrks,  itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( nbchans, itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk5,    itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk6,    itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk7,    itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( mainvol, itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( mainpan, itReadfrom, itPastEnd );
-            itReadfrom = utils::ReadIntFromBytes( unk8,    itReadfrom, itPastEnd );
+            itReadfrom = seqinfo.ReadFromContainer(itReadfrom, itPastEnd);
             return itReadfrom;
         }
 
-        operator SongData()
-        {
-            SongData sdat;
-            sdat.nbtrks  = nbtrks;
-            sdat.nbchans = nbchans;
-            sdat.mainvol = mainvol;
-            sdat.mainpan = mainpan;
-            return move(sdat);
-        }
     };
 
 //====================================================================================================
@@ -264,6 +147,7 @@ namespace DSE
 
         operator MusicSequence()
         {
+            m_song = seqinfo_table{};
             if( utils::LibWide().isLogOn() )
                 clog << "=== Parsing SMDL ===\n";
             //Set our iterator
@@ -281,12 +165,12 @@ namespace DSE
             if( m_hdr.version == static_cast<uint16_t>(eDSEVersion::V415) )
             {
                 //Parse tracks and return
-                return MusicSequence( ParseAllTracks(), std::move(meta) );
+                return MusicSequence( ParseAllTracks(), std::move(meta), std::move(m_song));
             }
             else if( m_hdr.version == static_cast<uint16_t>(eDSEVersion::V402) )
             {
                 //Parse tracks and return
-                return MusicSequence( ParseAllTracks(), std::move(meta) );
+                return MusicSequence( ParseAllTracks(), std::move(meta), std::move(m_song));
             }
             else
             {
@@ -304,24 +188,20 @@ namespace DSE
         inline void ParseHeader()
         {
             m_itread = m_hdr.ReadFromContainer( m_itread, m_itend );
-
             if( utils::LibWide().isLogOn() )
-            {
                 clog << m_hdr;
-            }
         }
 
         //Parse the song chunk
-        inline void ParseSong()
+        void ParseSong()
         {
-            //
             if( m_hdr.version == static_cast<uint16_t>(eDSEVersion::V402) )
             {
                 SongChunk_v402 schnk;
                 m_itread = schnk.ReadFromContainer( m_itread, m_itend );
                 if( utils::LibWide().isLogOn() )
                     clog << schnk;
-                m_song = schnk;
+                m_song = schnk.seqinfo;
             }
             else if( m_hdr.version == static_cast<uint16_t>(eDSEVersion::V415) )
             {
@@ -329,7 +209,7 @@ namespace DSE
                 m_itread = schnk.ReadFromContainer( m_itread, m_itend );
                 if( utils::LibWide().isLogOn() )
                     clog << schnk;
-                m_song = schnk;
+                m_song = schnk.seqinfo;
             }
             else
             {
@@ -420,8 +300,7 @@ namespace DSE
         rd_iterator_t                   m_itread;
         rd_iterator_t                   m_itEoC;    //Pos of the "end of chunk" chunk
         SMDL_Header                     m_hdr;
-        SongData                        m_song;
-
+        seqinfo_table                   m_song;
     };
 
 //====================================================================================================
@@ -456,13 +335,13 @@ namespace DSE
             //Reserve Song chunk
             if( m_version == eDSEVersion::V402 )
             {
-                itout = std::fill_n( itout, SongChunk_v402::Size, 0 );
-                nbwritten += SongChunk_v402::Size;
+                itout = std::fill_n( itout, SongChunk_v402::size(), 0);
+                nbwritten += SongChunk_v402::size();
             }
             else if( m_version == eDSEVersion::V415 )
             {
-                itout = std::fill_n( itout, (SongChunk_v415::SizeNoPadd + SongChunk_v415::LenMaxPadding), 0 );
-                nbwritten += ((size_t)SongChunk_v415::SizeNoPadd + SongChunk_v415::LenMaxPadding);
+                itout = std::fill_n( itout, SongChunk_v415::size(), 0); //Size includes padding
+                nbwritten += SongChunk_v415::size();
             }
             else
                 throw std::runtime_error( "SMDL_Writer::operator()(): Invalid DSE version supplied!!" );
@@ -542,42 +421,23 @@ namespace DSE
             //Song Chunk
             if( m_version == eDSEVersion::V402 )
             {
-                SongChunk_v402 songchnk;
-                songchnk.unk1    = SongChunk_v402::DefUnk1;
-                songchnk.unk2    = SongChunk_v402::DefUnk2;
-                songchnk.unk3    = SongChunk_v402::DefUnk3;
-                songchnk.unk4    = SongChunk_v402::DefUnk4;
-                songchnk.unk5    = SongChunk_v402::DefUnk5;
-                songchnk.nbtrks  = static_cast<uint8_t>(m_src.getNbTracks());
-                auto highestchan = std::max_element(existingchan.begin(), existingchan.end());
-                songchnk.nbchans = (*highestchan + 1);
-                songchnk.unk6    = SongChunk_v402::DefUnk6;
-                songchnk.unk7    = SongChunk_v402::DefUnk7;
-                songchnk.mainvol = m_src.metadata().mainvol;
-                songchnk.mainpan = m_src.metadata().mainpan;
-                songchnk.unk8    = SongChunk_v402::DefUnk8;
+                SongChunk_v402 songchnk{};
+                songchnk.seqinfo         = m_src.seqinfo();
+                auto highestchan         = std::max_element(existingchan.begin(), existingchan.end());
+                songchnk.seqinfo.nbtrks  = static_cast<uint8_t>(m_src.getNbTracks());
+                songchnk.seqinfo.nbchans = (*highestchan + 1);
+                songchnk.seqinfo.mainvol = m_src.metadata().mainvol;
+                songchnk.seqinfo.mainpan = m_src.metadata().mainpan;
                 itout = songchnk.WriteToContainer(itout);
             }
             else if( m_version == eDSEVersion::V415 )
             {
-                SongChunk_v415 songchnk;
-                songchnk.unk1    = SongChunk_v415::DefUnk1;
-                songchnk.unk2    = SongChunk_v415::DefUnk2;
-                songchnk.unk3    = SongChunk_v415::DefUnk3;
-                songchnk.unk4    = SongChunk_v415::DefUnk4;
-                songchnk.unk5    = SongChunk_v415::DefUnk5;
-                songchnk.nbtrks  = static_cast<uint8_t>(m_src.getNbTracks());
-                auto highestchan = std::max_element(existingchan.begin(), existingchan.end());
-                songchnk.nbchans = *highestchan + 1;
-                songchnk.unk6    = SongChunk_v415::DefUnk6;
-                songchnk.unk7    = SongChunk_v415::DefUnk7;
-                songchnk.unk8    = SongChunk_v415::DefUnk8;
-                songchnk.unk9    = SongChunk_v415::DefUnk9;
-                songchnk.unk10   = SongChunk_v415::DefUnk10;
-                songchnk.unk11   = SongChunk_v415::DefUnk11;
-                songchnk.unk12   = SongChunk_v415::DefUnk12;
-                std::fill_n( std::back_inserter(songchnk.unkpad), SongChunk_v415::LenMaxPadding, 0xFF );
-                itout = songchnk.WriteToContainer(itout); //Correct chunk label is written automatically, bypassing what's in "label"!
+                SongChunk_v415 songchnk{};
+                songchnk.seqinfo         = m_src.seqinfo();
+                auto highestchan         = std::max_element(existingchan.begin(), existingchan.end());
+                songchnk.seqinfo.nbtrks  = static_cast<uint8_t>(m_src.getNbTracks());
+                songchnk.seqinfo.nbchans = *highestchan + 1;
+                itout = songchnk.WriteToContainer(itout);
             }
         }
 
@@ -628,28 +488,13 @@ namespace DSE
 std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v415& sd)
 {
     os << "\t-- Song Chunk v0x415 --\n"
-        << showbase
-        << hex << uppercase
+        << showbase << hex << uppercase
         << "\tLabel        : " << sd.label << "\n"
         << "\tUnk1         : " << sd.unk1 << "\n"
         << "\tUnk2         : " << sd.unk2 << "\n"
         << "\tUnk3         : " << sd.unk3 << "\n"
-        << "\tUnk4         : " << sd.unk4 << "\n"
-        << "\toffnext      : " << sd.offnext << "\n"
-        << "\tUnk5         : " << sd.unk5 << "\n"
-        << dec << nouppercase
-        << "\tNbTracks     : " << static_cast<short>(sd.nbtrks) << "\n"
-        << "\tNbChans      : " << static_cast<short>(sd.nbchans) << "\n"
-        << hex << uppercase
-        << "\tUnk6         : " << sd.unk6 << "\n"
-        << "\tUnk7         : " << sd.unk7 << "\n"
-        << "\tUnk8         : " << sd.unk8 << "\n"
-        << "\tUnk9         : " << sd.unk9 << "\n"
-        << "\tUnk10        : " << sd.unk10 << "\n"
-        << "\tUnk11        : " << sd.unk11 << "\n"
-        << "\tUnk12        : " << sd.unk12 << "\n"
-        << dec << nouppercase
-        << noshowbase
+        << dec << nouppercase << noshowbase
+        << sd.seqinfo
         << "\n"
         ;
     return os;
@@ -661,26 +506,13 @@ std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v415& sd)
 std::ostream& operator<<(std::ostream& os, const DSE::SongChunk_v402& sd)
 {
     os << "\t-- Song Chunk v0x402 --\n"
-        << showbase
-        << hex << uppercase
+        << showbase << hex << uppercase
         << "\tLabel        : " << sd.label << "\n"
         << "\tUnk1         : " << sd.unk1 << "\n"
         << "\tUnk2         : " << sd.unk2 << "\n"
         << "\tUnk3         : " << sd.unk3 << "\n"
-        << "\tUnk4         : " << sd.unk4 << "\n"
-        << "\toffnext      : " << sd.offnext << "\n"
-        << dec << nouppercase
-        << "\tNbTracks     : " << static_cast<short>(sd.nbtrks) << "\n"
-        << "\tNbChans      : " << static_cast<short>(sd.nbchans) << "\n"
-        << hex << uppercase
-        << "\tUnk5         : " << static_cast<short>(sd.unk5) << "\n"
-        << "\tUnk6         : " << static_cast<short>(sd.unk6) << "\n"
-        << "\tUnk7         : " << sd.unk7 << "\n"
-        << "\tMainVol      : " << static_cast<short>(sd.mainvol) << "\n"
-        << "\tMainPan      : " << static_cast<short>(sd.mainpan) << "\n"
-        << "\tUnk8         : " << sd.unk8 << "\n"
-        << dec << nouppercase
-        << noshowbase
+        << dec << nouppercase << noshowbase
+        << sd.seqinfo
         << "\n"
         ;
     return os;

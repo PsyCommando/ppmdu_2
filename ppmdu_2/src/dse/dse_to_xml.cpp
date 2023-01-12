@@ -152,18 +152,89 @@ namespace DSE
     {
         const std::string NODE_Sequences = "Sequences"s;
         const std::string NODE_Sequence  = "Sequence"s;
+        const std::string NODE_SeqInfo = "Info"s;
     };
+
+    void seqinfo_table::WriteXml(pugi::xml_node seqnode)const
+    {
+        using namespace SeqInfoXml;
+        xml_node infonode = AppendChildNode(seqnode, NODE_SeqInfo);
+        WriteHexNumberVarToXml(unk30, infonode);
+        WriteHexNumberVarToXml(unk16, infonode);
+        //WriteNumberVarToXml(nbtrks,  infonode);
+        //WriteNumberVarToXml(nbchans, infonode);
+        WriteHexNumberVarToXml(unk19, infonode);
+        WriteHexNumberVarToXml(unk20, infonode);
+        WriteHexNumberVarToXml(unk21, infonode);
+        WriteHexNumberVarToXml(unk22, infonode);
+        WriteHexNumberVarToXml(unk23, infonode);
+        WriteHexNumberVarToXml(unk24, infonode);
+        WriteHexNumberVarToXml(unk25, infonode);
+        WriteHexNumberVarToXml(unk26, infonode);
+        WriteHexNumberVarToXml(unk27, infonode);
+        WriteHexNumberVarToXml(unk28, infonode);
+        WriteHexNumberVarToXml(unk29, infonode);
+        WriteHexNumberVarToXml(unk31, infonode);
+        WriteHexNumberVarToXml(unk12, infonode);
+
+        WriteHexNumberVarToXml(unk5, infonode);
+        WriteHexNumberVarToXml(unk6, infonode);
+        WriteHexNumberVarToXml(unk7, infonode);
+        WriteHexNumberVarToXml(unk8, infonode);
+    }
+
+    void seqinfo_table::ParseXml(pugi::xml_node seqnode)
+    {
+        using namespace SeqInfoXml;
+        xml_node infonode = seqnode.child(NODE_SeqInfo.c_str());
+        if (!infonode)
+            return;
+        ParseNumberVarFromXml(unk30, infonode);
+        ParseNumberVarFromXml(unk16, infonode);
+        //ParseNumberVarFromXml(nbtrks,  infonode);
+        //ParseNumberVarFromXml(nbchans, infonode);
+        ParseNumberVarFromXml(unk19, infonode);
+        ParseNumberVarFromXml(unk20, infonode);
+        ParseNumberVarFromXml(unk21, infonode);
+        ParseNumberVarFromXml(unk22, infonode);
+        ParseNumberVarFromXml(unk23, infonode);
+        ParseNumberVarFromXml(unk24, infonode);
+        ParseNumberVarFromXml(unk25, infonode);
+        ParseNumberVarFromXml(unk26, infonode);
+        ParseNumberVarFromXml(unk27, infonode);
+        ParseNumberVarFromXml(unk28, infonode);
+        ParseNumberVarFromXml(unk29, infonode);
+        ParseNumberVarFromXml(unk31, infonode);
+        ParseNumberVarFromXml(unk12, infonode);
+
+        ParseNumberVarFromXml(unk5, infonode);
+        ParseNumberVarFromXml(unk6, infonode);
+        ParseNumberVarFromXml(unk7, infonode);
+        ParseNumberVarFromXml(unk8, infonode);
+    }
 
     void ParseSequenceInfo(pugi::xml_node parent, std::vector<DSE::seqinfo_table>& sequences)
     {
         using namespace SeqInfoXml;
-        xml_node sequencesnode = parent.child(NODE_Sequences.c_str());
-        for (const xml_node& node : sequencesnode.children(NODE_Sequence.c_str()))
+        if (parent.name() == NODE_Sequences)
         {
+            for (const xml_node& node : parent.children(NODE_Sequence.c_str()))
+            {
+                seqinfo_table tbl;
+                tbl.ParseXml(node);
+                sequences.push_back(std::move(tbl));
+            }
+        }
+        else
+        {
+            xml_node seq = (parent.name() == NODE_Sequence) ? parent : parent.child(NODE_Sequence.c_str());
+            if (!seq)
+                throw std::runtime_error("No sequence node found!");
             seqinfo_table tbl;
-            tbl.ParseXml(node);
+            tbl.ParseXml(seq);
             sequences.push_back(std::move(tbl));
         }
+
     }
     void WriteSequenceInfo(pugi::xml_node parent, const std::vector<DSE::seqinfo_table>& sequences)
     {

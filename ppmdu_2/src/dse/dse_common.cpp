@@ -198,60 +198,7 @@ namespace DSE
         unk8 = hdr.unk8;
     }
 
-//
-// SeqInfoXml
-//
 
-    namespace SeqInfoXml
-    {
-        const std::string NODE_SeqInfo = "Info"s;
-    };
-    void seqinfo_table::WriteXml(pugi::xml_node seqnode)const
-    {
-        using namespace SeqInfoXml;
-        xml_node infonode = AppendChildNode(seqnode, NODE_SeqInfo);
-        WriteNumberVarToXml(unk30,   infonode);
-        WriteNumberVarToXml(unk16,   infonode);
-        WriteNumberVarToXml(nbtrks,  infonode);
-        WriteNumberVarToXml(nbchans, infonode);
-        WriteNumberVarToXml(unk19,   infonode);
-        WriteNumberVarToXml(unk20,   infonode);
-        WriteNumberVarToXml(unk21,   infonode);
-        WriteNumberVarToXml(unk22,   infonode);
-        WriteNumberVarToXml(unk23,   infonode);
-        WriteNumberVarToXml(unk24,   infonode);
-        WriteNumberVarToXml(unk25,   infonode);
-        WriteNumberVarToXml(unk26,   infonode);
-        WriteNumberVarToXml(unk27,   infonode);
-        WriteNumberVarToXml(unk28,   infonode);
-        WriteNumberVarToXml(unk29,   infonode);
-        WriteNumberVarToXml(unk31,   infonode);
-        WriteNumberVarToXml(unk12,   infonode);
-    }
-    void seqinfo_table::ParseXml(pugi::xml_node seqnode)
-    {
-        using namespace SeqInfoXml;
-        xml_node infonode = seqnode.child(NODE_SeqInfo.c_str());
-        if (!infonode)
-            return;
-        ParseNumberVarFromXml(unk30,   infonode);
-        ParseNumberVarFromXml(unk16,   infonode);
-        ParseNumberVarFromXml(nbtrks,  infonode);
-        ParseNumberVarFromXml(nbchans, infonode);
-        ParseNumberVarFromXml(unk19,   infonode);
-        ParseNumberVarFromXml(unk20,   infonode);
-        ParseNumberVarFromXml(unk21,   infonode);
-        ParseNumberVarFromXml(unk22,   infonode);
-        ParseNumberVarFromXml(unk23,   infonode);
-        ParseNumberVarFromXml(unk24,   infonode);
-        ParseNumberVarFromXml(unk25,   infonode);
-        ParseNumberVarFromXml(unk26,   infonode);
-        ParseNumberVarFromXml(unk27,   infonode);
-        ParseNumberVarFromXml(unk28,   infonode);
-        ParseNumberVarFromXml(unk29,   infonode);
-        ParseNumberVarFromXml(unk31,   infonode);
-        ParseNumberVarFromXml(unk12,   infonode);
-    }
 
 };
 

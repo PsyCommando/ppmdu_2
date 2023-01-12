@@ -59,6 +59,7 @@ list(APPEND audioutil_HEADER
     "../ppmdu_2/include/dse/containers/dse_sample_bank.hpp"
     "../ppmdu_2/include/dse/containers/dse_se_sequence.hpp"
 
+    "../ppmdu_2/include/dse/fmts/dse_fmt_common.hpp"
     "../ppmdu_2/include/dse/fmts/sadl.hpp"
     "../ppmdu_2/include/dse/fmts/sedl.hpp"
     "../ppmdu_2/include/dse/fmts/smdl.hpp"
@@ -115,6 +116,7 @@ list(APPEND audioutil_SRC
     "../ppmdu_2/src/dse/containers/dse_preset_db.cpp"
     "../ppmdu_2/src/dse/containers/dse_music_sequence.cpp"
 
+    "../ppmdu_2/src/dse/fmts/dse_fmt_common.cpp"
     "../ppmdu_2/src/dse/fmts/sedl.cpp"
     "../ppmdu_2/src/dse/fmts/smdl.cpp"
     "../ppmdu_2/src/dse/fmts/swdl.cpp"

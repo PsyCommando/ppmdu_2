@@ -99,6 +99,11 @@ namespace DSE
                 xml_node seqnode = doc.child(NODE_Sequence.c_str());
                 if(!seqnode)
                     throw std::runtime_error("Missing sequence node!");
+
+                std::vector<seqinfo_table> sinfo;
+                ParseSequenceInfo(seqnode, sinfo);
+                if (!sinfo.empty())
+                    m_seq.setSeqinfo(sinfo.front());
                 
                 std::vector<MusicTrack> loadedtrks;
                 loadedtrks.reserve(16);

@@ -273,20 +273,6 @@ namespace DSE
     };
 
     /// <summary>
-    /// A generic version of the DSE Song Chunk meant to contain only 
-    /// the relevant data and work with any version of DSE!
-    /// </summary>
-    struct SongData
-    {
-        uint8_t  nbtrks  = 0;
-        uint8_t  nbchans = 0;
-
-        // v0x402 specifics
-        int8_t   mainvol = 0x7F;
-        int8_t   mainpan = 0x40;
-    };
-
-    /// <summary>
     /// Entry from the "wavi" chunk in a swdl file. 
     /// This holds DSE version independent information on samples.
     /// </summary>
@@ -513,80 +499,35 @@ namespace DSE
         std::vector<SplitEntry>  m_splitstbl;
     };
 
-
     /// <summary>
     /// Table before a group of trk chunks belonging to the same sequence.
     /// Used in both SEDL and SMDL.
     /// </summary>
     struct seqinfo_table
     {
-        uint16_t unk30   = 0; //usually 0x0001
-        uint16_t ptrtrk  = 0; //Position of the first track from the start of the seqinfo table
-        uint16_t unk16   = 0; //Usually 0xFF01
+        uint16_t unk30   = 0;
+        uint16_t nextoff = 0;
+        uint16_t unk16   = 0;
         uint8_t  nbtrks  = 0; //Nb of track chunks in the sequence.
-        uint8_t  nbchans = 0; //Possibly number of midi/output tracks.
-        uint8_t  unk19   = 0; //Usually 0x00
-        uint8_t  unk20   = 0; //Usually 0x00
-        uint8_t  unk21   = 0; //Usually 0x00
-        uint8_t  unk22   = 0; //Usually 0x0F
-        uint32_t unk23   = 0; //usually 4 bytes of 0xFF
-        uint16_t unk24   = 0; //Usually 0x0000
-        uint16_t unk25   = 0; //Usually 0x4000
-        uint16_t unk26   = 0; //Usually 0x4000
-        uint16_t unk27   = 0; //Usually 0x0040
-        uint16_t unk28   = 0; //Usually 0x0400 also seen 0x0200
-        uint8_t  unk29   = 0; //Usually 0x00
-        uint8_t  unk31   = 0; //0x0E or 0x08
-        uint32_t unk12   = 0; //So far 0xFFFFFF00
-
-        template<class _outit>
-        _outit WriteToContainer(_outit itwriteto)const
-        {
-            itwriteto = utils::WriteIntToBytes(unk30,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(ptrtrk,  itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk16,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(nbtrks,  itwriteto);
-            itwriteto = utils::WriteIntToBytes(nbchans, itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk19,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk20,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk21,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk22,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk23,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk24,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk25,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk26,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk27,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk28,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk29,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk31,   itwriteto);
-            itwriteto = utils::WriteIntToBytes(unk12,   itwriteto);
-
-            return itwriteto;
-        }
-
-        template<class _init>
-        _init ReadFromContainer(_init itReadfrom, _init itPastEnd)
-        {
-            unk30   = utils::ReadIntFromBytes<decltype(unk30)>  (itReadfrom, itPastEnd);
-            ptrtrk  = utils::ReadIntFromBytes<decltype(ptrtrk)> (itReadfrom, itPastEnd);
-            unk16   = utils::ReadIntFromBytes<decltype(unk16)>  (itReadfrom, itPastEnd);
-            nbtrks  = utils::ReadIntFromBytes<decltype(nbtrks)> (itReadfrom, itPastEnd);
-            nbchans = utils::ReadIntFromBytes<decltype(nbchans)>(itReadfrom, itPastEnd);
-            unk19   = utils::ReadIntFromBytes<decltype(unk19)>  (itReadfrom, itPastEnd);
-            unk20   = utils::ReadIntFromBytes<decltype(unk20)>  (itReadfrom, itPastEnd);
-            unk21   = utils::ReadIntFromBytes<decltype(unk21)>  (itReadfrom, itPastEnd);
-            unk22   = utils::ReadIntFromBytes<decltype(unk22)>  (itReadfrom, itPastEnd);
-            unk23   = utils::ReadIntFromBytes<decltype(unk23)>  (itReadfrom, itPastEnd);
-            unk24   = utils::ReadIntFromBytes<decltype(unk24)>  (itReadfrom, itPastEnd);
-            unk25   = utils::ReadIntFromBytes<decltype(unk25)>  (itReadfrom, itPastEnd);
-            unk26   = utils::ReadIntFromBytes<decltype(unk26)>  (itReadfrom, itPastEnd);
-            unk27   = utils::ReadIntFromBytes<decltype(unk27)>  (itReadfrom, itPastEnd);
-            unk28   = utils::ReadIntFromBytes<decltype(unk28)>  (itReadfrom, itPastEnd);
-            unk29   = utils::ReadIntFromBytes<decltype(unk29)>  (itReadfrom, itPastEnd);
-            unk31   = utils::ReadIntFromBytes<decltype(unk31)>  (itReadfrom, itPastEnd);
-            unk12   = utils::ReadIntFromBytes<decltype(unk12)>  (itReadfrom, itPastEnd);
-            return itReadfrom;
-        }
+        uint8_t  nbchans = 0; //Number of midi/output tracks.
+        uint8_t  unk19   = 0;
+        uint8_t  unk20   = 0;
+        uint8_t  unk21   = 0;
+        uint8_t  unk22   = 0;
+        uint32_t unk23   = 0;
+        uint16_t unk24   = 0;
+        uint16_t unk25   = 0;
+        uint16_t unk26   = 0;
+        uint16_t unk27   = 0;
+        uint16_t unk28   = 0;
+        uint8_t  unk29   = 0;
+        uint8_t  unk31   = 0;
+        uint32_t unk12   = 0;
+        //0x402 specific stuff since dunno what to do with those
+        uint8_t  unk5    = 0;
+        uint8_t  unk6    = 0;
+        uint16_t unk7    = 0;
+        uint32_t unk8    = 0;
 
         void WriteXml(pugi::xml_node seqnode)const;
         void ParseXml(pugi::xml_node seqnode);

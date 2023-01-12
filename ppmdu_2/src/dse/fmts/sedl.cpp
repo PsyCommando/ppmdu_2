@@ -1,4 +1,5 @@
 #include <dse/fmts/sedl.hpp>
+#include <dse/fmts/dse_fmt_common.hpp>
 
 #include <fstream>
 using namespace std;
@@ -14,16 +15,14 @@ namespace DSE
     public:
         using iterator_t = _InIt;
 
-        SEDL_Parser(_InIt beg, _InIt end)
-            :m_itbeg(beg), m_itend(end)
-        {
-        }
+        SEDL_Parser(_InIt beg, _InIt end)noexcept :m_itbeg(beg), m_itend(end), m_version(eDSEVersion::VInvalid){}
 
         operator DSE::SoundEffectSequences()
         {
             SEDL_Header hdr = ParseHeader(m_itbeg);
             if (hdr.version != static_cast<uint16_t>(eDSEVersion::V415))
                 throw std::runtime_error("Unsupported SEDL header version : " + std::to_string(hdr.version) + "!");
+            m_version = (eDSEVersion)hdr.version;
             
             //Grab the seq header, so we get a list of all the sequences in the file
             iterator_t ithdrend       = std::next(m_itbeg, SEDL_Header::size());
@@ -83,12 +82,26 @@ namespace DSE
         MusicSequence ParseASequence(iterator_t itread)
         {
             seqinfo_table seqinfo;
-            seqinfo.ReadFromContainer(itread, m_itend);
             std::vector<MusicTrack> trks;
+
+            if (m_version == eDSEVersion::V415)
+            {
+                SeqInfoChunk_v415 seq415;
+                itread = seq415.ReadFromContainer(itread, m_itend);
+                seqinfo = seq415;
+            }
+            else if (m_version == eDSEVersion::V402)
+            {
+                SeqInfoChunk_v402 seq402;
+                itread = seq402.ReadFromContainer(itread, m_itend);
+                seqinfo = seq402;
+            }
+            else
+                assert(false);
             trks.reserve(seqinfo.nbtrks);
 
             iterator_t iteoc = DSE::FindNextChunk(itread, m_itend, DSE::eDSEChunks::eoc); //We stop at either m_itend or the next eoc chunk
-            iterator_t ittrk = std::next(itread, seqinfo.ptrtrk);
+            iterator_t ittrk = std::next(itread, seqinfo.nextoff);
 
             try
             {
@@ -157,6 +170,7 @@ namespace DSE
     private:
         iterator_t m_itbeg;
         iterator_t m_itend;
+        eDSEVersion m_version;
     };
 
     //
@@ -165,9 +179,7 @@ namespace DSE
     class SEDL_Writer
     {
     public:
-        SEDL_Writer(const DSE::SoundEffectSequences& seqref)
-            :m_seqref(seqref)
-        {}
+        SEDL_Writer(const DSE::SoundEffectSequences& seqref)noexcept :m_seqref(seqref) {}
 
         void operator()(std::ostreambuf_iterator<char> itout)
         {
