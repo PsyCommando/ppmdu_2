@@ -8,9 +8,6 @@ Description: Utilities for handling Pokemon Mystery Dungeon: Explorers of Sky/Ti
 
 License: Creative Common 0 ( Public Domain ) https://creativecommons.org/publicdomain/zero/1.0/
 All wrongs reversed, no crappyrights :P
-
-    #TODO: Move this to DSE folder + remove as many dependencies on PMD2 as possible !!!
-
 */
 #include <dse/dse_common.hpp>
 #include <dse/containers/dse_music_sequence.hpp>

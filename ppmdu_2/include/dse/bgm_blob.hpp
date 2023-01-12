@@ -121,13 +121,13 @@ namespace DSE
                 {
                      auto itfoundswdl = MatchFoundPair(ittocbeg, ittocend);
                      if( itfoundswdl != m_toc.end() )
-                         matches.push_back( move( make_pair( FoundContainer(*itfoundswdl), FoundContainer(*ittocbeg) ) ) );
+                         matches.push_back( make_pair( FoundContainer(*itfoundswdl), FoundContainer(*ittocbeg)) );
                 }
 
                 ++ittocbeg;
             }
 
-            return move(matches);
+            return matches;
         }
 
         std::vector<std::pair<FoundContainer,FoundContainer>> ListAllMatchingSEDLPairs()
