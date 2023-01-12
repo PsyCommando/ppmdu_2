@@ -23,6 +23,10 @@ namespace pugi { class xml_node; };
 
 namespace DSE
 {
+    enum struct eDSEChunks : uint32_t;
+    enum struct eDSEContainers : uint32_t;
+    constexpr eDSEChunks IntToChunkID(std::underlying_type_t<eDSEChunks> value);
+
 //====================================================================================================
 //  Typedefs
 //====================================================================================================
@@ -31,6 +35,10 @@ namespace DSE
     typedef uint8_t  presetid_t;
     typedef uint16_t sampleid_t;
     typedef uint8_t  midinote_t;
+
+//====================================================================================================
+//  Constants
+//====================================================================================================
 
     const bankid_t      InvalidBankID      = std::numeric_limits<bankid_t>::max();
     const presetid_t    InvalidPresetID    = std::numeric_limits<presetid_t>::max();
@@ -47,11 +55,35 @@ namespace DSE
     extern const std::string DSE_SmplFmt_ADPCM3;
     extern const std::string DSE_SmplFmt_PSG;
 
-//====================================================================================================
-//  Constants
-//====================================================================================================
+    const int          NbMidiChannels = 16;
+    const unsigned int NB_DSEChannels = 17;
+    const unsigned int NB_DSETracks = 17;
+    const unsigned int NB_DSEChunks = 11;
+    const unsigned int NB_DSEContainers = 4;
+    const uint32_t     SpecialChunkLen = 0xFFFFFFB0;   //Value some special chunks have as their length
+    const int16_t      DSERootKey = 60;           //By default the root key for dse sequences is assumed to be 60 the MIDI standard's middle C, AKA C4
+    const int8_t       DSEDefaultCoarseTune = -7;           //The default coarse tune value for splits and samples.
 
-    //Enum containing the IDs of all chunks used by the Procyon DSE system for sequenced music and sound effects
+    /// <summary>
+    /// The size of the ADPCM preamble in int32, the unit the 
+    /// NDS uses to store the loop positions.
+    /// Mainly here to make things more readable.
+    /// </summary>
+    extern const int SizeADPCMPreambleWords;
+
+    /// <summary>
+    /// Array containing all chunks labels
+    /// </summary>
+    extern const std::array<eDSEChunks, NB_DSEChunks>      DSEChunksList;
+
+    /// <summary>
+    /// Array containing all the DSE container's magic number.
+    /// </summary>
+    extern const std::array<eDSEContainers, NB_DSEContainers>  DSEContainerList;
+
+    /// <summary>
+    /// Enum containing the IDs of all chunks used by the Procyon DSE system for sequenced music and sound effects
+    /// </summary>
     enum struct eDSEChunks : uint32_t
     {
         invalid,
@@ -68,6 +100,9 @@ namespace DSE
         eod  = 0x656F6420, //"eod\0x20"
     };
 
+    /// <summary>
+    /// Enum containing the fourcc of all the known DSE file format headers.
+    /// </summary>
     enum struct eDSEContainers : uint32_t
     {
         invalid,
@@ -77,27 +112,9 @@ namespace DSE
         sadl = 0x7361646C,  //"sadl"
     };
 
-    const int          NbMidiChannels        = 16;
-    const unsigned int NB_DSEChannels        = 17;
-    const unsigned int NB_DSETracks          = 17;
-    const unsigned int NB_DSEChunks          = 11;
-    const unsigned int NB_DSEContainers      = 4;
-    const uint32_t     SpecialChunkLen       = 0xFFFFFFB0;   //Value some special chunks have as their length
-    const int16_t      DSERootKey            = 60;           //By default the root key for dse sequences is assumed to be 60 the MIDI standard's middle C, AKA C4
-    const int8_t       DSEDefaultCoarseTune  = -7;           //The default coarse tune value for splits and samples.
-
-    /*
-        The size of the ADPCM preamble in int32, the unit the NDS uses to store the loop positions
-        Mainly here to make things more readable.
-    */
-    extern const int SizeADPCMPreambleWords;
-
-    extern const std::array<eDSEChunks,     NB_DSEChunks>      DSEChunksList;    //Array containing all chunks labels
-    extern const std::array<eDSEContainers, NB_DSEContainers>  DSEContainerList; //Array containing all the DSE container's magic number.
-
-    //-------------------------------
-    // Sample Formats
-    //-------------------------------
+    /// <summary>
+    /// Enum of the possible sample format used in the DSE engine.
+    /// </summary>
     enum struct eDSESmplFmt : uint16_t
     {
         invalid    = std::numeric_limits<std::underlying_type_t<eDSESmplFmt>>::max(),
@@ -108,13 +125,9 @@ namespace DSE
         //psg       = 0x300,
     };
 
-    eDSESmplFmt IntToDSESmplFmt(std::underlying_type_t<eDSESmplFmt> val);
-    std::string DseSmplFmtToString(eDSESmplFmt fmt);
-    eDSESmplFmt StringToDseSmplFmt(const char * str);
-
-    // -------------------------------
-    // ------- DSE Version IDs -------
-    // -------------------------------
+    /// <summary>
+    /// Enum with all the known DSE versions.
+    /// </summary>
     enum struct eDSEVersion : uint16_t
     {
         V402 = 0x402,   //Used in Luminous Arc
@@ -122,57 +135,6 @@ namespace DSE
         VDef = V415,
         VInvalid = 0,
     };
-
-    inline eDSEVersion intToDseVer( uint16_t val )
-    {
-        if( val == static_cast<uint16_t>(eDSEVersion::V402) )
-            return eDSEVersion::V402;
-        if( val == static_cast<uint16_t>(eDSEVersion::V415) )
-            return eDSEVersion::V415;
-        else
-            return eDSEVersion::VInvalid;
-    }
-
-    inline uint16_t DseVerToInt( eDSEVersion ver )
-    {
-        return static_cast<uint16_t>(ver);
-    }
-    
-    // -------------------------------
-    // ----- DSE Chunk ID stuff ------
-    // -------------------------------
-    //inline eDSEChunks IntToChunkID( uint32_t   value ); //Return eDSEChunks::invalid, if invalid ID !
-    //inline uint32_t   ChunkIDToInt( eDSEChunks id    );
-    inline eDSEChunks IntToChunkID( uint32_t value )
-    {
-        for( auto cid : DSEChunksList )
-        {
-            if( value == static_cast<uint32_t>(cid) )
-                return cid;
-        }
-        return eDSEChunks::invalid;
-    }
-    
-    inline uint32_t ChunkIDToInt( eDSEChunks id )
-    {
-        return static_cast<uint32_t>(id);
-    }
-
-    //DSE Magic Number
-    inline eDSEContainers IntToContainerMagicNum( uint32_t value )  //Return eDSEContainers::invalid, if invalid ID !
-    {
-        for( auto cid : DSEContainerList )
-        {
-            if( value == static_cast<uint32_t>(cid) )
-                return cid;
-        }
-        return eDSEContainers::invalid;
-    }
-
-    inline uint32_t ContainerMagicNumToInt( eDSEContainers magicn )
-    {
-        return static_cast<uint32_t>(magicn);
-    }
 
 //====================================================================================================
 // Structs
@@ -222,6 +184,12 @@ namespace DSE
             return std::move(result);
         }
 
+        inline operator std::string()const
+        {
+            std::tm myt = *this;
+            return (std::stringstream() << std::put_time(&myt, "%Y/%m/%e-%Hh%Mm%Ss")).str();
+        }
+
         inline void SetTimeToNow()
         {
             std::time_t t  = std::time(nullptr);
@@ -246,10 +214,9 @@ namespace DSE
         }
     };
 
-    /****************************************************************************************
-        DSEEnvelope
-            Represents a DSE envelope used in the SWDL file format!
-    ****************************************************************************************/
+    /// <summary>
+    /// Represents a DSE envelope used in the SWDL file format!
+    /// </summary>
     struct DSEEnvelope
     {
         typedef int16_t timeprop_t;
@@ -265,11 +232,10 @@ namespace DSE
         timeprop_t release  = 0;
     };
 
-    /****************************************************************************************
-        ChunkHeader
-            Format for chunks used in Procyon's Digital Sound Element SWDL, SMDL, SEDL format, 
-            used in PMD2.
-    ****************************************************************************************/
+    /// <summary>
+    /// Format for chunks headers used in Procyon's Digital Sound Element SWDL, SMDL, SEDL format.
+    /// They all follow the same 16 bytes format.
+    /// </summary>
     struct ChunkHeader
     {
         static const uint32_t Size          = 16; //Length of the header
@@ -306,11 +272,10 @@ namespace DSE
         }
     };
 
-    /************************************************************************
-        SongData
-            A generic version of the DSE Song Chunk meant to contain only 
-            the relevant data and work with any version of DSE!
-    ************************************************************************/
+    /// <summary>
+    /// A generic version of the DSE Song Chunk meant to contain only 
+    /// the relevant data and work with any version of DSE!
+    /// </summary>
     struct SongData
     {
         uint8_t  nbtrks  = 0;
@@ -321,14 +286,10 @@ namespace DSE
         int8_t   mainpan = 0x40;
     };
 
-    /****************************************************************************************
-        WavInfo
-            Entry from the "wavi" chunk in a swdl file.
-    ****************************************************************************************/
-    
-    /*
-        This holds DSE version independent information on samples.
-    */
+    /// <summary>
+    /// Entry from the "wavi" chunk in a swdl file. 
+    /// This holds DSE version independent information on samples.
+    /// </summary>
     struct WavInfo
     {
         sampleid_t  id         = 0;
@@ -349,8 +310,6 @@ namespace DSE
         uint8_t     envon      = 1;
         DSEEnvelope env;
     };
-
-
 
     /*****************************************************************************************
         KeyGroup
@@ -423,12 +382,10 @@ namespace DSE
         }
     };
 
-
-    /*---------------------------------------------------------------------
-        LFOTblEntry
-            Contains details on to pass the LFOs during the playback of 
-            a program's samples.
-    ---------------------------------------------------------------------*/
+    /// <summary>
+    /// Contains details on how to setup one of the 4 LFOs 
+    /// available per program presets in the dse engine.
+    /// </summary>
     struct LFOTblEntry
     {
         static const uint32_t SIZE = 16; //bytes
@@ -510,10 +467,10 @@ namespace DSE
         }
     };
 
-    /*---------------------------------------------------------------------
-        SplitEntry
-            Data on a particular sample mapped to this instrument
-    ---------------------------------------------------------------------*/
+    /// <summary>
+    /// Data on a particular sample mapped to this program preset.
+    /// Associates key ranges, and etc to a specific sample.
+    /// </summary>
     struct SplitEntry
     {
         uint8_t     id        = 0; //split id, second byte
@@ -539,16 +496,12 @@ namespace DSE
         DSEEnvelope env;
     };
 
-    /*****************************************************************************************
-        ProgramInfo
-            Contains data for a single instrument.
-            This is a generic version independent version of the program info structure.
-    *****************************************************************************************/
+    /// <summary>
+    /// Contains data for a single dse program preset.
+    /// This is a generic version independent version of the program info structure.
+    /// </summary>
     struct ProgramInfo
     {
-        /*---------------------------------------------------------------------
-            Program info header stuff
-        ---------------------------------------------------------------------*/
         uint16_t id      = 0;
         uint8_t  prgvol  = 0x7F;
         uint8_t  prgpan  = 0x40;
@@ -639,11 +592,10 @@ namespace DSE
         void ParseXml(pugi::xml_node seqnode);
     };
 
-//  DSEMetaData
-    /************************************************************************
-        DSE_MetaData
-            Header data contained in all DSE files.
-    ************************************************************************/
+
+    /// <summary>
+    /// Base class for the header data contained in all DSE files.
+    /// </summary>
     struct DSE_MetaData
     {
         DSE_MetaData()
@@ -740,8 +692,98 @@ namespace DSE
     };
 
 //====================================================================================================
-// Conversion Functions
+// Functions
 //====================================================================================================
+
+    /// <summary>
+    /// Converts the integer value for a given sample format into a enum value for the matching format.
+    /// </summary>
+    /// <param name="val">The integer value to convert.</param>
+    /// <returns>The matching sample format enum value, or eDSESmplFmt::invalid.</returns>
+    eDSESmplFmt IntToDSESmplFmt(std::underlying_type_t<eDSESmplFmt> val);
+
+    /// <summary>
+    /// Returns a human readable string representing the sample format passed as argument.
+    /// </summary>
+    /// <param name="fmt">The sample format to return a string for.</param>
+    /// <returns>The string matching the sample format passed as argument.</returns>
+    std::string DseSmplFmtToString(eDSESmplFmt fmt);
+
+    /// <summary>
+    /// Returns the matching sample format enum value for the given string.
+    /// </summary>
+    /// <param name="str">The string to match to a sample format.</param>
+    /// <returns>The sample format enum value that matched the string passed as argument, or eDSESmplFmt::invalid.</returns>
+    eDSESmplFmt StringToDseSmplFmt(const char* str);
+
+    /// <summary>
+    /// Converts an integer value into a dse version enum value.
+    /// </summary>
+    /// <param name="val">The integer value to match to a dse version.</param>
+    /// <returns>Returns the version that matched, or eDSEVersion::invalid.</returns>
+    constexpr eDSEVersion intToDseVer(std::underlying_type_t<eDSEVersion> val)
+    {
+        using in_type = std::underlying_type_t<eDSEVersion>;
+        if (val == static_cast<in_type>(eDSEVersion::V402))
+            return eDSEVersion::V402;
+        if (val == static_cast<in_type>(eDSEVersion::V415))
+            return eDSEVersion::V415;
+        else
+            return eDSEVersion::VInvalid;
+    }
+
+    /// <summary>
+    /// Returns the integer value for the given dse version enum value.
+    /// </summary>
+    /// <param name="ver">The dse version enum value to convert.</param>
+    /// <returns>The integer value matching the dse version passed as argument.</returns>
+    constexpr std::underlying_type_t<eDSEVersion> DseVerToInt(eDSEVersion ver)
+    {
+        return static_cast<std::underlying_type_t<eDSEVersion>>(ver);
+    }
+
+    /// <summary>
+    /// Find a matching dse chunk enum value for the integer value passed as argument.
+    /// </summary>
+    /// <param name="value">The integer value to match to a dse chunk enum value.</param>
+    /// <returns>The matching dse chunk enum value, or .eDSEChunks::invalid</returns>
+    constexpr eDSEChunks IntToChunkID(std::underlying_type_t<eDSEChunks> value)
+    {
+        using in_type = std::underlying_type_t<eDSEChunks>;
+        for (const eDSEChunks cid : DSEChunksList)
+        {
+            if (value == static_cast<in_type>(cid))
+                return cid;
+        }
+        return eDSEChunks::invalid;
+    }
+
+    /// <summary>
+    /// Returns the integer value matching the dse chunk header id.
+    /// </summary>
+    /// <param name="id">The dse chunk header id to return the underlying value for.</param>
+    /// <returns>The integer value of the dse header chunk enum value passed as argument.</returns>
+    constexpr std::underlying_type_t<eDSEChunks> ChunkIDToInt(eDSEChunks id)
+    {
+        return static_cast<std::underlying_type_t<eDSEChunks>>(id);
+    }
+
+    /// <summary>
+    /// Returns the matching dse container header enum value for the given integer value.
+    /// </summary>
+    /// <param name="value">The integer value to match to a dse container header id enum value.</param>
+    /// <returns>The dse container header id enum value matching the given integer value, or eDSEContainers::invalid.</returns>
+    constexpr eDSEContainers IntToContainerMagicNum(std::underlying_type_t<eDSEContainers> value)  //Return eDSEContainers::invalid, if invalid ID !
+    {
+        using in_type = std::underlying_type_t<eDSEContainers>;
+        for (auto cid : DSEContainerList)
+        {
+            if (value == static_cast<in_type>(cid))
+                return cid;
+        }
+        return eDSEContainers::invalid;
+    }
+
 
     /*
         This converts the pitch value used for samples pitch correction in SWDL files, into semitones.

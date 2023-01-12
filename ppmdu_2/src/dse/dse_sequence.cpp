@@ -552,7 +552,7 @@ namespace DSE
             plev.mnoteid = (curoctave * static_cast<uint8_t>(eNote::nbNotes)) + plev.parsedkey; //Calculate MIDI key!
         }
 
-        //Parse the note hold duration bytes
+        //Parse the note hold duration bytes (Big Endian)
         for (size_t cntby = 0; cntby < plev.param2len; ++cntby)
             plev.holdtime = (plev.holdtime << 8) | ev.params[cntby + 1];
 
@@ -594,8 +594,4 @@ namespace DSE
         std::clog << "FindClosestTrkDelayID(): No closer delay found for " << static_cast<uint16_t>(delayticks) << " ticks !!\n";
         return std::nullopt; //Couldn't find something below the longest pause!
     }
-
-//====================================================================================================
-//====================================================================================================
-
 };
