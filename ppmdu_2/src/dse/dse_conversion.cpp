@@ -1451,7 +1451,7 @@ namespace DSE
             }
 
             auto samplebank = bnk.smplbank().lock();
-            for (auto entry : samplepaths)
+            for (const auto& entry : samplepaths)
             {
                 WavInfo * psmplinfo = samplebank->sampleInfo(entry.first);
 
