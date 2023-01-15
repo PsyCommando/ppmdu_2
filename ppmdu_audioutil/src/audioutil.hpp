@@ -204,7 +204,7 @@ namespace audioutil
 
         int  Execute           ();
         int ExecuteExport(importExportTarget& exportpaths, eExportSequenceFormat seqfmt, eExportSamplesFormat smplfmt);
-        void ExportAFile(const std::string& path, eExportSequenceFormat seqfmt, eExportSamplesFormat smplfmt);
+        void ExportAFile(const std::string& path, const std::string& outfile, eExportSequenceFormat seqfmt, eExportSamplesFormat smplfmt);
         int ExecuteImport();
         int  GatherArgs        ( int argc, const char * argv[] );
 
