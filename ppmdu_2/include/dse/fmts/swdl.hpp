@@ -300,7 +300,7 @@ namespace DSE
         uint8_t  second          = 0;
         uint8_t  centisec        = 0;
 
-        std::array<char, FNameLen> fname{0xFFi8};
+        std::array<char, FNameLen> fname{0xAAi8};
         uint32_t unk10           = 0;
         uint32_t unk11           = 0;
 
