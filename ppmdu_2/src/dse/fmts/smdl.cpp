@@ -633,7 +633,7 @@ std::ostream& operator<<(std::ostream& os, const DSE::SMDL_Header& hdr)
             smdl_rule_registrator
                 A small singleton that has for only task to register the smdl_rule!
         */
-        template<> RuleRegistrator<smdl_rule> RuleRegistrator<smdl_rule>::s_instance;
+        RuleRegistrator<smdl_rule> RuleRegistrator<smdl_rule>::s_instance{};
 
     };
 #endif

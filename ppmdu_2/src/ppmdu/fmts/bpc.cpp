@@ -228,5 +228,5 @@ namespace filetypes
         bpc_rule_registrator
             A small singleton that has for only task to register the bpc_rule!
     */
-    template<> RuleRegistrator<bpc_rule> RuleRegistrator<bpc_rule>::s_instance;
+    RuleRegistrator<bpc_rule> RuleRegistrator<bpc_rule>::s_instance{};
 };

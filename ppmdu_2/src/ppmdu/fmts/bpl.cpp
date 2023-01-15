@@ -157,5 +157,5 @@ namespace filetypes
         bpl_rule_registrator
             A small singleton that has for only task to register the bpl_rule!
     */
-    template<> RuleRegistrator<bpl_rule> RuleRegistrator<bpl_rule>::s_instance;
+    RuleRegistrator<bpl_rule> RuleRegistrator<bpl_rule>::s_instance{};
 };

@@ -19,7 +19,7 @@ namespace filetypes
     class wtu_rule : public IContentHandlingRule
     {
     public:
-        wtu_rule(){}
+        wtu_rule() :m_myID(0) {}
         ~wtu_rule(){}
 
         //Returns the value from the content type enum to represent what this container contains!
@@ -67,6 +67,6 @@ namespace filetypes
         wtu_rule_registrator
             A small singleton that has for only task to register the wtu_rule!
     */
-    template<> RuleRegistrator<wtu_rule> RuleRegistrator<wtu_rule>::s_instance;
+    RuleRegistrator<wtu_rule> RuleRegistrator<wtu_rule>::s_instance{};
 };
 

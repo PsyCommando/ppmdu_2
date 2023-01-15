@@ -2948,6 +2948,6 @@ std::ostream& operator<<(std::ostream& os, const DSE::SWDL_Header_v402& hdr)
             swdl_rule_registrator
                 A small singleton that has for only task to register the swdl_rule!
         */
-        template<> RuleRegistrator<swdl_rule> RuleRegistrator<swdl_rule>::s_instance;
+        RuleRegistrator<swdl_rule> RuleRegistrator<swdl_rule>::s_instance{};
     };
 #endif

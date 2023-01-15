@@ -76,6 +76,6 @@ namespace filetypes
         wte_rule_registrator
             A small singleton that has for only task to register the wte_rule!
     */
-    template<> RuleRegistrator<rgbx32_raw_pal_rule> RuleRegistrator<rgbx32_raw_pal_rule>::s_instance;
+    RuleRegistrator<rgbx32_raw_pal_rule> RuleRegistrator<rgbx32_raw_pal_rule>::s_instance{};
 
 };

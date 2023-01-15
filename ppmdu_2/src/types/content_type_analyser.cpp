@@ -1,5 +1,6 @@
 #include <types/content_type_analyser.hpp>
 #include <limits>
+#include <cassert>
 
 #ifndef USE_PPMDU_CONTENT_TYPE_ANALYSER
     static_assert(false, "Possibly forgot to add the preprocessor definition USE_PPMDU_CONTENT_TYPE_ANALYSER to enable the content type analyser! Otherwise, exclude content_type_analyser.cpp from build!")
@@ -63,6 +64,9 @@ namespace filetypes
     //File analysis
     ContentBlock CContentHandler::AnalyseContent( const analysis_parameter & parameters )
     {
+#ifdef USE_PPMDU_CONTENT_TYPE_ANALYSER
+        assert(!m_vRules.empty());
+#endif
         ContentBlock contentdetails;
 
         //Feed the data through all the rules we have and check which one returns true

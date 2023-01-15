@@ -123,6 +123,6 @@ namespace filetypes
         bma_rule_registrator
             A small singleton that has for only task to register the bma_rule!
     */
-    RuleRegistrator<bma_rule> RuleRegistrator<bma_rule>::s_instance;
+    RuleRegistrator<bma_rule> RuleRegistrator<bma_rule>::s_instance{};
 
 };

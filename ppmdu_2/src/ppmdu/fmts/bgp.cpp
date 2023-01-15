@@ -34,7 +34,7 @@ namespace filetypes
     {
     public:
         BGPParser(const string & filepath, bool islittleendian = true)
-            :m_filepath(filepath),m_littleendian(islittleendian)
+            :m_filepath(filepath),m_littleendian(islittleendian), m_hdr()
         {}
 
         BGP Parse()
@@ -306,7 +306,7 @@ namespace filetypes
         //}
 
         assert(false);
-        return move(target);
+        return target;
     }
 
 
@@ -321,7 +321,7 @@ namespace filetypes
     class bgp_rule : public IContentHandlingRule
     {
     public:
-        bgp_rule(){}
+        bgp_rule() :m_myID(0) {}
         ~bgp_rule(){}
 
         //Returns the value from the content type enum to represent what this container contains!
@@ -367,5 +367,5 @@ namespace filetypes
         bgp_rule_registrator
             A small singleton that has for only task to register the bgp_rule!
     */
-    template<> RuleRegistrator<bgp_rule> RuleRegistrator<bgp_rule>::s_instance;
+    RuleRegistrator<bgp_rule> RuleRegistrator<bgp_rule>::s_instance{};
 };

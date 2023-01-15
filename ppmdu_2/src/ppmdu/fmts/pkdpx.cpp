@@ -528,7 +528,7 @@ namespace filetypes
         pkdpx_rule_registrator
             A small singleton that has for only task to register the pkdpx_rule!
     */
-    template<> RuleRegistrator<pkdpx_rule>         RuleRegistrator<pkdpx_rule>        ::s_instance;
-    template<> SIR0RuleRegistrator<sir0pkdpx_rule> SIR0RuleRegistrator<sir0pkdpx_rule>::s_instance;
+    RuleRegistrator<pkdpx_rule>         RuleRegistrator<pkdpx_rule>        ::s_instance{};
+    SIR0RuleRegistrator<sir0pkdpx_rule> SIR0RuleRegistrator<sir0pkdpx_rule>::s_instance{};
 
 };
