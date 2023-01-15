@@ -664,11 +664,9 @@ namespace DSE
                 {
                     //#TODO: Will require some special implementation!
                     //#      Additionally, if ripping the midi not for playback it might be desirable to process the midis as close to original as possible!
-                    stringstream sstr;
-                    sstr << TXT_RepeatMark << ":" << static_cast<unsigned int>(ev.params.front());
-                    const string evtxt = sstr.str();
 
-                    outtrack.PutTextEvent(state.ticks_, META_MARKER_TEXT, evtxt.c_str(), evtxt.size());
+                    if (ShouldMarkUnsupported())
+                        HandleUnsupported(ev, trkno, state, mess, outtrack);
                     state.repeatmark_ = ((size_t)state.eventno_ + 1); //Make sure we don't start repeating on the same event
                     state.repeattimes_ = ev.params.front();
                     break;
@@ -676,14 +674,16 @@ namespace DSE
                 case eTrkEventCodes::RepeatSegment: //"D.S." Becomes "D.S. to coda" if the after repeat is set?
                 {
                     //#TODO: Will require some special implementation
-                    outtrack.PutTextEvent(state.ticks_, META_MARKER_TEXT, TXT_RepeatFromMark.c_str(), TXT_RepeatFromMark.size());
+                    if (ShouldMarkUnsupported())
+                        HandleUnsupported(ev, trkno, state, mess, outtrack);
                     state.repeat_ = state.eventno_; //Make sure we don't end repeating on the same event
                     break;
                 }
                 case eTrkEventCodes::AfterRepeat: //"Coda"
                 {
                     //#TODO: Will require some special implementation
-                    outtrack.PutTextEvent(state.ticks_, META_MARKER_TEXT, TXT_AfterRepeatMark.c_str(), TXT_AfterRepeatMark.size());
+                    if (ShouldMarkUnsupported())
+                        HandleUnsupported(ev, trkno, state, mess, outtrack);
                     state.afterrepmark_ = ((size_t)state.eventno_ + 1);
                     break;
                 }
@@ -693,7 +693,9 @@ namespace DSE
                 case eTrkEventCodes::SkipNext2Bytes1:
                 case eTrkEventCodes::SkipNext2Bytes2:
                 {
-                    //Don't do anything with those, we keep them in there just for reseach purpose
+                    //Mark them for science!
+                    if (ShouldMarkUnsupported())
+                        HandleUnsupported(ev, trkno, state, mess, outtrack);
                     break;
                 }
                 //------------------ Unsupported Events ------------------ 
