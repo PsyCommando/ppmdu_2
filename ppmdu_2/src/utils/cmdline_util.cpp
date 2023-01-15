@@ -212,13 +212,13 @@ namespace utils{ namespace cmdl
 
         while( !hasReachedTheEndOfArgList() )
         {
-            auto nextpara = getNextParam();
+            string nextpara = getNextParam();
             if( nextpara.size() > 0 )
-                allparams.push_back( nextpara );
+                allparams.push_back( move(nextpara) );
         }
 
         m_rawcurarg = itbefore; //restore initial state
-        return std::move(allparams); 
+        return allparams; 
     }
 
     //Returns a list of all the found extra parameters passed at construction.
@@ -226,7 +226,7 @@ namespace utils{ namespace cmdl
     {
         vector<string> addparam;
         appendAllAdditionalInputParams( addparam );
-        return std::move( addparam );
+        return addparam;
     }
 
     bool CArgsParser::appendAllAdditionalInputParams( std::vector<std::string> & out_vtoappendto )
