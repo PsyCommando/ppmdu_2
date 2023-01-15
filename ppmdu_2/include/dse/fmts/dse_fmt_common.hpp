@@ -235,6 +235,24 @@ namespace DSE
         }
     };
 
+//
+//
+//
+    template<typename _fwdit> void StringToDseFilename(const std::string& src, _fwdit itbeg, _fwdit itend, char padbyte = 0)
+    {
+        size_t tgtlen    = (size_t)std::distance(itbeg, itend);
+        size_t stringend = std::min(src.size(), tgtlen - 1);
+        std::fill(itbeg, itend, padbyte);
+        
+        std::copy(src.c_str(), src.c_str() + stringend, itbeg);
+
+        //Make sure there's a ending 0
+        if (stringend < tgtlen)
+            *(std::next(itbeg, stringend)) = 0;
+        else
+            *(std::next(itbeg, tgtlen - 1)) = 0;
+    }
+
 };
 
 std::ostream& operator<<(std::ostream& os, const DSE::SeqInfoChunk_v415& obj);

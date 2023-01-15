@@ -112,12 +112,90 @@ namespace DSE
 
     const std::unordered_map<std::string, eDSESmplFmt> StrToDseSmplFmtHashTbl
     {
-        std::make_pair(DSE_SmplFmt_PCM8,   eDSESmplFmt::pcm8),
-        std::make_pair(DSE_SmplFmt_PCM16,  eDSESmplFmt::pcm16     ),
-        std::make_pair(DSE_SmplFmt_ADPCM4, eDSESmplFmt::ima_adpcm4),
-        std::make_pair(DSE_SmplFmt_ADPCM3, eDSESmplFmt::ima_adpcm3),
-        std::make_pair(DSE_SmplFmt_INVALID, eDSESmplFmt::invalid),
+        std::make_pair(DSE_SmplFmt_PCM8,    eDSESmplFmt::pcm8      ),
+        std::make_pair(DSE_SmplFmt_PCM16,   eDSESmplFmt::pcm16     ),
+        std::make_pair(DSE_SmplFmt_ADPCM4,  eDSESmplFmt::ima_adpcm4),
+        std::make_pair(DSE_SmplFmt_ADPCM3,  eDSESmplFmt::ima_adpcm3),
+        std::make_pair(DSE_SmplFmt_INVALID, eDSESmplFmt::invalid   ),
     };
+
+    const std::map<eLFOWaveShape, std::string> DSE_LFOWaveShapesIdToString
+    {
+        std::make_pair( eLFOWaveShape::None,     "none"s     ),
+        std::make_pair( eLFOWaveShape::Square,   "square"s   ),
+        std::make_pair( eLFOWaveShape::Triangle, "triangle"s ),
+        std::make_pair( eLFOWaveShape::Sinus,    "sinus"s    ),
+        std::make_pair( eLFOWaveShape::UNK4,     "unk"s      ),
+        std::make_pair( eLFOWaveShape::Saw,      "saw"s      ),
+        std::make_pair( eLFOWaveShape::Noise,    "noise"s    ),
+        std::make_pair( eLFOWaveShape::Random,   "random"s   ),
+        std::make_pair( eLFOWaveShape::Invalid,  "invalid"s  ),
+    };
+    const std::unordered_map<std::string, eLFOWaveShape> DSE_LFOWaveShapesStringToId
+    {
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::None    ), eLFOWaveShape::None     ),
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::Square  ), eLFOWaveShape::Square   ),
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::Triangle), eLFOWaveShape::Triangle ),
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::Sinus   ), eLFOWaveShape::Sinus    ),
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::UNK4    ), eLFOWaveShape::UNK4     ),
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::Saw     ), eLFOWaveShape::Saw      ),
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::Noise   ), eLFOWaveShape::Noise    ),
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::Random  ), eLFOWaveShape::Random   ),
+        std::make_pair( DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::Invalid ), eLFOWaveShape::Invalid  ),
+    };
+
+    const std::map<eLFODest, std::string> DSE_LFODestIdToString
+    {
+        std::make_pair( eLFODest::None    , "none"s    ),
+        std::make_pair( eLFODest::Pitch   , "pitch"s   ),
+        std::make_pair( eLFODest::Volume  , "vol"s     ),
+        std::make_pair( eLFODest::Pan     , "pan"s     ),
+        std::make_pair( eLFODest::UNK_4   , "unk"s     ),
+        std::make_pair( eLFODest::Invalid , "invalid"s ),
+    };
+
+    const std::unordered_map<std::string, eLFODest> DSE_LFODestStringToId
+    {
+        std::make_pair( DSE_LFODestIdToString.at(eLFODest::None    ), eLFODest::None    ),
+        std::make_pair( DSE_LFODestIdToString.at(eLFODest::Pitch   ), eLFODest::Pitch   ),
+        std::make_pair( DSE_LFODestIdToString.at(eLFODest::Volume  ), eLFODest::Volume  ),
+        std::make_pair( DSE_LFODestIdToString.at(eLFODest::Pan     ), eLFODest::Pan     ),
+        std::make_pair( DSE_LFODestIdToString.at(eLFODest::UNK_4   ), eLFODest::UNK_4   ),
+        std::make_pair( DSE_LFODestIdToString.at(eLFODest::Invalid ), eLFODest::Invalid ),
+    };
+
+//
+// Functions
+//
+    eLFOWaveShape DseLfoWaveShapeNameToId(const std::string& name)
+    {
+        auto itfound = DSE_LFOWaveShapesStringToId.find(name);
+        if (itfound == DSE_LFOWaveShapesStringToId.end())
+            return eLFOWaveShape::Invalid;
+        return itfound->second;
+    }
+    const std::string& DseLfoWaveShapeIdToName(eLFOWaveShape id)
+    {
+        auto itfound = DSE_LFOWaveShapesIdToString.find(id);
+        if (itfound == DSE_LFOWaveShapesIdToString.end())
+            return DSE_LFOWaveShapesIdToString.at(eLFOWaveShape::Invalid);
+        return itfound->second;
+    }
+
+    eLFODest DseLfoDestNameToId(const std::string& name)
+    {
+        auto itfound = DSE_LFODestStringToId.find(name);
+        if (itfound == DSE_LFODestStringToId.end())
+            return eLFODest::Invalid;
+        return itfound->second;
+    }
+    const std::string& DseLfoDestIdToName(eLFODest id)
+    {
+        auto itfound = DSE_LFODestIdToString.find(id);
+        if (itfound == DSE_LFODestIdToString.end())
+            return DSE_LFODestIdToString.at(eLFODest::Invalid);
+        return itfound->second;
+    }
 
     eDSESmplFmt IntToDSESmplFmt(std::underlying_type_t<eDSESmplFmt> val)
     {

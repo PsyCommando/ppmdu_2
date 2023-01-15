@@ -37,50 +37,8 @@ namespace DSE
     typedef uint8_t  midinote_t;
 
 //====================================================================================================
-//  Constants
+//  Enums
 //====================================================================================================
-
-    const bankid_t      InvalidBankID      = std::numeric_limits<bankid_t>::max();
-    const presetid_t    InvalidPresetID    = std::numeric_limits<presetid_t>::max();
-    const dsepresetid_t InvalidDSEPresetID = std::numeric_limits<dsepresetid_t>::max();
-    const uint8_t       InvalidMIDIKey     = std::numeric_limits<uint8_t>::max(); //The default value for the MIDI key
-    const uint8_t       DSE_MaxOctave      = 9; //The maximum octave value possible to handle
-
-    const int8_t        DSE_DefaultPan = 64; //The default pan value
-    const int8_t        DSE_DefaultVol = 127; //The default vol value
-
-    extern const std::string DSE_SmplFmt_PCM16;
-    extern const std::string DSE_SmplFmt_PCM8;
-    extern const std::string DSE_SmplFmt_ADPCM4;
-    extern const std::string DSE_SmplFmt_ADPCM3;
-    extern const std::string DSE_SmplFmt_PSG;
-
-    const int          NbMidiChannels = 16;
-    const unsigned int NB_DSEChannels = 17;
-    const unsigned int NB_DSETracks = 17;
-    const unsigned int NB_DSEChunks = 11;
-    const unsigned int NB_DSEContainers = 4;
-    const uint32_t     SpecialChunkLen = 0xFFFFFFB0;   //Value some special chunks have as their length
-    const int16_t      DSERootKey = 60;           //By default the root key for dse sequences is assumed to be 60 the MIDI standard's middle C, AKA C4
-    const int8_t       DSEDefaultCoarseTune = -7;           //The default coarse tune value for splits and samples.
-
-    /// <summary>
-    /// The size of the ADPCM preamble in int32, the unit the 
-    /// NDS uses to store the loop positions.
-    /// Mainly here to make things more readable.
-    /// </summary>
-    extern const int SizeADPCMPreambleWords;
-
-    /// <summary>
-    /// Array containing all chunks labels
-    /// </summary>
-    extern const std::array<eDSEChunks, NB_DSEChunks>      DSEChunksList;
-
-    /// <summary>
-    /// Array containing all the DSE container's magic number.
-    /// </summary>
-    extern const std::array<eDSEContainers, NB_DSEContainers>  DSEContainerList;
-
     /// <summary>
     /// Enum containing the IDs of all chunks used by the Procyon DSE system for sequenced music and sound effects
     /// </summary>
@@ -130,11 +88,112 @@ namespace DSE
     /// </summary>
     enum struct eDSEVersion : uint16_t
     {
-        V402 = 0x402,   //Used in Luminous Arc
-        V415 = 0x415,   //Used in Pokemon Mystery Dungeon2, Zombi Daisuki, Inayusha Eleven, Professor Layton, etc..
-        VDef = V415,
+        V402     = 0x402,   //Used in Luminous Arc
+        V415     = 0x415,   //Used in Pokemon Mystery Dungeon2, Zombi Daisuki, Inayusha Eleven, Professor Layton, etc..
+        VDef     = V415,
         VInvalid = 0,
     };
+
+    /// <summary>
+    /// Destination parameter for a DSE LFO
+    /// </summary>
+    enum struct eLFODest : uint8_t
+    {
+        None    = 0,
+        Pitch   = 1,
+        Volume  = 2,
+        Pan     = 3,
+        UNK_4   = 4,
+        NbDest, //Must be last after valid values
+        Invalid = std::numeric_limits<uint8_t>::max(),
+    };
+
+    /// <summary>
+    /// Wave shape parameter for a DSE LFO.
+    /// </summary>
+    enum struct eLFOWaveShape : uint8_t
+    {
+        None     = 0,
+        Square   = 1,
+        Triangle = 2,
+        Sinus    = 3,
+        UNK4     = 4,
+        Saw      = 5,
+        Noise    = 6,
+        Random   = 7,
+        NbShapes, //Must be last after valid values
+        Invalid  = std::numeric_limits<uint8_t>::max(),
+    };
+
+//====================================================================================================
+//  Constants
+//====================================================================================================
+
+    const bankid_t      InvalidBankID      = std::numeric_limits<bankid_t>::max();
+    const presetid_t    InvalidPresetID    = std::numeric_limits<presetid_t>::max();
+    const dsepresetid_t InvalidDSEPresetID = std::numeric_limits<dsepresetid_t>::max();
+    const uint8_t       InvalidMIDIKey     = std::numeric_limits<uint8_t>::max(); //The default value for the MIDI key
+    const uint8_t       DSE_MaxOctave      = 9; //The maximum octave value possible to handle
+
+    const int8_t        DSE_DefaultPan = 64; //The default pan value
+    const int8_t        DSE_DefaultVol = 127; //The default vol value
+
+    extern const std::string DSE_SmplFmt_PCM16;
+    extern const std::string DSE_SmplFmt_PCM8;
+    extern const std::string DSE_SmplFmt_ADPCM4;
+    extern const std::string DSE_SmplFmt_ADPCM3;
+    extern const std::string DSE_SmplFmt_PSG;
+
+    const int          NbMidiChannels = 16;
+    const unsigned int NB_DSEChannels = 17;
+    const unsigned int NB_DSETracks = 17;
+    const unsigned int NB_DSEChunks = 11;
+    const unsigned int NB_DSEContainers = 4;
+    const uint32_t     SpecialChunkLen = 0xFFFFFFB0;   //Value some special chunks have as their length
+    const int16_t      DSERootKey = 60;           //By default the root key for dse sequences is assumed to be 60 the MIDI standard's middle C, AKA C4
+    const int8_t       DSEDefaultCoarseTune = -7;           //The default coarse tune value for splits and samples.
+
+    /// <summary>
+    /// The Default wave shape set for lfos.
+    /// </summary>
+    const eLFOWaveShape DSE_LFO_DefaultWaveShape = eLFOWaveShape::Square;
+
+    /// <summary>
+    /// The size of the ADPCM preamble in int32, the unit the 
+    /// NDS uses to store the loop positions.
+    /// Mainly here to make things more readable.
+    /// </summary>
+    extern const int SizeADPCMPreambleWords;
+
+    /// <summary>
+    /// Array containing all chunks labels
+    /// </summary>
+    extern const std::array<eDSEChunks, NB_DSEChunks>      DSEChunksList;
+
+    /// <summary>
+    /// Array containing all the DSE container's magic number.
+    /// </summary>
+    extern const std::array<eDSEContainers, NB_DSEContainers>  DSEContainerList;
+
+    /// <summary>
+    /// Map of LFO wave shape names to their wave shape ID.
+    /// </summary>
+    extern const std::unordered_map<std::string, eLFOWaveShape> DSE_LFOWaveShapesStringToId;
+
+    /// <summary>
+    /// Map of LFO wave shapes IDs to their name.
+    /// </summary>
+    extern const std::map<eLFOWaveShape, std::string> DSE_LFOWaveShapesIdToString;
+
+    /// <summary>
+    /// Map of LFO destination names to their ID.
+    /// </summary>
+    extern const std::unordered_map<std::string, eLFODest> DSE_LFODestStringToId;
+
+    /// <summary>
+    /// Map of LFO destination IDs to their name.
+    /// </summary>
+    extern const std::map<eLFODest, std::string> DSE_LFODestIdToString;
 
 //====================================================================================================
 // Structs
@@ -374,34 +433,12 @@ namespace DSE
     /// </summary>
     struct LFOTblEntry
     {
-        static const uint32_t SIZE = 16; //bytes
-        static uint32_t size() { return SIZE; }
-
-        enum struct eLFODest : uint8_t
-        {
-            None   = 0,
-            Pitch  = 1,
-            Volume = 2,
-            Pan    = 3,
-            UNK_4  = 4,
-        };
-
-        enum struct eLFOWaveShape : uint8_t
-        {
-            None = 0,
-            Square = 1,
-            Triangle = 2,
-            Sinus = 3,
-            UNK4 = 4,
-            Saw = 5,
-            Noise = 6,
-            Random = 7,
-        };
+        static constexpr size_t size() { return 16; }
 
         uint8_t  unk34  = 0;
         uint8_t  unk52  = 0;
         uint8_t  dest   = 0;
-        uint8_t  wshape = (uint8_t)eLFOWaveShape::Square;
+        uint8_t  wshape = (std::underlying_type_t<eLFOWaveShape>)DSE_LFO_DefaultWaveShape;
         uint16_t rate   = 0;
         uint16_t unk29  = 0;
         uint16_t depth  = 0;
@@ -414,7 +451,7 @@ namespace DSE
         */
         inline bool isLFONonDefault()const
         {
-            return (unk52 != 0 || dest != 0 || wshape != 1 || rate != 0 ||
+            return (unk52 != 0 || dest != 0 || wshape != (std::underlying_type_t<eLFOWaveShape>)DSE_LFO_DefaultWaveShape || rate != 0 ||
                         unk29 != 0 || depth != 0 || delay != 0 || unk32 != 0 || 
                         unk33 != 0 );
         }
@@ -656,6 +693,12 @@ namespace DSE
     /// <param name="str">The string to match to a sample format.</param>
     /// <returns>The sample format enum value that matched the string passed as argument, or eDSESmplFmt::invalid.</returns>
     eDSESmplFmt StringToDseSmplFmt(const char* str);
+
+    eLFOWaveShape DseLfoWaveShapeNameToId(const std::string& name);
+    const std::string& DseLfoWaveShapeIdToName(eLFOWaveShape id);
+
+    eLFODest DseLfoDestNameToId(const std::string& name);
+    const std::string& DseLfoDestIdToName(eLFODest id);
 
     /// <summary>
     /// Converts an integer value into a dse version enum value.
