@@ -265,72 +265,7 @@ namespace audioutil
         return 0;
     }
 
-    int CAudioUtil::ExportSWDL(const std::string& path, const std::vector<uint8_t>& fdata)
-    {
-        //using namespace pmd2::audio;
-        Poco::Path inputfile(path);
-        Poco::Path outputfile;
-        string     outfname;
 
-        if (!m_outputPath.empty())
-            outputfile = Poco::Path(m_outputPath);
-        else
-            outputfile = inputfile.parent().append(inputfile.getBaseName()).makeDirectory();
-
-        outfname = outputfile.getBaseName();
-
-        // The only thing we can do with a single swd file is to output its content to a directory
-
-        //Create directory
-        const string outNewDir = outputfile.toString();
-        CreateOutputDir(outNewDir);
-
-        cout << "Exporting SWDL:\n"
-            << "\t\"" << inputfile.toString() << "\"\n"
-            << "To:\n"
-            << "\t\"" << outNewDir << "\"\n";
-
-        //Load SWDL
-        PresetBank swd(DSE::ParseSWDL(fdata.begin(), fdata.end()));
-        ExportPresetBank(outNewDir, swd, true, m_useHexaNumbers, !m_bConvertSamples);
-
-        return 0;
-    }
-
-    int CAudioUtil::ExportSMDL(const std::string& path, const std::vector<uint8_t>& fdata)
-    {
-        //using namespace pmd2::audio;
-        Poco::Path inputfile(path);
-        Poco::Path outputfile;
-        string     outfname;
-
-        if (!m_outputPath.empty())
-            outputfile = Poco::Path(m_outputPath);
-        else
-            outputfile = inputfile.parent().append(inputfile.getBaseName()).makeFile();
-
-        outfname = outputfile.getBaseName();
-
-        cout << "Exporting SMDL:\n"
-            << "\t\"" << inputfile.toString() << "\"\n"
-            << "To:\n"
-            << "\t\"" << outfname << "\"\n";
-        cout << "<*>- Exporting SMDL to MIDI !\n";
-
-        //By default export a sequence only!
-        MusicSequence smd(DSE::ParseSMDL(fdata.begin(), fdata.end()));
-        outputfile.setExtension("mid");
-
-        ExportASequenceToMidi(smd, inputfile.getBaseName(), outputfile.toString(), m_convinfopath, m_nbloops, m_bGM);
-        return 0;
-    }
-
-    int CAudioUtil::ExportSEDL(const std::string& path, const std::vector<uint8_t>& fdata)
-    {
-        cout << "Not implemented!\n";
-        assert(false);
-        return 0;
-    }
 
 
     int CAudioUtil::ExportBatchPairsAndBank()

@@ -213,10 +213,6 @@ namespace audioutil
 
 
         //Exec methods
-        int ExportSWDL(const std::string& path, const std::vector<uint8_t>& fdata);
-        int ExportSMDL(const std::string& path, const std::vector<uint8_t>& fdata);
-        int ExportSEDL(const std::string& path, const std::vector<uint8_t>& fdata);
-
         int ExportBatchPairsAndBank();
         int ExportBatchPairs();
 

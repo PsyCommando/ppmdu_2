@@ -839,7 +839,7 @@ namespace audioutil
         using namespace filetypes;
         const Poco::Path inpath(m_inputPath);
         const Poco::File infile(inpath.absolute());
-        const Poco::Path outpath(m_outputPath);
+        Poco::Path outpath(m_outputPath);
 
         if( !m_outputPath.empty() && !Poco::File( Poco::Path( m_outputPath ).makeAbsolute().parent() ).exists() )
             throw runtime_error("Specified output path does not exists!");
@@ -895,7 +895,16 @@ namespace audioutil
                 m_targetPaths.outpath = Poco::Path::transcode(outpath.absolute().makeParent().toString());
             }
             else
-                m_targetPaths.outpath = Poco::Path::transcode(infile.path());  //If we have system paths specified, we use the input path as output
+            {
+                //Pick either the input or output path whichever is defined
+                //#FIXME: The logic for parsing input and output path is bugged
+                outpath = Poco::Path((m_outputPath.empty() ? m_inputPath : m_outputPath));
+                
+                if(outpath.isFile())
+                    m_targetPaths.outpath = Poco::Path::transcode(outpath.absolute().makeParent().toString());
+                else
+                    m_targetPaths.outpath = Poco::Path::transcode(outpath.absolute().toString());
+            }
 
             //Additionally, in export mode, we can specify bgm container or blob path
             if (!m_bgmblobpath.empty())
@@ -977,7 +986,7 @@ namespace audioutil
             }
             if (!m_targetPaths.swdlDirPath.empty())
             {
-                m_loader.LoadSWDL(m_targetPaths.smdlDirPath);
+                m_loader.LoadSWDL(m_targetPaths.swdlDirPath);
                 cout << "<*>- Loaded SWDL Dir!\n";
             }
 
@@ -1022,7 +1031,7 @@ namespace audioutil
         return returnval;
     }
 
-    void CAudioUtil::ExportAFile(const std::string & path, eExportSequenceFormat seqfmt, eExportSamplesFormat smplfmt)
+    void CAudioUtil::ExportAFile(const std::string & path, const std::string& outfile, eExportSequenceFormat seqfmt, eExportSamplesFormat smplfmt)
     {
         Poco::File curfile(path);
         if (curfile.isFile())
@@ -1030,15 +1039,39 @@ namespace audioutil
             //Handle single file operations
             vector<uint8_t> fdata = utils::io::ReadFileToByteVector(path);
             auto            cntty = filetypes::DetermineCntTy(fdata.begin(), fdata.end(), Poco::Path(path).getExtension());
+            const string outpathtranscoded = Poco::Path::transcode(outfile);
 
             if (cntty._type == static_cast<unsigned int>(filetypes::CnTy_SMDL))
-                ExportSMDL(path, fdata);
+            {
+                m_loader.LoadSMDL(begin(fdata), end(fdata), Poco::Path::transcode(Poco::Path(path).makeFile().getBaseName()) );
+                if (m_seqExportFmt == eExportSequenceFormat::Midi_GS)
+                    m_loader.ExportMIDIs(outpathtranscoded, DSE::sequenceProcessingOptions{ m_nbloops });
+                else if (m_seqExportFmt == eExportSequenceFormat::XML)
+                    m_loader.ExportXMLMusic(outpathtranscoded);
+                else
+                    assert(false);
+            }
             else if (cntty._type == static_cast<unsigned int>(filetypes::CnTy_SWDL))
-                ExportSWDL(path, fdata);
+            {
+                m_loader.LoadSWDL(begin(fdata), end(fdata), Poco::Path::transcode(Poco::Path(path).makeFile().getBaseName()));
+                if (m_smplsExportFmt == eExportSamplesFormat::SF2)
+                    m_loader.ExportSoundfont(outpathtranscoded, sampleProcessingOptions{ m_bBakeSamples, m_bUseLFOFx });
+                else if (m_smplsExportFmt == eExportSamplesFormat::XML)
+                    m_loader.ExportXMLPrograms(outpathtranscoded, m_bConvertSamples);
+                else
+                    assert(false);
+            }
             else if (cntty._type == static_cast<unsigned int>(filetypes::CnTy_SEDL))
-                ExportSEDL(path, fdata);
+            {
+                m_loader.LoadSEDL(begin(fdata), end(fdata), Poco::Path::transcode(Poco::Path(path).makeFile().getBaseName()));
+                cout << "#TODO: Implement SEDL!!!!";
+                assert(false);
+            }
             else if (cntty._type == static_cast<unsigned int>(filetypes::CnTy_MIDI))
-                assert(false); //TODO: This should import a midi to the dse format more or less as-is.
+            {
+                m_loader.ImportMusicSeq(path);
+                m_loader.ImportChangesToGame(outpathtranscoded, outpathtranscoded, outpathtranscoded);
+            }
             else
                 clog << "Unknown file type for path:\""  << path << "\", skipping..";
         }
@@ -1049,7 +1082,7 @@ namespace audioutil
             Poco::DirectoryIterator dirend;
             while (dirit != dirend)
             {
-                ExportAFile(dirit.path().absolute().toString(), seqfmt, smplfmt);
+                ExportAFile(dirit.path().absolute().toString(), outfile, seqfmt, smplfmt);
                 ++dirit;
             }
         }
@@ -1146,7 +1179,7 @@ namespace audioutil
             //Process all paths
             for (const string& path : m_targetPaths.paths)
             {
-                ExportAFile(path, seqfmt, smplfmt);
+                ExportAFile(path, outpath.path(), seqfmt, smplfmt);
             }
         }
 
@@ -1174,11 +1207,10 @@ namespace audioutil
                     else if (IsXMLMusicSequence(path))
                         m_loader.ImportMusicSeq(path);
                     else
-                        throw std::runtime_error("Unknown XML file:\""s + path + "\""s);
+                        throw std::runtime_error("Unknown XML file format:\""s + path + "\""s);
                 }
                 else if (fext == "mid")
                 {
-                    //If we find some midi file, import them as sequences
                     m_loader.ImportMusicSeq(path);
                 }
                 else
@@ -1194,7 +1226,8 @@ namespace audioutil
         //Next convert into dse files what we loaded
         const std::string outputswdl = m_targetPaths.swdlDirPath.empty() ? m_targetPaths.outpath : m_targetPaths.swdlDirPath;
         const std::string outputsmdl = m_targetPaths.smdlDirPath.empty() ? m_targetPaths.outpath : m_targetPaths.smdlDirPath;
-        m_loader.ImportChangesToGame(outputswdl, outputsmdl);
+        const std::string outputsedl = m_targetPaths.sedlDirPath.empty() ? m_targetPaths.outpath : m_targetPaths.sedlDirPath;
+        m_loader.ImportChangesToGame(outputswdl, outputsmdl, outputsedl);
         return 0;
     }
 
