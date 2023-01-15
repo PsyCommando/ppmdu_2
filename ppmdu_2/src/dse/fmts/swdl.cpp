@@ -1,5 +1,6 @@
 #include <dse/fmts/swdl.hpp>
 #include <dse/dse_common.hpp>
+#include <dse/fmts/dse_fmt_common.hpp>
 #include <utils/library_wide.hpp>
 #include <iostream>
 #include <iomanip>
@@ -2044,7 +2045,7 @@ namespace DSE
                     continue;
                 const DSE::WavInfo& wavi      = *out_smplbnk.sampleInfo(cntsmpl);
                 auto                itsmplbeg = itpcmd + wavi.smplpos;
-                const size_t        smpllen   = DSESampleLoopOffsetToBytes(wavi.loopbeg + wavi.looplen);
+                const uint32_t      smpllen   = DSESampleLoopOffsetToBytes(wavi.loopbeg + wavi.looplen);
 
                 out_smplbnk.setSampleData(cntsmpl, vector<uint8_t>(itsmplbeg, itsmplbeg + smpllen) );
             }
@@ -2287,25 +2288,28 @@ namespace DSE
 
         void WriteHeader( writeit_t & itout, size_t filelen, size_t pcmdatalen, size_t wavilen )
         {
-            
+            const DSE_MetaDataSWDL& meta = m_src.metadata();
             if( m_version == eDSEVersion::V415 )
             {
                 SWDL_Header_v415 hdr;
                 hdr.unk18       = 0; //Always null
                 hdr.flen        = filelen;
                 hdr.version     = SWDL_Header_v415::DefVersion; 
-                hdr.bankid_low  = m_src.metadata().bankid_coarse;
-                hdr.bankid_high = m_src.metadata().bankid_fine;
+                hdr.bankid_low  = meta.bankid_coarse;
+                hdr.bankid_high = meta.bankid_fine;
                 hdr.unk3        = 0; //Always null
                 hdr.unk4        = 0; //Always null
-                hdr.year        = m_src.metadata().createtime.year;
-                hdr.month       = m_src.metadata().createtime.month;
-                hdr.day         = m_src.metadata().createtime.day;
-                hdr.hour        = m_src.metadata().createtime.hour;
-                hdr.minute      = m_src.metadata().createtime.minute;
-                hdr.second      = m_src.metadata().createtime.second;
-                hdr.centisec    = m_src.metadata().createtime.centsec;
-                std::copy( begin(m_src.metadata().fname), end(m_src.metadata().fname), begin(hdr.fname) );
+                hdr.year        = meta.createtime.year;
+                hdr.month       = meta.createtime.month;
+                hdr.day         = meta.createtime.day;
+                hdr.hour        = meta.createtime.hour;
+                hdr.minute      = meta.createtime.minute;
+                hdr.second      = meta.createtime.second;
+                hdr.centisec    = meta.createtime.centsec;
+
+                //Move over filename and put padding after if there's room
+                StringToDseFilename(meta.fname, begin(hdr.fname), end(hdr.fname), 0xAA);
+
                 hdr.unk10       = SWDL_Header_v415::DefUnk10;
                 hdr.unk11       = 0; //Always null
                 hdr.unk12       = 0; //Always null
@@ -2327,7 +2331,7 @@ namespace DSE
                 else
                     hdr.nbprgislots = 0;
 
-                hdr.unk17   = m_src.metadata().unk17;
+                hdr.unk17   = meta.unk17;
                 hdr.wavilen = static_cast<uint16_t>(wavilen);
                 if( wavilen > std::numeric_limits<uint16_t>::max() )
                     clog << "<!>- Warning: wavi chunk size written to header overflows a 16 bits integer!\n";
@@ -2340,18 +2344,21 @@ namespace DSE
                 hdr.unk18    = 0; //Always null
                 hdr.flen     = filelen;
                 hdr.version  = SWDL_Header_v402::DefVersion; 
-                hdr.unk1     = m_src.metadata().bankid_coarse;
-                hdr.unk2     = m_src.metadata().bankid_fine;
+                hdr.unk1     = meta.bankid_coarse;
+                hdr.unk2     = meta.bankid_fine;
                 hdr.unk3     = 0; //Always null
                 hdr.unk4     = 0; //Always null
-                hdr.year     = m_src.metadata().createtime.year;
-                hdr.month    = m_src.metadata().createtime.month;
-                hdr.day      = m_src.metadata().createtime.day;
-                hdr.hour     = m_src.metadata().createtime.hour;
-                hdr.minute   = m_src.metadata().createtime.minute;
-                hdr.second   = m_src.metadata().createtime.second;
-                hdr.centisec = m_src.metadata().createtime.centsec;
-                std::copy( begin(m_src.metadata().fname), end(m_src.metadata().fname), begin(hdr.fname) );
+                hdr.year     = meta.createtime.year;
+                hdr.month    = meta.createtime.month;
+                hdr.day      = meta.createtime.day;
+                hdr.hour     = meta.createtime.hour;
+                hdr.minute   = meta.createtime.minute;
+                hdr.second   = meta.createtime.second;
+                hdr.centisec = meta.createtime.centsec;
+
+                //Move over filename and put padding after if there's room
+                StringToDseFilename(meta.fname, begin(hdr.fname), end(hdr.fname), 0xAA);
+
                 hdr.unk10    = SWDL_Header_v402::DefUnk10;
                 hdr.unk11    = 0; //Always null
                 hdr.unk12    = 0; //Always null
@@ -2668,7 +2675,7 @@ namespace DSE
                 const DSE::WavInfo * ptrwaientry = smplbank.sampleInfo(i);
                 if( ptrwaientry != nullptr )
                 {
-                    size_t smpllen = (ptrwaientry->loopbeg + ptrwaientry->looplen) * 4; //Multiply by 4 since the lengths are counted as int32.
+                    uint32_t smpllen = (ptrwaientry->loopbeg + ptrwaientry->looplen) * 4; //Multiply by 4 since the lengths are counted as int32.
                     smploffsets[i] = currentoffset;
                     currentoffset += smpllen;
                 }

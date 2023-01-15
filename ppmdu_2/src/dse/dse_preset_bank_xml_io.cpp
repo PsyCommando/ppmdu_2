@@ -229,7 +229,7 @@ public:
             {
                 ParseDSEXmlNode(doc, &meta);
                 ParseSampleInfos(sampledata, doc);
-                ParsePrograms(prgmbank, doc);
+                ParsePrograms(prgmbank, meta, doc);
                 ParseKeygroups(kgrp, doc);
             }
             else
@@ -255,18 +255,36 @@ public:
 
 private:
 
-    void ParsePrograms( vector< unique_ptr<ProgramInfo> > & prgmbank, xml_document & doc)
+    void ParsePrograms( vector< unique_ptr<ProgramInfo> >& prgmbank, DSE_MetaDataSWDL& meta, xml_document& doc)
     {
         using namespace PrgmXML;
         //Check version info and etc..
         xml_node rootnode = doc.child(ROOT_Programs.c_str());
+
+        //Pre-alloc
+        if (meta.nbprgislots > 0)
+            prgmbank.reserve(meta.nbprgislots);
+
         //Parse programs
-        for (auto curnode : rootnode.children(NODE_Program.c_str()))
+        for (xml_node curnode : rootnode.children(NODE_Program.c_str()))
         {
             std::unique_ptr<ProgramInfo> info = ParseAProgram(curnode);
             if (info->id >= prgmbank.size())
                 prgmbank.resize(info->id + 1); //Program info in the table have to be inserted at the index matching their ID!
             prgmbank[info->id] = std::move(info);
+        }
+
+        //Next, make sure we still have the nb of prgi slots (empty or otherwise) we asked for in our header if any
+        if (prgmbank.size() > 0 && meta.nbprgislots > prgmbank.size())
+        {
+            clog << "<*>- More prgi slots were allocated in the swdl info than what was parsed. Increasing amount of physical slots to match amount! ( parsed: " << prgmbank.size() <<" < allocated: " << meta.nbprgislots << ")\n";
+            prgmbank.resize(meta.nbprgislots);
+        }
+
+        if (prgmbank.size() > meta.nbprgislots)
+        {
+            clog << "<*>- Parsed more program slots than what was asked in the meta-data! Growing prgi slot number accordingly! ( parsed: " << prgmbank.size() <<" > allocated: " << meta.nbprgislots << ")\n";
+            meta.nbprgislots = prgmbank.size();
         }
     }
 
@@ -323,16 +341,18 @@ private:
         return info; //Should move
     }
 
-    uint8_t parseLfoDest(xml_attribute attr)
+    inline std::underlying_type_t<eLFODest> parseLfoDest(xml_attribute attr)
     {
-        //#TODO: Implement enum checks here to validate destination
-        return  (uint8_t)std::clamp(attr.as_uint(), (unsigned int)numeric_limits<uint8_t>::min(), (unsigned int)numeric_limits<uint8_t>::max());
+        std::string destname = attr.as_string();
+        std::transform(destname.begin(), destname.end(), destname.begin(), [](unsigned char c) { return std::tolower(c); });
+        return (std::underlying_type_t<eLFODest>) DseLfoDestNameToId(destname);
     }
 
-    uint8_t parseLfoWaveShape(xml_attribute attr)
+    inline std::underlying_type_t<eLFOWaveShape> parseLfoWaveShape(xml_attribute attr)
     {
-        //#TODO: Implement enum checks here to validate destination
-        return  (uint8_t)std::clamp(attr.as_uint((unsigned int)LFOTblEntry::eLFOWaveShape::Square), (unsigned int)numeric_limits<uint8_t>::min(), (unsigned int)numeric_limits<uint8_t>::max());
+        std::string shapename = attr.as_string();
+        std::transform(shapename.begin(), shapename.end(), shapename.begin(), [](unsigned char c) { return std::tolower(c); });
+        return (std::underlying_type_t<eLFOWaveShape>) DseLfoWaveShapeNameToId(shapename);
     }
 
     LFOTblEntry ParseALFO(xml_node lfonode)
@@ -469,7 +489,7 @@ private:
         //Check version info and etc..
         xml_node      rootnode = doc.child(ROOT_WavInfo.c_str());
 
-        for (auto node : rootnode.children(NODE_Sample.c_str()))
+        for (xml_node node : rootnode.children(NODE_Sample.c_str()))
         {
             SampleBank::SampleBlock blk = ParseASample(node);
             const sampleid_t sampleid = blk.pinfo_->id;
@@ -641,14 +661,14 @@ private:
         WriteCommentNode( prgnode, "LFO Settings" );
         {
             xml_node lfotblnode = prgnode.append_child( NODE_LFOTable.c_str() );
-            for( const auto & lfoentry : curprog.m_lfotbl )
+            for( const LFOTblEntry & lfoentry : curprog.m_lfotbl )
                 WriteALFO( lfotblnode, lfoentry );
         }
 
         WriteCommentNode( prgnode, "Splits" );
         {
             xml_node splittblnode = prgnode.append_child( NODE_SplitTable.c_str() );
-            for( const auto & splitentry : curprog.m_splitstbl )
+            for( const SplitEntry & splitentry : curprog.m_splitstbl )
                 WriteASplit( splittblnode, splitentry );
         }
         
@@ -659,8 +679,10 @@ private:
         using namespace PrgmXML;
         xml_node lfoentry = AppendChildNode(parent, NODE_LFOEntry); //Always leave at least the empty node, so we can tell how many lfos there are
         AppendAttribute( lfoentry, ATTR_LFOEnabled,    curlfo.unk52  );
-        AppendAttribute( lfoentry, ATTR_LFOModDest,    curlfo.dest   );
-        AppendAttribute( lfoentry, ATTR_LFOWaveShape,  curlfo.wshape );
+
+        AppendAttribute( lfoentry, ATTR_LFOModDest,   DseLfoDestIdToName((eLFODest)curlfo.dest) );
+        AppendAttribute( lfoentry, ATTR_LFOWaveShape, DseLfoWaveShapeIdToName((eLFOWaveShape)curlfo.wshape) );
+
         AppendAttribute( lfoentry, ATTR_LFORate,       curlfo.rate   );
         AppendAttribute( lfoentry, ATTR_LFOUnk29,      curlfo.unk29  );
         AppendAttribute( lfoentry, ATTR_LFODepth,      curlfo.depth  );
@@ -672,12 +694,23 @@ private:
     void WriteASplit( xml_node & parent, const SplitEntry & cursplit )
     {
         using namespace PrgmXML;
-        WriteCommentNode( parent, "Split Sample " + to_string(cursplit.smplid) );
+        WriteCommentNode( parent, "Split Sample ID " + to_string(cursplit.smplid) );
         
         xml_node splitnode = AppendChildNode(parent, NODE_Split);
         AppendAttribute(splitnode, ATTR_ID, cursplit.id);
         WriteNodeWithValue(splitnode, PROP_SplitUnk25, cursplit.unk25);
 
+        {
+            xml_node sample = AppendChildNode(splitnode, NODE_Sample);
+            AppendAttribute(sample, ATTR_SmplID, cursplit.smplid);
+            WriteNodeWithValue(sample, PROP_Volume, cursplit.smplvol);
+            WriteNodeWithValue(sample, PROP_Pan, cursplit.smplpan);
+            WriteNodeWithValue(sample, PROP_BendRng, cursplit.bendrange);
+            WriteNodeWithValue(sample, PROP_RootKey, cursplit.rootkey);
+            WriteNodeWithValue(sample, PROP_FTune, cursplit.ftune);
+            WriteNodeWithValue(sample, PROP_CTune, cursplit.ctune);
+            WriteNodeWithValue(sample, PROP_KeyTrans, cursplit.ktps);
+        }
         {
             xml_node keys = AppendChildNode(splitnode, NODE_Keys);
 #ifdef _DEBUG
@@ -693,18 +726,6 @@ private:
             WriteNodeWithValue(keys, PROP_HighVel, cursplit.hivel);
             WriteNodeWithValue(keys, NODE_KGrp,    cursplit.kgrpid);
         }
-        {
-            xml_node sample = AppendChildNode(splitnode, NODE_Sample);
-            AppendAttribute(sample, ATTR_SmplID, cursplit.smplid);
-            WriteNodeWithValue(sample, PROP_Volume, cursplit.smplvol);
-            WriteNodeWithValue(sample, PROP_Pan, cursplit.smplpan);
-            WriteNodeWithValue(sample, PROP_BendRng, cursplit.bendrange);
-            WriteNodeWithValue(sample, PROP_RootKey, cursplit.rootkey);
-            WriteNodeWithValue(sample, PROP_FTune, cursplit.ftune);
-            WriteNodeWithValue(sample, PROP_CTune, cursplit.ctune);
-            WriteNodeWithValue(sample, PROP_KeyTrans, cursplit.ktps);
-        }
-
         WriteDSEEnvelope(splitnode, cursplit.env, cursplit.envon);
     }
 
@@ -720,7 +741,7 @@ private:
             return;
         }
 
-        for( const auto & grp : ptrprgms->Keygrps() )
+        for( const KeyGroup & grp : ptrprgms->Keygrps() )
             WriteKeyGroup( kgrpsnode, grp );
     }
 
@@ -774,7 +795,7 @@ private:
         WriteNodeWithValue( infonode, PROP_RootKey,     winfo.rootkey );
         WriteNodeWithValue( infonode, PROP_KeyTrans,    winfo.ktps );
         WriteNodeWithValue( infonode, PROP_SmplRate,    winfo.smplrate);
-        WriteCommentNode( infonode, "Loop Data (calculated in individual sample points)" );
+        WriteCommentNode( infonode, "Loop End and optionally a Loop Beg. The values are calculated in number of 32 bits integers. So for PCM16, you'd take an amount of sample points and divide it by 2." );
         //Samples points will change depending on whether they were converted.
         {
             xml_node loopnode = AppendChildNode(infonode, NODE_Loop);

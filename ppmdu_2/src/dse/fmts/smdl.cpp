@@ -395,28 +395,31 @@ namespace DSE
 
         void WriteHeader( std::ostreambuf_iterator<char> & itout, const std::set<int> & existingchan, size_t filelen )
         {
+            const DSE_MetaDataSMDL& meta = m_src.metadata();
             //Header
-            SMDL_Header smdhdr; 
-            smdhdr.unk7        = 0;
-            smdhdr.flen        = filelen;
-            smdhdr.version     = DseVerToInt(m_version);
-            smdhdr.bankid_low  = m_src.metadata().bankid_coarse;
-            smdhdr.bankid_high = m_src.metadata().bankid_fine;
-            smdhdr.unk3        = 0;
-            smdhdr.unk4        = 0;
-            smdhdr.year        = m_src.metadata().createtime.year;
-            smdhdr.month       = m_src.metadata().createtime.month;
-            smdhdr.day         = m_src.metadata().createtime.day;
-            smdhdr.hour        = m_src.metadata().createtime.hour;
-            smdhdr.minute      = m_src.metadata().createtime.minute;
-            smdhdr.second      = m_src.metadata().createtime.second;
-            smdhdr.centisec    = m_src.metadata().createtime.centsec;
-            std::copy(m_src.metadata().fname.c_str(), m_src.metadata().fname.c_str() + std::min(m_src.metadata().fname.size(), smdhdr.fname.size() - 1), smdhdr.fname.data());
-            smdhdr.unk5        = SMDL_Header::DefUnk5;
-            smdhdr.unk6        = SMDL_Header::DefUnk6;
-            smdhdr.unk8        = SMDL_Header::DefUnk8;
-            smdhdr.unk9        = SMDL_Header::DefUnk9;
-            smdhdr.WriteToContainer( itout ); //The correct magic number for SMDL is forced on write, whatever the value in smdhdr.magicn is.
+            SMDL_Header hdr; 
+            hdr.unk7        = 0;
+            hdr.flen        = filelen;
+            hdr.version     = DseVerToInt(m_version);
+            hdr.bankid_low  = m_src.metadata().bankid_coarse;
+            hdr.bankid_high = m_src.metadata().bankid_fine;
+            hdr.unk3        = 0;
+            hdr.unk4        = 0;
+            hdr.year        = m_src.metadata().createtime.year;
+            hdr.month       = m_src.metadata().createtime.month;
+            hdr.day         = m_src.metadata().createtime.day;
+            hdr.hour        = m_src.metadata().createtime.hour;
+            hdr.minute      = m_src.metadata().createtime.minute;
+            hdr.second      = m_src.metadata().createtime.second;
+            hdr.centisec    = m_src.metadata().createtime.centsec;
+
+            StringToDseFilename(meta.fname, begin(hdr.fname), end(hdr.fname), 0xFF);
+
+            hdr.unk5        = SMDL_Header::DefUnk5;
+            hdr.unk6        = SMDL_Header::DefUnk6;
+            hdr.unk8        = SMDL_Header::DefUnk8;
+            hdr.unk9        = SMDL_Header::DefUnk9;
+            hdr.WriteToContainer( itout ); //The correct magic number for SMDL is forced on write, whatever the value in smdhdr.magicn is.
 
             //Song Chunk
             if( m_version == eDSEVersion::V402 )

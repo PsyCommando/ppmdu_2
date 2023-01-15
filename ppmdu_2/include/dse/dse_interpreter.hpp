@@ -89,6 +89,12 @@ namespace DSE
 
         int8_t                 trkvol_ = 0; //The volume the track is currently set to
         int8_t                 trkpan_ = 0; //The pan the track is currently set to
+        int8_t                 chvol_  = 0; //Channel Volume (???)
+        int8_t                 chpan_  = 0; //Channel pan (balance?)
+        int8_t                 expr_   = 0; //Track expression volume
+
+        int16_t                pitchbend_ = 0;
+        uint8_t                bendrng_   = 0;
 
         size_t                 looppoint_ = 0; //The index of the envent after the loop pos
 

@@ -24,14 +24,15 @@ namespace DSE
         const std::string ATTR_DSE_OrigFname     = "original_filename"s;
         const std::string ATTR_DSE_OrigLoadOrder = "original_load_order"s;
         const std::string ATTR_DSE_OrigTime      = "original_timestamp"s;
+        const std::string ATTR_DSE_OrigCentSec   = "original_centsec"s;
         const std::string ATTR_DSE_Unk17         = "unk17"s;
         const std::string ATTR_DSE_Vol           = "vol"s;
         const std::string ATTR_DSE_Pan           = "pan"s;
         const std::string ATTR_DSE_Unk5          = "unk5"s;
-        const std::string ATTR_DSE_Unk6 = "unk6"s;
-        const std::string ATTR_DSE_Unk7 = "unk7"s;
-        const std::string ATTR_DSE_Unk8 = "unk8"s;
-        const std::string ATTR_DSE_NbPrgmSlots = "prgi_slots"s;
+        const std::string ATTR_DSE_Unk6          = "unk6"s;
+        const std::string ATTR_DSE_Unk7          = "unk7"s;
+        const std::string ATTR_DSE_Unk8          = "unk8"s;
+        const std::string ATTR_DSE_NbPrgmSlots   = "prgi_slots"s;
     };
 
     void ParseDSEXmlNode(pugi::xml_node parent, DSE::DSE_MetaData* meta)
@@ -59,6 +60,7 @@ namespace DSE
         AppendAttribute(dsei, ATTR_DSE_OrigFname,     origfname);
         AppendAttribute(dsei, ATTR_DSE_OrigLoadOrder, origloadorder);
         AppendAttribute(dsei, ATTR_DSE_OrigTime,      static_cast<std::string>(createtime));
+        AppendAttribute(dsei, ATTR_DSE_OrigCentSec,   createtime.centsec);
     }
 
     void DSE::DSE_MetaData::ParseXml(xml_node dsei)
@@ -85,6 +87,8 @@ namespace DSE
                 stringstream ssin(timestamp);
                 ssin >> createtime;
             }
+            else if(att_name == ATTR_DSE_OrigCentSec)
+                utils::parseHexaValToValue(att.value(), createtime.centsec);
         }
     }
 
@@ -103,7 +107,7 @@ namespace DSE
         using namespace XmlConstants;
         DSE_MetaData::ParseXml(dsei);
         utils::parseHexaValToValue(dsei.attribute(ATTR_DSE_Unk17.c_str()).value(), unk17);
-        nbprgislots = (uint16_t)dsei.attribute(ATTR_DSE_Unk17.c_str()).as_uint();
+        nbprgislots = (uint16_t)dsei.attribute(ATTR_DSE_NbPrgmSlots.c_str()).as_uint();
     }
 
     //

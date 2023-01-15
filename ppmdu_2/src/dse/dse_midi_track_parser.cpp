@@ -38,10 +38,6 @@ namespace DSE
     class MIDIToDSE
     {
         typedef unsigned long long ticks_t;
-        MusicSequence                   m_seqOut;
-        std::unique_ptr<MIDIMultiTrack> m_miditrks;
-        std::map<uint8_t, MusicTrack>   m_dsetracks;
-        std::map<uint8_t, TrkState>     m_dsetrkstates;
     public:
 
         /*
@@ -49,7 +45,7 @@ namespace DSE
                                      closest matches in the DSE system.
         */
         MIDIToDSE(const string& srcmidi, bool bNoDeltaTimeRounding = true)
-            :m_srcpath(srcmidi), m_bIsAccurateTime(bNoDeltaTimeRounding)
+            :m_srcpath(srcmidi), m_bIsAccurateTime(bNoDeltaTimeRounding), m_Tempo(120)
         {}
 
         /****************************************************************************************
@@ -66,6 +62,7 @@ namespace DSE
             m_miditrks.reset(new MIDIMultiTrack);
             m_dsetracks.clear();
             m_dsetrkstates.clear();
+            m_Tempo = 120;
 
             if (utils::LibWide().isLogOn())
             {
@@ -101,6 +98,13 @@ namespace DSE
             m_seqOut.metadata().createtime.SetTimeToNow();
 
             ConvertMIDI();
+
+            //#3 - Do some post-processing stuff
+
+            //#TODO: 
+            //#TODO: Make sure that tempo changes are all on track 0
+            //#TODO: Add Pause events to track 0 from the last tempo event to the end of track
+
             m_miditrks.release();
             return std::move(m_seqOut);
         }
@@ -147,7 +151,7 @@ namespace DSE
                 throw std::runtime_error("ConvertFromSingleTrackMidi(): JDKSMIDI: jdksmidi returned a null track ! wtf..");
 
             //Maintain a global tick count
-            ticks_t                ticks = 0;
+            //ticks_t                ticks = 0;
             const int              nbev = mtrack->GetNumEvents();
 
             //Iterate through events
@@ -159,7 +163,7 @@ namespace DSE
 
                 try
                 {
-                    HandleSingleTrackEvent(*ptrev, ticks);
+                    HandleSingleTrackEvent(mtrack, cntev, *ptrev);
                 }
                 catch (...)
                 {
@@ -181,194 +185,35 @@ namespace DSE
             Its used to properly pad events with silences if required, and properly
             calculate the delta time of each events on each separate tracks.
         ****************************************************************************************/
-        void HandleSingleTrackEvent(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
+        void HandleSingleTrackEvent(const MIDITrack* mtrack, int cntev, const jdksmidi::MIDITimedBigMessage& mev)
         {
-            ticks_t     evtglobaltick = mev.GetTime(); //The global absolute tick of the event
-            unsigned char channel = (!mev.IsSystemExclusive() && !mev.IsMetaEvent())? mev.GetChannel() : 0; //Meta and sysex don't really have a channel
-            TrkState& curstate = m_dsetrkstates[channel];
-            MusicTrack& curtrk = m_dsetracks[channel];
+            ticks_t       evtime   = mev.GetTime(); //The global absolute tick of the event
+            unsigned char channel  = (!mev.IsSystemExclusive() && !mev.IsMetaEvent())? (mev.GetChannel() + 1) : 0; //Add one to channel, so we free Track 0
 
-            //Insert a pause if needed
-            ticks_t delta = (evtglobaltick >= curstate.ticks_)? (evtglobaltick - curstate.ticks_) : 0; //If the event time is 0, we wanna avoid overflows
-            if (delta != 0)
-                HandlePauses(mev, curstate, curtrk, globalticks, delta);
-
-            //After the pause was handled, deal with the event
-            if (mev.IsSystemExclusive())
-                HandleSysExEvents(mev, globalticks);
-            else if (mev.IsMetaEvent())
-                HandleMetaEvents(mev, globalticks);
+            //if (mev.IsSystemExclusive())
+                //HandleSysExEvents(mtrack, cntev, mev, evtime);
+            /*else*/ if (mev.IsMetaEvent())
+                HandleMetaEvents(mtrack, cntev, mev, evtime);
             else
-                HandleEvent(mev, curstate, curtrk, globalticks);
-        }
-
-
-        /****************************************************************************************
-            Handles the pause event insertion logic, based on the delta time an event happens at!
-        ****************************************************************************************/
-        void HandlePauses(const jdksmidi::MIDITimedBigMessage& mev,
-            TrkState& state,
-            MusicTrack& trk,
-            ticks_t& globalticks,
-            ticks_t                               delta)
-        {
-            //Check if we can handle the pause with a simple fixed duration pause event first!
-            if (delta <= static_cast<ticks_t>(DSE::eTrkDelays::_half))
-            {
-                DSE::TrkEvent pauseev;
-                auto          itfound = TicksToTrkDelayID.find(static_cast<uint8_t>(delta));
-                ticks_t       newdelta = delta;
-
-                //If we have an exact match, go for that!
-                if (itfound != TicksToTrkDelayID.end())
-                {
-                    pauseev.evcode = DSE::TrkDelayToEvID.at(itfound->second);
-                    newdelta = itfound->first;
-                }
-                else if (isAccurateTime()) //Otherwise, depending on our time conversion strategy, pick the closest time
-                {
-                    HandleLongPauseEvents(mev, state, trk, globalticks, delta);
-                    return; //Just return if we handled it that way!
-                }
-                else
-                {
-                    auto closest = DSE::FindClosestTrkDelayID(static_cast<uint8_t>(delta));
-                    if (!closest)
-                        throw std::runtime_error("Couldn't find the closest matching delay for duration \"" + std::to_string((unsigned int)delta) + "\" ticks.");
-                    pauseev.evcode = DSE::TrkDelayToEvID.at(*closest);
-                    newdelta = static_cast<uint8_t>(*closest);
-                }
-
-                //Find out what delta we went for in the end!
-                //Add the pause to the track state and global tick count
-                globalticks += newdelta;
-                state.ticks_ += newdelta;
-                state.lastpause_ = newdelta;
-                trk.push_back( std::move(pauseev) );
-            }
-            else
-                HandleLongPauseEvents(mev, state, trk, globalticks, delta); //If delta time is too long, use a longer pause event!
+                HandleEvent(mtrack, cntev, mev, channel, evtime);
         }
 
         /****************************************************************************************
         ****************************************************************************************/
-        void HandleLongPauseEvents(const jdksmidi::MIDITimedBigMessage& mev,
-            TrkState& state,
-            MusicTrack& trk,
-            ticks_t& globalticks,
-            ticks_t                               delta)
-        {
-
-            if (delta == state.lastpause_) //Check if our last pause is the exact same duration, and use that if possible
-            {
-                DSE::TrkEvent pauseev;
-                pauseev.evcode = static_cast<uint8_t>(DSE::eTrkEventCodes::RepeatLastPause);
-
-                //Add the pause to the track state and global tick count
-                globalticks += state.lastpause_;
-                state.ticks_ += state.lastpause_;
-
-                trk.push_back(std::move(pauseev));
-            }
-            else if ((delta < ((ticks_t)state.lastpause_ + std::numeric_limits<uint8_t>::max())) && (delta > state.lastpause_)) //Check if our last pause is shorter than the required delay, so we can just add to it
-            {
-                DSE::TrkEvent addpauseev;
-                addpauseev.evcode = static_cast<uint8_t>(DSE::eTrkEventCodes::AddToLastPause);
-                addpauseev.params.push_back(static_cast<uint8_t>((delta - state.lastpause_) & 0xFF));
-
-                //Add the pause to the track state and global tick count
-                globalticks += (ticks_t)state.lastpause_ + addpauseev.params.front();
-                state.ticks_ += state.lastpause_ + addpauseev.params.front();
-                state.lastpause_ = state.lastpause_ + addpauseev.params.front();
-                trk.push_back(std::move(addpauseev));
-            }
-            else if (delta < std::numeric_limits<uint8_t>::max())
-            {
-                //Otherwise make a short pause event if the delay fits within a short pause
-                DSE::TrkEvent shortpauseev;
-                shortpauseev.evcode = static_cast<uint8_t>(DSE::eTrkEventCodes::Pause8Bits);
-                shortpauseev.params.push_back(static_cast<uint8_t>(delta & 0xFF));
-
-                //Add the pause to the track state and global tick count
-                globalticks += delta;
-                state.ticks_ += delta;
-                state.lastpause_ = delta;
-                trk.push_back(std::move(shortpauseev));
-            }
-            else if (delta < std::numeric_limits<uint16_t>::max())
-            {
-                //Otherwise make a long pause event
-                DSE::TrkEvent longpauseev;
-                longpauseev.evcode = static_cast<uint8_t>(DSE::eTrkEventCodes::Pause16Bits);
-                longpauseev.params.push_back(static_cast<uint8_t>(delta & 0xFF));
-                longpauseev.params.push_back(static_cast<uint8_t>((delta >> 8) & 0xFF));
-
-                //Add the pause to the track state and global tick count
-                globalticks += delta;
-                state.ticks_ += delta;
-                state.lastpause_ = delta;
-                trk.push_back(std::move(longpauseev));
-            }
-            else 
-            {
-                //Make several pauses in a row!
-                unsigned long long nbpauses = delta / std::numeric_limits<uint16_t>::max();
-                if( ( delta % std::numeric_limits<uint16_t>::max() ) != 0 )
-                    ++nbpauses;
-
-                unsigned long long pauseleft = delta; //The nb of ticks to pause for remaining
-
-                for( unsigned long long i = 0; i < nbpauses; ++nbpauses )
-                {
-                    if( pauseleft < numeric_limits<uint8_t>::max() )
-                    {
-                        //Use short pause
-                        DSE::TrkEvent shortpauseev;
-                        shortpauseev.evcode = static_cast<uint8_t>(DSE::eTrkEventCodes::Pause8Bits);
-                        shortpauseev.params.push_back( static_cast<uint8_t>( pauseleft & 0xFF ) );
-
-                        //Add the pause to the track state and global tick count
-                        globalticks    += pauseleft;
-                        state.ticks_   += pauseleft;
-                        state.lastpause_ = pauseleft;
-                        trk.push_back(std::move(shortpauseev) );
-
-                        pauseleft = 0;
-                    }
-                    else
-                    {
-                        //Pick the longest pause we can
-                        uint16_t curpause = pauseleft & numeric_limits<uint16_t>::max();
-
-                        DSE::TrkEvent longpauseev;
-                        longpauseev.evcode = static_cast<uint8_t>(DSE::eTrkEventCodes::Pause16Bits);
-                        longpauseev.params.push_back( static_cast<uint8_t>(  curpause       & 0xFF ) );
-                        longpauseev.params.push_back( static_cast<uint8_t>( (curpause >> 8) & 0xFF ) );
-
-                        //Add the pause to the track state and global tick count
-                        globalticks    += curpause;
-                        state.ticks_   += curpause;
-                        state.lastpause_ = curpause;
-                        trk.push_back(std::move(longpauseev) );
-
-                        //Use long pause
-                        pauseleft -= curpause;
-                    }
-                }
-            }
-        }
-
-        /****************************************************************************************
-        ****************************************************************************************/
-        void HandleEvent(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk, ticks_t& globalticks)
+        void HandleEvent(const MIDITrack* mtrack, int cntev, const jdksmidi::MIDITimedBigMessage& mev, size_t trkid, ticks_t evtime)
         {
             using namespace jdksmidi;
+            TrkState& state = m_dsetrkstates[trkid];
+            MusicTrack& trk = m_dsetracks[trkid];
+
             if (mev.IsControlChange())
-                HandleControlChanges(mev, state, trk);
+                state.ticks_ += HandleControlChanges(mev, trkid, evtime);
+            else if (mev.IsProgramChange())
+                state.ticks_ += HandleProgramChange(mev, trkid, evtime);
+            else if (mev.IsPitchBend())
+                state.ticks_ += HandlePitchBend(mev, trkid, evtime);
             else if (mev.IsNoteOn())
-                HandleNoteOn(mev, state, trk);
-            else if (mev.IsNoteOff())
-                HandleNoteOff(mev, state, trk);
+                state.ticks_ += HandleNoteOn(mtrack, cntev, mev, trkid);
             else
             {
                 std::string txtbuff;
@@ -379,99 +224,104 @@ namespace DSE
 
         /****************************************************************************************
         ****************************************************************************************/
-        void HandleNoteOn(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
+        uint32_t HandleNoteOn(const MIDITrack* mtrack, int cntev, const jdksmidi::MIDITimedBigMessage& mev, size_t trkid)
         {
-            NoteOnData noteoninf;
-            uint8_t      vel = mev.GetVelocity();
-            uint8_t      note = mev.GetNote();
-            uint8_t      targetoctave = (note / NbMidiKeysInOctave);
-            int8_t       octavediff = state.octave_ - targetoctave;
-            noteoninf.noteonnum = trk.size();
-            noteoninf.noteonticks = mev.GetTime();
-            state.noteson_.push_back(std::move(noteoninf));
+            TrkState&   state = m_dsetrkstates[trkid];
+            MusicTrack& trk = m_dsetracks[trkid];
+            const int numevent = mtrack->GetNumEvents();
+            const jdksmidi::MIDITimedBigMessage * evnoteoff = nullptr;
 
-            //See if we need to insert a setoctave event before this note!
-            if (state.octave_ == -1 ||
-                state.octave_ != -1 && (abs(octavediff) > 2 || octavediff < -1)) //If we haven't specified the initial octave yet
-                InsertSetOctaveEvent(trk, state, targetoctave);
+            //Find noteoff
+            for (int cntsearch = cntev; cntsearch < numevent; ++cntsearch)
+            {
+                const MIDITimedBigMessage* ptrev = mtrack->GetEvent(cntsearch);
+                if (ptrev == nullptr)
+                    continue;
+                if (ptrev->IsNoteOff() && (ptrev->GetChannel() == mev.GetChannel()) && (ptrev->GetNote() == mev.GetNote()))
+                {
+                    evnoteoff = ptrev;
+                    break;
+                }
+            }
 
-            //We need to insert a dse event, to reserve the play note event's spot!
-            //We also assemble the play note event partially (Because we need to hit the note off event for this note to know its duration)
-            DSE::TrkEvent noteonev;
-            uint8_t octmod = (targetoctave + 2) - state.octave_;
-            uint8_t key = (note % NbMidiKeysInOctave);
-            noteonev.evcode = vel & 0x7F;
-            noteonev.params.push_back(((octmod & 3) << 4) | (key & 0xF)); //Put the param1 without the parameter lenght for now!
-            trk.push_back(std::move(noteonev));
+            if (evnoteoff == nullptr)
+                return 0;
+
+            MIDIClockTime holdtime = evnoteoff->GetTime() - mev.GetTime();
+            if(holdtime > numeric_limits<unsigned int>::max()) //This should never happen, since it would be completely unsupported
+                throw std::overflow_error("The time difference between a note on and off event was longer than the maximum value of a 32 bits integer. (" + to_string(holdtime) + ")!");
+            
+            uint32_t dttrack = (mev.GetTime() - state.ticks_);
+            return InsertNoteEvent(trkid, dttrack, mev.GetNote(), mev.GetVelocity(), (uint32_t)holdtime);
         }
 
         /****************************************************************************************
         ****************************************************************************************/
-        void HandleNoteOff(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
+        //void HandleNoteOff(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
+        //{
+        //    //Ignore orphanned notes off events
+        //    if (!state.noteson_.empty())
+        //    {
+        //        //Update DSE event that was reserved earlier!
+        //        const NoteOnData& noteonev = state.noteson_.front();
+        //        ticks_t              noteduration = abs(static_cast<long>(mev.GetTime() - noteonev.noteonticks));
+
+        //        assert(noteonev.noteonnum < trk.size());
+        //        assert(!(trk[noteonev.noteonnum].params.empty()));
+
+        //        uint8_t paramlenby = 0;
+
+        //        if (state.lasthold_ != noteduration) //If the note duration has changed since the last note, append it!
+        //        {
+        //            if ((noteduration & 0x00FF0000) > 0)
+        //                paramlenby = 3;
+        //            else if ((noteduration & 0x0000FF00) > 0)
+        //                paramlenby = 2;
+        //            else if ((noteduration & 0x000000FF) > 0)
+        //                paramlenby = 1;
+
+        //            state.lasthold_ = static_cast<uint32_t>(noteduration); //Update last note duration
+        //        }
+
+        //        trk[noteonev.noteonnum].params.front() |= (paramlenby & 3) << 6; //Add the nb of param bytes
+
+        //        //Push the duration in ticks
+        //        for (uint8_t cnt = 0; cnt < paramlenby; ++cnt)
+        //            trk[noteonev.noteonnum].params.push_back(paramlenby >> ((paramlenby - cnt) * 8));
+
+        //        state.noteson_.pop_front();
+        //    }
+        //    else
+        //        clog << mev.GetTime() << " - MIDI NoteOff event no preceeded by a NoteOn!";
+
+        //}
+
+        void HandleSysExEvents(const MIDITrack* mtrack, int cntev, const jdksmidi::MIDITimedBigMessage& mev, ticks_t evtime)
         {
-            //Ignore orphanned notes off events
-            if (!state.noteson_.empty())
-            {
-                //Update DSE event that was reserved earlier!
-                const NoteOnData& noteonev = state.noteson_.front();
-                ticks_t              noteduration = abs(static_cast<long>(mev.GetTime() - noteonev.noteonticks));
-
-                assert(noteonev.noteonnum < trk.size());
-                assert(!(trk[noteonev.noteonnum].params.empty()));
-
-                uint8_t paramlenby = 0;
-
-                if (state.lasthold_ != noteduration) //If the note duration has changed since the last note, append it!
-                {
-                    if ((noteduration & 0x00FF0000) > 0)
-                        paramlenby = 3;
-                    else if ((noteduration & 0x0000FF00) > 0)
-                        paramlenby = 2;
-                    else if ((noteduration & 0x000000FF) > 0)
-                        paramlenby = 1;
-
-                    state.lasthold_ = static_cast<uint32_t>(noteduration); //Update last note duration
-                }
-
-                trk[noteonev.noteonnum].params.front() |= (paramlenby & 3) << 6; //Add the nb of param bytes
-
-                //Push the duration in ticks
-                for (uint8_t cnt = 0; cnt < paramlenby; ++cnt)
-                    trk[noteonev.noteonnum].params.push_back(paramlenby >> ((paramlenby - cnt) * 8));
-
-                state.noteson_.pop_front();
-            }
-            else
-                clog << mev.GetTime() << " - MIDI NoteOff event no preceeded by a NoteOn!";
-
+            using namespace jdksmidi;
+            const MIDISystemExclusive * sysex = mev.GetSysEx();
+            assert(false);
         }
 
-        void HandleSysExEvents(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
-        {
-            //using namespace jdksmidi;
-            //const MIDISystemExclusive * sysex = mev.GetSysEx();
-            //assert(false);
-        }
-
-        void HandleMetaEvents(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
+        void HandleMetaEvents(const MIDITrack* mtrack, int cntev, const jdksmidi::MIDITimedBigMessage& mev, ticks_t evtime)
         {
             using namespace jdksmidi;
             switch (mev.GetMetaType())
             {
             case META_MARKER_TEXT:
-                HandleUnsupportedEvents(mev, globalticks);
+                HandleUnsupportedEvents(mtrack, cntev, mev, evtime);
                 break;
 
             case META_TRACK_LOOP:
-                HandleLoopPoint(mev, globalticks);
+                InsertLoopPoint(evtime);
                 break;
 
             case META_END_OF_TRACK:
-                HandleEoT(mev, globalticks);
+                InsertEndOfTrack(evtime);
                 break;
 
             case META_TEMPO:
-                HandleSetTempo(mev, globalticks);
+                InsertSetTempo(evtime, mev.GetTempo());
                 break;
 
             case META_CHANNEL_PREFIX:
@@ -514,7 +364,7 @@ namespace DSE
             HandleUnsupportedEvents
                 Handles parsing MIDI text events for obtaining the DSE event stored in them.
         *****************************************************************************************/
-        void HandleUnsupportedEvents(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
+        void HandleUnsupportedEvents(const MIDITrack* mtrack, int cntev, const jdksmidi::MIDITimedBigMessage& mev, ticks_t evtime)
         {
             using namespace jdksmidi;
             using namespace Poco::JSON;
@@ -526,24 +376,32 @@ namespace DSE
 
             //First, copy the text data from the event's sysex
             const MIDISystemExclusive& txtdat = *(mev.GetSysEx());
-            string                      evtxt;
-            copy_n(txtdat.GetBuf(), txtdat.GetLength(), back_inserter(evtxt));
-
-            //Try to see if its a DSE event in text form. If it is, parse it!
-            size_t found = evtxt.find(TXT_DSE_Event);
-            if (found == string::npos)
-                return;
+            string                     evtxt(txtdat.GetBuf(), txtdat.GetBuf() + txtdat.GetLength());
+            if (size_t first = string::npos; (first = evtxt.find_first_of('{')) == string::npos || evtxt.find_first_of('}', first) == string::npos)
+                return; //Try to filter out non-json stuff before actually having to deal with exceptions from the parser, because exceptions are really slow
 
             //Parse the event's JSON
-            Object::Ptr jsonobj = Parser().parse(evtxt).extract<Object::Ptr>();
-            if (!jsonobj || !jsonobj->has(TXT_DSE_Event) || !jsonobj->has("id"))
+            Var parsed;
+            try 
+            { 
+                parsed = Parser().parse(evtxt);
+            }
+            catch (const Poco::JSON::JSONException&)
+            {
+                //Literally any text markers that's not parseable json...
+                return; //poco doesn't let you check if the text is valid json, it just throws an exception
+            }
+            Object::Ptr jsonobj = parsed.extract<Object::Ptr>();
+            if (!jsonobj || !jsonobj->has("id"))
                 return;
-            uint8_t    evid = static_cast<uint8_t>(jsonobj->getValue<unsigned int>("id"));
-            uint8_t    evchan = jsonobj->has("chan")? static_cast<uint8_t>(jsonobj->getValue<unsigned int>("chan")) : 0xFFui8;
-            Array::Ptr args   = jsonobj->getArray("params");
-            
+
+            //Parse the event json
+            uint8_t       evid   = static_cast<uint8_t>(jsonobj->getValue<unsigned int>("id"));
+            uint8_t       evchan = jsonobj->has("chan")? static_cast<uint8_t>(jsonobj->getValue<unsigned int>("chan")) : 0xFFui8;
+            Array::Ptr    args   = jsonobj->getArray("params");
             DSE::TrkEvent dsev;
             dsev.evcode = evid;
+
             if (args)
             {
                 for (Var entry : *args)
@@ -562,189 +420,498 @@ namespace DSE
                 return;
             }
 
-            //Insert parsed event
-            m_dsetracks[evchan].push_back(std::move(dsev));
+            HandleParsedDseEvent(mtrack, cntev, evtime, evchan, std::move(dsev));
         }
 
-        /****************************************************************************************
-            HandleEoT
-                Inserts the end of track marker.
-        ****************************************************************************************/
-        void HandleEoT(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
+        void HandleParsedDseEvent(const MIDITrack* mtrack, int cntev, ticks_t evtime, uint8_t evchan, DSE::TrkEvent && ev)
         {
-            for (size_t cnttrk = 0; cnttrk < m_dsetracks.size(); ++cnttrk)
+            TrkState& state     = m_dsetrkstates[evchan];
+            MusicTrack& trk     = m_dsetracks[evchan];
+            uint32_t delta_time = (evtime - state.ticks_);
+
+            switch ((eTrkEventCodes)ev.evcode)
             {
-                ticks_t trktickdiff = (globalticks - m_dsetrkstates[cnttrk].ticks_); //The difference in ticks between the track's last tick and the current global tick
-                ticks_t evtglobaltick = mev.GetTime(); //The global absolute tick of the event
+            case eTrkEventCodes::LoopPointSet:
+                InsertLoopPoint(evtime);
+                break;
 
-                //Insert a pause if needed
-                ticks_t delta = (evtglobaltick - m_dsetrkstates[cnttrk].ticks_);
-                if (delta != 0)
-                    HandlePauses(mev, m_dsetrkstates[cnttrk], m_dsetracks[cnttrk], globalticks, delta);
-
-                InsertDSEEvent(m_dsetracks[cnttrk], eTrkEventCodes::EndOfTrack);
+            //
+            case eTrkEventCodes::SweepTrackVol:
+            case eTrkEventCodes::FadeSongVolume:
+            case eTrkEventCodes::SweepTrkPan:
+            //
+            case eTrkEventCodes::SetFTune:
+            case eTrkEventCodes::AddFTune:
+            case eTrkEventCodes::SetCTune:
+            case eTrkEventCodes::AddCTune:
+            case eTrkEventCodes::SweepTune:
+            case eTrkEventCodes::SetRndNoteRng:
+            //
+            case eTrkEventCodes::DisableEnvelope:
+            case eTrkEventCodes::SetEnvAtkLvl:
+            case eTrkEventCodes::SetEnvHold:
+            case eTrkEventCodes::SetEnvDecSus:
+            case eTrkEventCodes::SetEnvFade:
+            // --- LFO Controls ---
+            //LFO1
+            case eTrkEventCodes::SetLFO1:
+            case eTrkEventCodes::SetLFO1DelayFade:
+            case eTrkEventCodes::RouteLFO1ToPitch:
+            //LFO2
+            case eTrkEventCodes::SetLFO2:
+            case eTrkEventCodes::SetLFO2DelFade:
+            case eTrkEventCodes::RouteLFO2ToVol:
+            //LFO3
+            case eTrkEventCodes::SetLFO3:
+            case eTrkEventCodes::SetLFO3DelFade:
+            case eTrkEventCodes::RouteLFO3ToPan:
+            //LFO
+            case eTrkEventCodes::SetLFO:
+            case eTrkEventCodes::SetLFODelFade:
+            case eTrkEventCodes::SetLFOParam:
+            case eTrkEventCodes::SetLFORoute:
+            // --- Skip Bytes ---
+            case eTrkEventCodes::SkipNextByte:
+            case eTrkEventCodes::SkipNext2Bytes1:
+            case eTrkEventCodes::SkipNext2Bytes2:
+            //
+            case eTrkEventCodes::RepeatFrom:
+            case eTrkEventCodes::RepeatSegment:
+            case eTrkEventCodes::AfterRepeat:
+            {
+                state.ticks_ += InsertDSEEvent(evchan, delta_time, (eTrkEventCodes)ev.evcode, move(ev.params));
+                return;
             }
-        }
 
-        void HandleControlChanges(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
-        {
-            using namespace jdksmidi;
-            switch (mev.GetController())
-            {
-            case C_LSB:
-                InsertDSEEvent(trk, eTrkEventCodes::SetBankHighByte, mev.GetByte2());
-                break;
-            case C_GM_BANK:
-                InsertDSEEvent(trk, eTrkEventCodes::SetBankLowByte, mev.GetByte2());
-                break;
-            case C_BALANCE:
-            case C_PAN:
-                HandlePanChanges(mev, state, trk);
-                break;
-            case C_EXPRESSION:
-                InsertDSEEvent(trk, eTrkEventCodes::SetExpress, mev.GetByte2());
-                break;
-            case C_MAIN_VOLUME:
-                InsertDSEEvent(trk, eTrkEventCodes::SetChanVol, mev.GetByte2());
-                break;
-            case eMidiCC::C_SoundReleaseTime: //0x48, // Sound Controller 3, default: Release Time
-                InsertDSEEvent(trk, eTrkEventCodes::SetEnvRelease, mev.GetByte2());
-                break;
-            case eMidiCC::C_SoundAttackTime: //0x49, // Sound Controller 4, default: Attack Time
-                InsertDSEEvent(trk, eTrkEventCodes::SetEnvAtkTime, mev.GetByte2());
-                break;
-
-            case C_MODULATION:
-            case C_BREATH:
-            case C_FOOT:
-            case C_PORTA_TIME:
-            case C_GENERAL_1:
-            case C_GENERAL_2:
-            case C_GENERAL_3:
-            case C_GENERAL_4:
-            case C_DAMPER:
-            case C_PORTA:
-            case C_SOSTENUTO:
-            case C_SOFT_PEDAL:
-            case 0x44://              0x44   Legato Footswitch
-            case C_HOLD_2:
-            case 0x46: //0x46, // Sound Controller 1, default: Sound Variation
-            case 0x47: //0x47, // Sound Controller 2, default: Timbre/Harmonic Intens.
-            case 0x4A: //0x4A, // Sound Controller 5, default: Brightness
-            case 0x4B: // Sound Controller 6, default: Decay Time
-            case 0x4C: // Sound Controller 7, default: Vibrato Rate
-            case 0x4D: // Sound Controller 8, default: Vibrato Depth
-            case 0x4E: // Sound Controller 9, default: Vibrato Delay
-            case 0x4F: // Sound Controller 10, default undefined
-            case C_GENERAL_5:
-            case C_GENERAL_6:
-            case C_GENERAL_7:
-            case C_GENERAL_8:
-            case 0x54://            0x54  Portamento Control
-            case C_EFFECT_DEPTH:
-            case C_TREMOLO_DEPTH:
-            case C_CHORUS_DEPTH:
-            case C_CELESTE_DEPTH:
-            case C_PHASER_DEPTH:
-            case C_DATA_ENTRY:
-            case C_DATA_INC:
-            case C_DATA_DEC:
-            case C_NONRPN_LSB:
-            case C_NONRPN_MSB:
-            case C_RPN_LSB:
-            case C_RPN_MSB:
-            case C_ALL_SOUNDS_OFF:
-            case C_RESET:
-            case C_LOCAL:
-            case C_ALL_NOTES_OFF:
-            case C_OMNI_OFF:
-            case C_OMNI_ON:
-            case C_MONO:
-            case C_POLY:
             default:
-                clog << "Unsupported midi controller CC" << static_cast<unsigned int>(mev.GetController()) << ", Value: " << static_cast<unsigned int>(mev.GetByte1()) << "!";
-                break;
+                clog << evtime << "t: unsupported encoded dse event " << ev << "\n";
+                return;
             };
         }
 
-        /****************************************************************************************
-        ****************************************************************************************/
-        void HandleSetTempo(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
+        uint32_t HandleControlChanges(const jdksmidi::MIDITimedBigMessage& mev, size_t trkid, ticks_t evtime)
         {
-            // ticks_t trktickdiff   = (globalticks - states[0].ticks); //The difference in ticks between the track's last tick and the current global tick
-            ticks_t evtglobaltick = mev.GetTime(); //The global absolute tick of the event
+            using namespace jdksmidi;
+            TrkState& state = m_dsetrkstates[trkid];
+            MIDIClockTime dt = evtime - state.ticks_;
 
-            //Insert a pause if needed
-            ticks_t delta = (evtglobaltick - m_dsetrkstates[0].ticks_);
-            if (delta != 0)
-                HandlePauses(mev, m_dsetrkstates[0], m_dsetracks[0], globalticks, delta);
+            try
+            {
+                switch (mev.GetController())
+                {
+                case C_LSB:
+                    return InsertSetBankHigh(trkid, (uint32_t)dt, mev.GetByte2());
 
-            //
-            uint8_t tempo = static_cast<uint8_t>(ConvertMicrosecPerQuarterNoteToBPM(mev.GetTempo()));
-            InsertDSEEvent(m_dsetracks[0], eTrkEventCodes::SetTempo, { tempo });
+                case C_GM_BANK:
+                    return InsertSetBankLow(trkid, (uint32_t)dt, mev.GetByte2());
+
+                case C_BALANCE:
+                    return InsertSetChanPan(trkid, (uint32_t)dt, mev.GetByte2());
+
+                case C_PAN:
+                    return InsertSetTrkPan(trkid, (uint32_t)dt, mev.GetByte2());
+
+                case C_EXPRESSION:
+                    return InsertSetExpression(trkid, (uint32_t)dt, mev.GetByte2());
+
+                case C_MAIN_VOLUME:
+                    return InsertSetTrkVol(trkid, (uint32_t)dt, mev.GetByte2());
+
+                case eMidiCC::C_SoundReleaseTime: //0x48, // Sound Controller 3, default: Release Time
+                    return InsertDSEEvent(trkid, (uint32_t)dt, eTrkEventCodes::SetEnvRelease, { mev.GetByte2() });
+
+                case eMidiCC::C_SoundAttackTime: //0x49, // Sound Controller 4, default: Attack Time
+                    return InsertDSEEvent(trkid, (uint32_t)dt, eTrkEventCodes::SetEnvAtkTime, { mev.GetByte2() });
+
+                case C_CELESTE_DEPTH:
+                case C_MODULATION:
+                case C_BREATH:
+                case C_FOOT:
+                case C_PORTA_TIME:
+                case C_GENERAL_1:
+                case C_GENERAL_2:
+                case C_GENERAL_3:
+                case C_GENERAL_4:
+                case C_DAMPER:
+                case C_PORTA:
+                case C_SOSTENUTO:
+                case C_SOFT_PEDAL:
+                case 0x44://              0x44   Legato Footswitch
+                case C_HOLD_2:
+                case 0x46: //0x46, // Sound Controller 1, default: Sound Variation
+                case 0x47: //0x47, // Sound Controller 2, default: Timbre/Harmonic Intens.
+                case 0x4A: //0x4A, // Sound Controller 5, default: Brightness
+                case 0x4B: // Sound Controller 6, default: Decay Time
+                case 0x4C: // Sound Controller 7, default: Vibrato Rate
+                case 0x4D: // Sound Controller 8, default: Vibrato Depth
+                case 0x4E: // Sound Controller 9, default: Vibrato Delay
+                case 0x4F: // Sound Controller 10, default undefined
+                case C_GENERAL_5:
+                case C_GENERAL_6:
+                case C_GENERAL_7:
+                case C_GENERAL_8:
+                case 0x54://            0x54  Portamento Control
+                case C_EFFECT_DEPTH:
+                case C_TREMOLO_DEPTH:
+                case C_CHORUS_DEPTH:
+                case C_PHASER_DEPTH:
+                case C_DATA_ENTRY:
+                case C_DATA_INC:
+                case C_DATA_DEC:
+                case C_NONRPN_LSB:
+                case C_NONRPN_MSB:
+                case C_RPN_LSB:
+                case C_RPN_MSB:
+                case C_ALL_SOUNDS_OFF:
+                case C_RESET:
+                case C_LOCAL:
+                case C_ALL_NOTES_OFF:
+                case C_OMNI_OFF:
+                case C_OMNI_ON:
+                case C_MONO:
+                case C_POLY:
+                default:
+                    clog << "Unsupported midi controller CC" << static_cast<unsigned int>(mev.GetController()) << ", Value: " << static_cast<unsigned int>(mev.GetByte1()) << "!";
+                    break;
+                };
+            }
+            catch (...)
+            {
+                throw_with_nested(std::runtime_error("Error processing HandleControlChanges()."));
+            }
+            return 0;
         }
 
-        void HandlePanChanges(const jdksmidi::MIDITimedBigMessage& mev, TrkState& state, MusicTrack& trk)
+        uint32_t HandlePitchBend(const jdksmidi::MIDITimedBigMessage& mev, size_t trkid, ticks_t evtime)
         {
-            InsertDSEEvent(trk, eTrkEventCodes::SetChanPan, mev.GetByte2());
-            state.trkpan_ = mev.GetByte2();
+            TrkState& state = m_dsetrkstates[trkid];
+            MIDIClockTime tm = (evtime - state.ticks_);
+            return InsertSetPitchBend(trkid, (uint32_t)tm, mev.GetBenderValue());
         }
 
-        void HandlePitchBend(const jdksmidi::MIDITimedBigMessage& mev,
-            TrkState& state,
-            MusicTrack& trk)
+        uint32_t HandleProgramChange(const jdksmidi::MIDITimedBigMessage& mev, size_t trkid, ticks_t evtime)
         {
-            InsertDSEEvent(trk, eTrkEventCodes::SetPitchBend, mev.GetBenderValue());
-        }
-
-        void HandleProgramChange(const jdksmidi::MIDITimedBigMessage& mev,
-            TrkState& state,
-            MusicTrack& trk)
-        {
-            InsertDSEEvent(trk, eTrkEventCodes::SetProgram, mev.GetPGValue());
-        }
-
-        void HandleLoopPoint(const jdksmidi::MIDITimedBigMessage& mev, ticks_t& globalticks)
-        {
-            const unsigned char chan = mev.GetChannel();
-            DSE::MusicTrack& trk = m_dsetracks[chan];
-            TrkState& state = m_dsetrkstates[chan];
-            InsertDSEEvent(trk, eTrkEventCodes::LoopPointSet);
-            state.looppoint_ = trk.size();
+            TrkState& state = m_dsetrkstates[trkid];
+            MIDIClockTime tm = (evtime - state.ticks_);
+            return InsertSetProgram(trkid, (uint32_t)tm, mev.GetPGValue());
         }
 
     private:
 
-        static void InsertDSEEvent(MusicTrack& trk, DSE::eTrkEventCodes evcode, std::vector<uint8_t>&& params)
+
+        inline uint32_t InsertAddTrkPan(size_t trackid, uint32_t delta_time, uint8_t addpan)
         {
-            DSE::TrkEvent dsev;
-            dsev.evcode = static_cast<uint8_t>(evcode);
-            dsev.params = std::move(params);
-            trk.push_back(std::move(dsev));
+            m_dsetrkstates[trackid].trkpan_ += addpan;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::AddTrkPan, { addpan });
         }
 
-        static void InsertDSEEvent(MusicTrack& trk, DSE::eTrkEventCodes evcode, uint8_t param)
+        inline uint32_t InsertSetTrkPan(size_t trackid, uint32_t delta_time, uint8_t newpan)
         {
-            DSE::TrkEvent dsev;
-            dsev.evcode = static_cast<uint8_t>(evcode);
-            dsev.params.push_back(param);
-            trk.push_back(std::move(dsev));
+            if (m_dsetrkstates[trackid].trkpan_ == newpan)
+                return 0;
+            m_dsetrkstates[trackid].trkpan_ = newpan;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetTrkPan, { newpan });
         }
 
-        static void InsertDSEEvent(MusicTrack& trk, DSE::eTrkEventCodes evcode)
+        inline uint32_t InsertSetChanPan(size_t trackid, uint32_t delta_time, uint8_t newpan)
         {
-            DSE::TrkEvent dsev;
-            dsev.evcode = static_cast<uint8_t>(evcode);
-            trk.push_back(std::move(dsev));
+            if (m_dsetrkstates[trackid].chpan_ == newpan)
+                return 0;
+            m_dsetrkstates[trackid].trkpan_ = newpan;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetChanPan, { newpan });
         }
 
-        void InsertSetOctaveEvent(MusicTrack& trk, TrkState& state, uint8_t newoctave)
+        // -- Vol --
+        inline uint32_t InsertAddTrkVol(size_t trackid, uint32_t delta_time, uint8_t addvol)
         {
-            InsertDSEEvent(trk, DSE::eTrkEventCodes::SetOctave, { newoctave });
-            state.octave_ = newoctave;
+            m_dsetrkstates[trackid].trkvol_ += addvol;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::AddTrkVol, { addvol });
+        }
+
+        inline uint32_t InsertSetTrkVol(size_t trackid, uint32_t delta_time, uint8_t newvol)
+        {
+            if (m_dsetrkstates[trackid].trkvol_ == newvol)
+                return 0;
+            m_dsetrkstates[trackid].trkvol_ = newvol;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetTrkVol, { newvol });
+        }
+
+        inline uint32_t InsertSetChanVol(size_t trackid, uint32_t delta_time, uint8_t newvol)
+        {
+            if (m_dsetrkstates[trackid].chvol_ == newvol)
+                return 0;
+            m_dsetrkstates[trackid].chvol_ = newvol;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetChanVol, { newvol });
+        }
+
+        inline uint32_t InsertSetExpression(size_t trackid, uint32_t delta_time, uint8_t newvol)
+        {
+            if (m_dsetrkstates[trackid].expr_ == newvol)
+                return 0;
+            m_dsetrkstates[trackid].expr_ = newvol;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetExpress, { newvol });
+        }
+
+        // -- Prgm --
+        inline uint32_t InsertSetProgram(size_t trackid, uint32_t delta_time, uint8_t prgm)
+        {
+            if (m_dsetrkstates[trackid].curprgm_ == prgm)
+                return 0;
+            m_dsetrkstates[trackid].curprgm_ = prgm;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetProgram, { prgm });
+        }
+
+        inline uint32_t InsertSetBank(size_t trackid, uint32_t delta_time, uint16_t bank)
+        {
+            if (m_dsetrkstates[trackid].curbank_ == bank)
+                return 0;
+            m_dsetrkstates[trackid].curbank_ = bank;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetBank, { (uint8_t)bank, (uint8_t)(bank >> 8) });
+        }
+
+        inline uint32_t InsertSetBankLow(size_t trackid, uint32_t delta_time, uint8_t banklow)
+        {
+            if ((m_dsetrkstates[trackid].curbank_ & 0x00FF) == banklow)
+                return 0;
+            m_dsetrkstates[trackid].curbank_ = (m_dsetrkstates[trackid].curbank_ & 0xFF00) | banklow;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetBankLowByte, { banklow });
+        }
+        
+        inline uint32_t InsertSetBankHigh(size_t trackid, uint32_t delta_time, uint8_t bankhigh)
+        {
+            if (((m_dsetrkstates[trackid].curbank_ & 0xFF00) >> 8) == bankhigh)
+                return 0;
+            m_dsetrkstates[trackid].curbank_ = (m_dsetrkstates[trackid].curbank_ & 0x00FF) | ((uint16_t)bankhigh << 8);
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetBankHighByte, { bankhigh });
+        }
+
+        inline uint32_t InsertSetOctave(size_t trackid, uint32_t delta_time, uint8_t newoctave)
+        { 
+            if (m_dsetrkstates[trackid].octave_ == newoctave)
+                return 0;
+            m_dsetrkstates[trackid].octave_ = newoctave;
+            return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetOctave, { newoctave });
+        }
+
+        inline uint32_t InsertSetTempo(MIDIClockTime absolute_time, uint8_t tempo)
+        {
+            TrkState&     state = m_dsetrkstates[0]; //Tempo is only on track 0
+            MIDIClockTime mt    = absolute_time - state.ticks_;
+            if (m_Tempo == tempo)
+                return 0; //If we already set the tempo previously don't bother putting another event
+            m_Tempo = tempo;
+
+            if (mt > numeric_limits<uint32_t>::max())
+                throw std::overflow_error("A set tempo event was set to be inserted at a time value larger than an unsigned 32 bits integer.");
+            return state .ticks_ += InsertDSEEvent(0, (uint32_t)mt, DSE::eTrkEventCodes::SetTempo, {tempo});
+        }
+
+        inline uint32_t InsertSetPitchBend(size_t trackid, uint32_t delta_time, int16_t bend)
+        {
+            if (m_dsetrkstates[trackid].pitchbend_ == bend)
+                return 0;
+            m_dsetrkstates[trackid].pitchbend_ = bend;
+            return InsertDSEEvent(0, delta_time, DSE::eTrkEventCodes::SetPitchBend, { (uint8_t)bend, (uint8_t)(bend >> 8) });
+        }
+
+        inline uint32_t InsertSetPitchBendRange(size_t trackid, uint32_t delta_time, uint8_t bendrng)
+        {
+            if (m_dsetrkstates[trackid].bendrng_ == bendrng)
+                return 0;
+            m_dsetrkstates[trackid].bendrng_ = bendrng;
+            return InsertDSEEvent(0, delta_time, DSE::eTrkEventCodes::SetPitchBendRng, { bendrng });
+        }
+
+        inline void InsertLoopPoint(MIDIClockTime absolute_time)
+        {
+            for (size_t cnttrk = 0; cnttrk < m_dsetracks.size(); ++cnttrk)
+            {
+                TrkState& state = m_dsetrkstates[cnttrk];
+                MIDIClockTime mt = absolute_time - state.ticks_;
+                if (mt > numeric_limits<uint32_t>::max())
+                    throw std::overflow_error("A loop point event was set to be inserted at a time value larger than an unsigned 32 bits integer.");
+                state.ticks_ += InsertDSEEvent(cnttrk, (uint32_t)mt, DSE::eTrkEventCodes::LoopPointSet);
+                state.looppoint_ = state.ticks_;
+            }
+        }
+
+        inline void InsertEndOfTrack(MIDIClockTime absolute_time)
+        {
+            for (size_t cnttrk = 0; cnttrk < m_dsetracks.size(); ++cnttrk)
+            {
+                TrkState& state = m_dsetrkstates[cnttrk];
+                MIDIClockTime mt = absolute_time - state.ticks_;
+                if (mt > numeric_limits<uint32_t>::max())
+                    throw std::overflow_error("A end of track event was set to be inserted at a time value larger than an unsigned 32 bits integer.");
+                state.ticks_ += InsertDSEEvent(cnttrk, (uint32_t)mt, DSE::eTrkEventCodes::EndOfTrack);
+            }
         }
 
     private:
+
+        //Returns the smallest amount of bytes needed to hole the given note hold duration
+        inline unsigned int GetSmallestHoldBytes(uint32_t value)
+        {
+            return (value <= numeric_limits<uint8_t>::max())? 1 : ((value <= numeric_limits<uint16_t>::max())? 2 : ((value <= int24max)? 3 : 4));
+        }
+
+        //Insert a play note event. Automatically handle octave and pauses
+        uint32_t InsertNoteEvent(size_t trackid, uint32_t delta_time, midinote_t note, int8_t velocity = 127, uint32_t hold_time = 0)
+        {
+            try
+            {
+                MusicTrack& trk = m_dsetracks[trackid];
+                TrkState& state = m_dsetrkstates[trackid];
+                std::vector<uint8_t> params(1);
+                uint32_t evduration = 0; //Keep track of any pause events we may insert
+
+                //Get Octave Diff
+                uint8_t newoctave = (note / 12);
+                uint8_t noteid = (note % 12);
+                int     octavediff = (int)newoctave - (int)state.octave_;
+
+                //For large differences insert a separate event
+                if ((octavediff >= 2) || (octavediff < -2))
+                {
+                    evduration += InsertSetOctave(trackid, delta_time, newoctave);
+                    octavediff = NoteEvOctaveShiftRange; //0 octave change is 2
+                }
+                else if ((octavediff < 2) && (octavediff >= -2))
+                    octavediff = (octavediff + NoteEvOctaveShiftRange) & 3; //0 octave change is 2
+
+                //Clamp and determine hold time
+                hold_time = std::clamp(hold_time, (unsigned int)0, (unsigned int)int24max);
+                if (hold_time == state.lasthold_)
+                    hold_time = 0;               //Don't put a hold time if it's the same as the last time
+                else if (hold_time != 0)
+                    state.lasthold_ = hold_time; //In this case we're putting a hold time. Just ignore if it's 0.
+
+                //Calc hold bytes
+                uint8_t nbholdbytes = (hold_time > 0) ? GetSmallestHoldBytes(hold_time) : 0;
+
+                //Calculate the first parameter byte
+                params[0] = ((nbholdbytes & 3) << 6) | ((uint8_t)(octavediff & 3) << 4) | (noteid & NoteEvParam1NoteMask); //hold byte length is set up later
+
+                //Insert the hold duration bytes if applicable
+                for (size_t cnt = 0; cnt < nbholdbytes; ++cnt)
+                    params.push_back((uint8_t)(hold_time >> ((nbholdbytes - 1) - cnt))); //Slap in all the hold bytes in big endian order
+
+                //Add the event
+                return evduration += InsertDSEEvent(trackid, (delta_time - evduration), (eTrkEventCodes)(velocity & 0x7F), std::move(params));
+            }
+            catch (...)
+            {
+                throw_with_nested(std::runtime_error("Error while inserting note event"));
+            }
+        }
+
+        //Insert a track event at the time position specified and inserts pauses as needed
+        uint32_t InsertDSEEvent(size_t trackid, uint32_t delta_time, DSE::eTrkEventCodes evcode, std::vector<uint8_t>&& params = {})
+        {
+            MusicTrack& trk = m_dsetracks[trackid];
+            TrkState& state = m_dsetrkstates[trackid];
+            uint32_t    evduration = GetEventDuration(state.lastpause_, evcode, params); //Most events don't have a duration
+
+            assert(state.ticks_ <= (state.ticks_ + delta_time));
+            assert((delta_time - evduration) >= 0);
+            if (delta_time > 0)
+                evduration += InsertPause(trackid, delta_time - evduration);
+
+            trk.push_back(DSE::TrkEvent{ static_cast<uint8_t>(evcode), std::move(params) });
+            return evduration;
+        }
+
+        //For a given time interval, insert the appropriate pause event
+        uint32_t InsertPause(size_t trackid, uint32_t duration)
+        {
+            MusicTrack& trk   = m_dsetracks[trackid];
+            TrkState&   state = m_dsetrkstates[trackid];
+
+            //First try somthing simple
+            if (state.lastpause_ > 0 && duration == state.lastpause_)
+            {
+                trk.push_back(DSE::TrkEvent{ (uint8_t)eTrkEventCodes::RepeatLastPause });
+                return state.lastpause_;
+            }
+            else if ((duration <= (uint32_t)eTrkDelays::_half))
+            {
+                auto itfound = TicksToTrkDelayID.find(duration);
+                if (itfound != TicksToTrkDelayID.end())
+                {
+                    trk.push_back(DSE::TrkEvent{ (uint8_t)itfound->second });
+                    return state.lastpause_ = duration; //Delays also count as pauses
+                }
+            }
+            
+            //Check if we're in range for pausing 
+            uint32_t diff_last = (uint32_t)std::abs((long long)duration - state.lastpause_);
+            if (diff_last < std::numeric_limits<uint8_t>::max())
+            {
+                trk.push_back(DSE::TrkEvent{ (uint8_t)eTrkEventCodes::AddToLastPause, { (uint8_t)diff_last } });
+                return state.lastpause_ = duration;
+            }
+
+            //Otherwise we have to go with a full blown pause event
+            if (duration <= std::numeric_limits<uint8_t>::max())
+            {
+                trk.push_back(DSE::TrkEvent{ (uint8_t)eTrkEventCodes::Pause8Bits, { (uint8_t)duration } });
+                return state.lastpause_ = duration;
+            }
+            else if (duration <= std::numeric_limits<uint16_t>::max())
+            {
+                trk.push_back(DSE::TrkEvent{ (uint8_t)eTrkEventCodes::Pause16Bits, { (uint8_t)duration, (uint8_t)(duration >> 8) } });
+                return state.lastpause_ = duration;
+            }
+            else if (duration <= std::numeric_limits<uint16_t>::max() + std::numeric_limits<uint8_t>::max()) //24bits
+            {
+                trk.push_back(DSE::TrkEvent{ (uint8_t)eTrkEventCodes::Pause16Bits, { (uint8_t)duration, (uint8_t)(duration >> 8), (uint8_t)(duration >> 16) } });
+                return state.lastpause_ = duration;
+            }
+            
+            //If we still can't fit the pause duration into a single pause event, use several.
+            uint32_t durleft = duration;
+            while (durleft > 0)
+                durleft -= InsertPause(trackid, durleft);
+            return duration; //Return the initial duration so it all gets added to the track's tick counter
+        }
+
+        //Tell the ticks an event will increase the tick counter by
+        uint32_t GetEventDuration(uint32_t lastpause, eTrkEventCodes ev, const std::vector<uint8_t>& args)
+        {
+            if (ev <= eTrkEventCodes::NoteOnEnd || ev > eTrkEventCodes::PauseUntilRel)
+                return 0; //Anything but delay or pause events have a duration of 0
+
+            if (ev <= eTrkEventCodes::Delay_64N && ev > eTrkEventCodes::NoteOnEnd)
+                return (uint32_t)TrkDelayCodeVals.at((uint8_t)ev); //Fixed delays
+
+            if (ev == eTrkEventCodes::RepeatLastPause)
+                return lastpause;
+
+            assert(args.size() >= 1);
+            //Next for a given kind of pause return the duration
+            switch (ev)
+            {
+            case eTrkEventCodes::AddToLastPause:
+                {
+                    return lastpause + args.front();
+                }
+            case eTrkEventCodes::Pause16Bits:
+                {
+                    assert(args.size() == 2);
+                    return (uint16_t)(args[1] << 8 | args[0]);
+                }
+            case eTrkEventCodes::Pause24Bits:
+                {
+                    assert(args.size() == 3);
+                    return (uint32_t)(args[2] << 16 | args[1] << 8 | args[0]);
+                }
+            }
+            //Pause until release, and 8bits pause
+            return args.front();
+        }
+
+    private:
+        static const size_t int24max = numeric_limits<uint8_t>::max() + numeric_limits<uint16_t>::max();
 
         bool isAccurateTime()const
         {
@@ -752,8 +919,13 @@ namespace DSE
         }
 
     private:
-        const string m_srcpath;
-        bool         m_bIsAccurateTime;
+        const string                    m_srcpath;
+        bool                            m_bIsAccurateTime;
+        MusicSequence                   m_seqOut;
+        std::unique_ptr<MIDIMultiTrack> m_miditrks;
+        std::map<uint8_t, MusicTrack>   m_dsetracks;
+        std::map<uint8_t, TrkState>     m_dsetrkstates;
+        uint8_t                         m_Tempo;
     };
 
 //======================================================================================
