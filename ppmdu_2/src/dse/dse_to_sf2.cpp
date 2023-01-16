@@ -264,7 +264,6 @@ namespace DSE
         AddSampleToSoundfont
     ***************************************************************************************/
 
-
     [[deprecated]]
     void AddSampleToSoundfont(sampleid_t cntsmslot, std::shared_ptr<DSE::SampleBank>& samples, std::map<uint16_t, size_t>& swdsmplofftosf, sf2::SoundFont& sf)
     {
@@ -366,7 +365,7 @@ namespace DSE
                 if (utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn())
                     clog << "\tLFO" << cntlfo << " : Target: ";
 
-                if (lfo.dest == static_cast<uint8_t>(LFOTblEntry::eLFODest::Pitch)) //Pitch
+                if (lfo.dest == static_cast<std::underlying_type_t<eLFODest>>(eLFODest::Pitch)) //Pitch
                 {
                     //The effect on the pitch can be handled this way
                     global.AddGenerator(eSFGen::freqVibLFO, DSE_LFOFrequencyToCents(lfo.depth/*lfo.rate*//*/50*/)); //Frequency
@@ -376,7 +375,7 @@ namespace DSE
                     if (utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn())
                         clog << "(1)pitch";
                 }
-                else if (lfo.dest == static_cast<uint8_t>(LFOTblEntry::eLFODest::Volume)) //Volume
+                else if (lfo.dest == static_cast<std::underlying_type_t<eLFODest>>(eLFODest::Volume)) //Volume
                 {
                     //The effect on the pitch can be handled this way
                     global.AddGenerator(eSFGen::freqModLFO, DSE_LFOFrequencyToCents(lfo.rate/*lfo.rate*//*/50*/)); //Frequency
@@ -386,7 +385,7 @@ namespace DSE
                     if (utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn())
                         clog << "(2)volume";
                 }
-                else if (lfo.dest == static_cast<uint8_t>(LFOTblEntry::eLFODest::Pan)) //Pan
+                else if (lfo.dest == static_cast<std::underlying_type_t<eLFODest>>(eLFODest::Pan)) //Pan
                 {
                     //Leave the data for the MIDI exporter, so maybe it can do something about it..
                     convinf.extrafx.push_back(
@@ -398,7 +397,7 @@ namespace DSE
                     if (utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn())
                         clog << "(3)pan";
                 }
-                else if (lfo.dest == static_cast<uint8_t>(LFOTblEntry::eLFODest::UNK_4))
+                else if (lfo.dest == static_cast<std::underlying_type_t<eLFODest>>(eLFODest::UNK_4))
                 {
                     //Unknown LFO target
                     if (utils::LibWide().isLogOn() && utils::LibWide().isVerboseOn())
