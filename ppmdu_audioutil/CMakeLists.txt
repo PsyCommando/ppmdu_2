@@ -103,6 +103,7 @@ list(APPEND audioutil_SRC
     "../ppmdu_2/src/utils/gfileio.cpp"
     "../ppmdu_2/src/utils/gfileutil.cpp"
     "../ppmdu_2/src/utils/library_wide.cpp"
+    "../ppmdu_2/src/utils/midi_helpers.cpp"
     "../ppmdu_2/src/utils/multiple_task_handler.cpp"
     "../ppmdu_2/src/utils/multithread_logger.cpp"
     "../ppmdu_2/src/utils/parallel_tasks.cpp"
