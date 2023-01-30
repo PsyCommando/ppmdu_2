@@ -96,6 +96,15 @@ namespace DSE
         int8_t                 chpan_  = 0; //Channel pan (balance?)
         int8_t                 expr_   = 0; //Track expression volume
 
+        //Current instrument's envelope
+        int8_t                 env_atklvl_ = 0;
+        int8_t                 env_atk_    = 0;
+        int8_t                 env_hold_   = 0;
+        int8_t                 env_dec_    = 0;
+        int8_t                 env_suslvl_ = std::numeric_limits<int8_t>::max();
+        int8_t                 env_fade_   = 0;
+        int8_t                 env_rel_    = 0;
+
         int16_t                pitchbend_ = 0;
         uint8_t                bendrng_   = 0;
         int16_t                ftune_     = 0x2000; //A440 tuning
