@@ -945,8 +945,8 @@ namespace DSE
         }
 
         MusicSequence mseq = seq ? std::move(seq.value()) : MusicSequence();
-        Poco::Path inxml = Poco::Path(inmidi).setExtension("xml");
-        inxml.setBaseName(inxml.getBaseName() + "_seq");
+        Poco::Path inxml = Poco::Path(inmidi).setExtension(XML_FILE_EXT);
+        inxml.setBaseName(inxml.getBaseName() + SEQUENCE_XML_SUFFIX);
         
         //Grab the xml file if its there, so we can properly fill our meta data
         if (Poco::File(inxml).exists())

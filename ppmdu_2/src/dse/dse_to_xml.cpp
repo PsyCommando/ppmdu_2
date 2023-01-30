@@ -14,6 +14,8 @@ using namespace pugixmlutils;
 
 namespace DSE
 {
+    const std::string XML_FILE_EXT = "xml";
+
     namespace XmlConstants 
     {
         const std::string ROOT_DSEInfo           = "DSE"s;
@@ -159,7 +161,7 @@ namespace DSE
     {
         const std::string NODE_Sequences = "Sequences"s;
         const std::string NODE_Sequence  = "Sequence"s;
-        const std::string NODE_SeqInfo = "Info"s;
+        const std::string NODE_SeqInfo   = "Info"s;
     };
 
     void seqinfo_table::WriteXml(pugi::xml_node seqnode)const
@@ -234,12 +236,11 @@ namespace DSE
         }
         else
         {
+            seqinfo_table tbl{};
             xml_node seq = (parent.name() == NODE_Sequence) ? parent : parent.child(NODE_Sequence.c_str());
-            if (!seq)
-                throw std::runtime_error("No sequence node found!");
-            seqinfo_table tbl;
-            tbl.ParseXml(seq);
-            sequences.push_back(std::move(tbl));
+            if (seq)
+                tbl.ParseXml(seq);
+            sequences.push_back(std::move(tbl)); //Push the default one if we didn't find a node.
         }
 
     }

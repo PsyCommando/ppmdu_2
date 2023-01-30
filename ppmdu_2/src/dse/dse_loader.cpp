@@ -6,6 +6,7 @@
 #include <dse/bgm_blob.hpp>
 #include <dse/bgm_container.hpp>
 #include <dse/dse_to_sf2.hpp>
+#include <dse/dse_to_xml.hpp>
 
 #include <dse/fmts/swdl.hpp>
 #include <dse/fmts/smdl.hpp>
@@ -13,6 +14,7 @@
 
 #include <ext_fmts/sf2.hpp>
 #include <ext_fmts/adpcm.hpp>
+#include <ext_fmts/midi_fmtrule.hpp>
 
 #include <utils/audio_utilities.hpp>
 
@@ -334,7 +336,7 @@ namespace DSE
                 const MusicSequence& seq = entry.second;
                 Poco::Path fpath(destdirpath);
                 fpath.append(std::to_string(seq.metadata().origloadorder) + "_" + seq.metadata().fname).makeFile().setExtension("xml");
-                fpath.setBaseName(fpath.getBaseName() + "_seq");
+                fpath.setBaseName(fpath.getBaseName() + SEQUENCE_XML_SUFFIX);
                 const std::string curpath  = fpath.toString();
                 const std::string curfname = fpath.getBaseName();
 
@@ -499,6 +501,48 @@ namespace DSE
 
         //Import
 
+        //Import a file without knowing what type it is in advance
+        void ImportAFile(const std::string& pathfile)
+        {
+            const Poco::Path  myfile = pathfile;
+            ImportAFile(myfile);
+        }
+
+        //Import a file without knowing what type it is in advance
+        void ImportAFile(const Poco::Path& pathfile)
+        {
+            const std::string transcoded = Poco::Path::transcode(pathfile.absolute().toString());
+            if (!pathfile.isFile())
+                throw std::runtime_error("Tried to import directory \""s + transcoded + "\" as a file!");
+
+            std::string ext = pathfile.getExtension();
+            std::transform( ext.begin(), ext.end(), ext.begin(), std::bind(std::tolower<char>, std::placeholders::_1, std::locale::classic()) );
+
+            //Tell if its a set of sequence or a bank
+            if (ext == XML_FILE_EXT)
+            {
+                if (IsXMLPresetBank(transcoded))
+                    ImportBank(transcoded);
+                else if (IsXMLMusicSequenceInfoOnly(transcoded))
+                {
+                    //Try to grab the associated midi file
+                    Poco::Path        midpath = transcoded;
+                    const std::string basename = midpath.getBaseName();
+                    const size_t      splitter = basename.find_first_of(SEQUENCE_XML_SPLITTER_CHAR);
+                    midpath.setBaseName(midpath.getBaseName().substr(0, splitter));
+                    ImportMusicSeq(midpath.toString());
+                }
+                else if (IsXMLMusicSequence(transcoded))
+                    ImportMusicSeq(transcoded);
+                else
+                    throw std::runtime_error("Tried to import to DSE a XML file \""s  + transcoded + "\" with unrecognized format!");
+            }
+            else if (ext == audio::MIDI_FILE_EXT)
+                ImportMusicSeq(transcoded);
+            else
+                throw std::runtime_error("Tried to import to DSE unknown file type \""s + ext +"\"!");
+        }
+
         void ImportDirectory(const std::string& pathdir)
         {
             Poco::DirectoryIterator itdir(pathdir);
@@ -507,30 +551,20 @@ namespace DSE
             cout << "Scanning directory \"" << pathdir << "\"...\n";
             try
             {
+                //Count the files we're processing for the progress indicator
                 size_t filecount = 0;
                 for (; itdir != itend; ++itdir, ++filecount);
                 itdir = Poco::DirectoryIterator(pathdir);
 
+                //Actually process the files
                 size_t cnt = 0;
                 for (; itdir != itend; ++itdir)
                 {
-                    const std::string fpath = Poco::Path::transcode(itdir.path().absolute().toString());
-                    if (itdir->isFile())
-                    {
-
-                        //Tell if its a set of sequence or a bank
-                        if (itdir.path().getExtension() == "xml")
-                        {
-                            if(IsXMLPresetBank(fpath))
-                                ImportBank(fpath);
-                            else if (IsXMLMusicSequence(fpath))
-                                ImportMusicSeq(fpath);
-                        }
-                        else if (itdir.path().getExtension() == "mid")
-                            ImportMusicSeq(fpath);
-                    }
-                    else if (itdir->isDirectory() && IsSESequenceXmlDir(fpath))
-                        ImportSoundEffectSeq(fpath);
+                    const std::string transcoded = Poco::Path::transcode(itdir.path().absolute().toString());
+                    if (itdir->isDirectory() && IsSESequenceXmlDir(transcoded))
+                        ImportSoundEffectSeq(transcoded);
+                    else if(itdir->isFile())
+                        ImportAFile(itdir.path());
 
                     ++cnt;
                     const std::string& fname = itdir.name();
@@ -540,7 +574,7 @@ namespace DSE
             }
             catch (...)
             {
-                std::throw_with_nested(std::runtime_error("Error importing file " + Poco::Path::transcode(itdir.path().toString())));
+                std::throw_with_nested(std::runtime_error("Error importing file "s + Poco::Path::transcode(itdir.path().toString())));
             }
         }
 
@@ -555,11 +589,14 @@ namespace DSE
 
         DSE::MusicSequence& ImportMusicSeq(const std::string& midipath)
         {
-            Poco::Path fpath = midipath;
+            Poco::Path         fpath = midipath;
+            std::string        fext  = fpath.getExtension();
             DSE::MusicSequence seq;
-            if (fpath.getExtension() == "mid")
+            std::transform( fext.begin(), fext.end(), fext.begin(), std::bind(std::tolower<char>, std::placeholders::_1, std::locale::classic()) );
+
+            if (fext == audio::MIDI_FILE_EXT)
                 seq = MidiToSequence(midipath);
-            else if (fpath.getExtension() == "xml")
+            else if (fext == XML_FILE_EXT)
                 seq = XMLToMusicSequence(midipath);
             else
                 throw std::runtime_error("Unknown file type!");
@@ -570,7 +607,7 @@ namespace DSE
         {
             DSE::SoundEffectSequences seq;
             if (!IsSESequenceXmlDir(seqdir))
-                throw runtime_error("The \"" + seqdir + "\" directory is missing the required xml files to assemble a sound effect set from.");
+                throw runtime_error("The \""s + seqdir + "\" directory is missing the required xml files to assemble a sound effect set from.");
 
             assert(false);
 
@@ -765,6 +802,11 @@ namespace DSE
     void DSELoader::ImportDirectory(const std::string& pathdir)
     {
         m_pimpl->ImportDirectory(pathdir);
+    }
+
+    void DSELoader::ImportAFile(const std::string& pathfile)
+    {
+        m_pimpl->ImportAFile(pathfile);
     }
 
 };

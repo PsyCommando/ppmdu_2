@@ -19,7 +19,10 @@ using namespace pugixmlutils;
 
 namespace DSE
 {
-    namespace MusicSeqXML
+    const char        SEQUENCE_XML_SPLITTER_CHAR = '_'; //Character used to split the filename of the sequence xml file
+    const std::string SEQUENCE_XML_SUFFIX        = std::string({ SEQUENCE_XML_SPLITTER_CHAR }) + "seq";
+
+    namespace MusicSeqXml
     {
         const std::string NODE_Sequence = "Sequence";
         const std::string NODE_Track    = "Track";
@@ -80,25 +83,19 @@ namespace DSE
     public:
         DSE::MusicSequence operator()(const std::string& filepath)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             m_seq = MusicSequence();
             xml_document     doc;
-            xml_parse_result parseres;
             DSE_MetaDataSMDL meta;
             try
             {
-                if (!(parseres = doc.load_file(filepath.c_str())))
-                {
-                    stringstream sstr;
-                    sstr << "Can't load XML document, Pugixml returned an error : \"" << parseres.description() << "\"";
-                    throw std::runtime_error(sstr.str());
-                }
+                HandleParsingError( doc.load_file(filepath.c_str()), filepath );
                 ParseDSEXmlNode(doc, &meta);
                 m_seq.setMetadata(meta);
 
                 xml_node seqnode = doc.child(NODE_Sequence.c_str());
                 if(!seqnode)
-                    throw std::runtime_error("Missing sequence node!");
+                    throw std::runtime_error("Missing <Sequence> node!");
 
                 std::vector<seqinfo_table> sinfo;
                 ParseSequenceInfo(seqnode, sinfo);
@@ -126,7 +123,7 @@ namespace DSE
 
         MusicTrack ParseTrack(xml_node trk, size_t trkcnt)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             MusicTrack mtrk;
             try
             {
@@ -161,7 +158,7 @@ namespace DSE
 
         TrkEvent ParseDelay(xml_node ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             TrkEvent      outev;
             xml_attribute adur = ev.attribute(ATTR_Duration.c_str());
             if (!adur)
@@ -176,7 +173,7 @@ namespace DSE
 
         TrkEvent ParseNote(xml_node ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             TrkEvent outev;
             xml_attribute avelocity = ev.attribute(ATTR_Velocity.c_str());
             xml_attribute anote     = ev.attribute(ATTR_Note.c_str());
@@ -192,54 +189,54 @@ namespace DSE
             uint8_t noteparam0 = 0;
 
             //Duration
-            const uint32_t duration = aduration.as_uint();
-            uint8_t  nbdurationbytes = 0;
+            const uint32_t duration        = aduration.as_uint();
+            uint8_t        nbdurationbytes = 0;
             if (duration > 0)
             {
-                if (duration <= 0xFFui8)
+                if (duration <= numeric_limits<uint8_t>::max())
                     nbdurationbytes = 1;
-                else if (duration <= 0xFFFFui16)
+                else if (duration <= numeric_limits<uint16_t>::max())
                     nbdurationbytes = 2;
                 else
                     nbdurationbytes = 3;
-                noteparam0 |= (nbdurationbytes & 0x3) << 6;
+                noteparam0 |= (nbdurationbytes << 6) & NoteEvParam1NbParamsMask;
             }
 
             //Get the octave shift
             const uint8_t octaveshift = std::clamp((int8_t)aoctave.as_int(0), (int8_t)(- 2), (int8_t)1) + NoteEvOctaveShiftRange;
-            noteparam0 |= (octaveshift & 3ui8) << 4;
+            noteparam0 |= (octaveshift << 4) & NoteEvParam1PitchMask;
 
             //Get the note id
             eNote noteid = StringToNote(anote.as_string());
             if (noteid >= eNote::nbNotes) //If our id is invalid
-                noteparam0 |= (uint8_t)anote.as_uint() & 0x0F; //Confine to lower nybble. sometimes the note is a special number used in some sequences
+                noteparam0 |= (uint8_t)anote.as_uint() & NoteEvParam1NoteMask; //Confine to lower nybble. sometimes the note is a special number used in some sequences
             else
-                noteparam0 |= (uint8_t)noteid & 0x0F;
+                noteparam0 |= (uint8_t)noteid & NoteEvParam1NoteMask;
 
-            //Handle param 0
+            //Insert param 0
             outev.params.push_back(noteparam0);
 
-            //Handle optional duration bytes (Big endian)
+            //Insert optional duration bytes (Big endian)
             if (nbdurationbytes == 3)
             {
-                outev.params.push_back((duration >> 16) & 0xFFui8);
-                outev.params.push_back((duration >> 8) & 0xFFui8);
-                outev.params.push_back(duration & 0xFFui8);
+                outev.params.push_back((uint8_t)(duration >> 16));
+                outev.params.push_back((uint8_t)(duration >>  8));
+                outev.params.push_back((uint8_t)duration);
             }
             else if (nbdurationbytes == 2)
             {
-                outev.params.push_back((duration >> 8) & 0xFFui8);
-                outev.params.push_back(duration & 0xFFui8);
+                outev.params.push_back((uint8_t)(duration >> 8));
+                outev.params.push_back((uint8_t)duration);
             }
             else if(nbdurationbytes == 1)
-                outev.params.push_back(duration & 0xFFui8);
+                outev.params.push_back((uint8_t)duration);
 
             return outev;
         }
 
         TrkEvent ParseWait(xml_node ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             xml_attribute evty = ev.attribute(ATTR_Type.c_str());
             if (!evty)
                 throw std::runtime_error("Wait event with missing event type!");
@@ -249,11 +246,10 @@ namespace DSE
                 throw runtime_error("Got bad event type \"" + evname + "\"!");
 
             TrkEvent outev{ (uint8_t)code };
-            if (code == eTrkEventCodes::RepeatLastPause)
-                return outev; //No parameters
-
             switch (code)
             {
+            case eTrkEventCodes::RepeatLastPause:
+                return outev; //No parameters
             
             case eTrkEventCodes::AddToLastPause:
             case eTrkEventCodes::Pause8Bits:
@@ -266,24 +262,26 @@ namespace DSE
             {
                 const uint16_t duration = ClampUInt16(ev.attribute(ATTR_Duration.c_str()).as_uint());
                 outev.params.push_back((uint8_t)duration);
-                outev.params.push_back((uint8_t)((duration >> 8) & 0xFF));
+                outev.params.push_back((uint8_t)(duration >> 8));
                 break;
             }
             case eTrkEventCodes::Pause24Bits:
             {
                 const uint32_t duration = ev.attribute(ATTR_Duration.c_str()).as_uint();
                 outev.params.push_back((uint8_t)duration);
-                outev.params.push_back((uint8_t)((duration >> 8) & 0xFF));
-                outev.params.push_back((uint8_t)((duration >> 16) & 0xFF));
+                outev.params.push_back((uint8_t)(duration >> 8));
+                outev.params.push_back((uint8_t)(duration >> 16));
                 break;
             }
+            default:
+                throw std::runtime_error("Bad pause event!");
             };
             return outev;
         }
 
         TrkEvent ParseEvent(xml_node ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             xml_attribute evty = ev.attribute(ATTR_Type.c_str());
             if (!evty)
                 throw std::runtime_error("Event with missing event type!");
@@ -542,7 +540,7 @@ namespace DSE
 
         void operator()(const std::string& filepath)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             xml_document doc;
             WriteDSEXmlNode(doc, &m_seq.metadata());
             xml_node seqnode = AppendChildNode(doc, NODE_Sequence);
@@ -560,7 +558,7 @@ namespace DSE
     private:
         void WriteTrack(xml_node parent, size_t trkid)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             const MusicTrack&    trk = m_seq[trkid];
             WriteCommentNode(parent, "Track #"s + std::to_string(trkid));
 
@@ -575,7 +573,7 @@ namespace DSE
 
         void WriteMessage(xml_node parent, const TrkEvent& ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             const eTrkEventCodes code = static_cast<eTrkEventCodes>(ev.evcode);
 
             if (code >= eTrkEventCodes::Delay_HN && code <= eTrkEventCodes::Delay_64N)
@@ -590,7 +588,7 @@ namespace DSE
 
         void WriteDelay(xml_node parent, const TrkEvent& ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             const uint8_t code   = ev.evcode;
             xml_node      evnode = AppendChildNode(parent, NODE_Delay);
             AppendAttribute(evnode, ATTR_Duration, (unsigned int)TrkDelayCodeVals.at(code) );
@@ -598,7 +596,7 @@ namespace DSE
 
         void WriteNote(xml_node parent, const TrkEvent& ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             const uint8_t      code      = ev.evcode;
             const ev_play_note plev      = ParsePlayNote(ev);
             xml_node           evnode    = AppendChildNode(parent, NODE_Note);
@@ -613,7 +611,7 @@ namespace DSE
 
         void WriteWaitEvent(xml_node parent, const TrkEvent& ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             const eTrkEventCodes code     = static_cast<eTrkEventCodes>(ev.evcode);
             xml_node             waitnode = AppendChildNode(parent, NODE_Wait);
             auto                 evinfo   = GetEventInfo(code);
@@ -646,7 +644,7 @@ namespace DSE
 
         void WriteEvent(xml_node parent, const TrkEvent& ev)
         {
-            using namespace MusicSeqXML;
+            using namespace MusicSeqXml;
             const eTrkEventCodes code = static_cast<eTrkEventCodes>(ev.evcode);
             xml_node             evnode = AppendChildNode(parent, NODE_Event);
             auto                 evinfo = GetEventInfo(code);
@@ -831,9 +829,22 @@ namespace DSE
 
     bool IsXMLMusicSequence(const std::string& xmlfilepath)
     {
-        using namespace MusicSeqXML;
         xml_document doc;
-        doc.load_file(xmlfilepath.c_str());
-        return (doc.child(NODE_Sequence.c_str()));
+        HandleParsingError(doc.load_file(xmlfilepath.c_str()), xmlfilepath);
+        return doc.child(MusicSeqXml::NODE_Sequence.c_str()).child(MusicSeqXml::NODE_Track.c_str());
+    }
+
+    bool IsXMLMusicSequenceInfoOnly(const std::string& xmlfilepath)
+    {
+        xml_document doc;
+        HandleParsingError(doc.load_file(xmlfilepath.c_str()), xmlfilepath);
+
+        xml_node seq = doc.child(MusicSeqXml::NODE_Sequence.c_str());
+        if (seq.child(MusicSeqXml::NODE_Track.c_str()))
+            return false; //If it has track data, it's not meta-data only
+
+        //Check if we have a DSE info node, and if we have a sequence node if it contains a sequence info block
+        return (doc.child(XmlConstants::ROOT_DSEInfo.c_str())) || 
+               (seq.child(SeqInfoXml::NODE_SeqInfo.c_str()));
     }
 };

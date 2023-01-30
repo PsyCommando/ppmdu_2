@@ -78,7 +78,10 @@ namespace DSE
     ***********************************************************************************/
     struct TrkState
     {
-        uint32_t               ticks_ = 0; //The current tick count for the track
+        uint8_t                trkid_  = 0; //Id of the track in the storage class this struct is in
+        uint8_t                chanid_ = 0; //Id of the midi channel to use for events on this track 
+
+        unsigned long          ticks_ = 0; //The current tick count for the track
         uint32_t               eventno_ = 0; //Event index counter to identify a single problematic event
         uint32_t               lastpause_ = 0; //Duration of the last pause event, including fixed duration pauses.
         uint32_t               lasthold_ = 0; //Last duration a note was held
@@ -95,6 +98,8 @@ namespace DSE
 
         int16_t                pitchbend_ = 0;
         uint8_t                bendrng_   = 0;
+        int16_t                ftune_     = 0x2000; //A440 tuning
+        int8_t                 ctune_     = 0x40;   //A440 tuning
 
         size_t                 looppoint_ = 0; //The index of the envent after the loop pos
 
@@ -119,9 +124,6 @@ namespace DSE
         bool                   chanoverriden = false;     //Whether the current preset overrides the channel
         uint8_t                ovrchan_ = std::numeric_limits<uint8_t>::max(); //The channel we override to
         uint8_t                chantoreinit = std::numeric_limits<uint8_t>::max(); //If we did override a note from this track, and played it on another channel, this indicates the channel we need to refresh the current preset + bank on!
-
-
-
     };
 
 //===============================================================================

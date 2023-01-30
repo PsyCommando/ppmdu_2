@@ -14,6 +14,7 @@ Description: Contains utilities to deal with DSE event tracks. Or anything withi
 #include <functional>
 #include <iostream>
 #include <optional>
+#include <set>
 
 namespace DSE
 {
@@ -213,9 +214,8 @@ namespace DSE
 
     /// <summary>
     /// For a given amount of ticks, returns the matching track delay ID.
-    /// DEPRECATED: Prefer using the function FindClosestTrkDelayID instead.
+    /// Prefer using the function FindClosestTrkDelayID instead.
     /// </summary>
-    [[deprecated]]
     extern const std::map<uint8_t, eTrkDelays> TicksToTrkDelayID;
 
     /// <summary>

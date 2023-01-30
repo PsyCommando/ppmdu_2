@@ -190,247 +190,16 @@ namespace DSE
         DSE::SoundEffectSequences& ImportSoundEffectSeq(const std::string& seqdir);
         void                       ImportDirectory     (const std::string& pathdir); //Batch import everything contained in a directory. XML for banks, midi, SE sequences folders
 
+        /// <summary>
+        /// Import a file to DSE without knowing its type in advance.
+        /// </summary>
+        /// <param name="pathfile">The path to the file to try to import.</param>
+        void ImportAFile(const std::string& pathfile);
+
     private:
         class DSELoaderImpl;
         std::unique_ptr<DSELoaderImpl> m_pimpl;
     };
-
-
-//====================================================================================================
-//  Specialized Loaders/Exporters
-//====================================================================================================
-    /*
-        BatchAudioLoader
-            Used to load an entire set of smd+swd pairs all refering to a master bank.
-            Just like what PMD2 uses.
-
-            Can also be used to load the master bank, and then either a single or more smd+swd pairs.
-
-            From there, several operations requiring pairs of those files loaded can be done!
-    */
-    //class BatchAudioLoader
-    //{
-    //public:
-    //    typedef std::pair< DSE::MusicSequence, DSE::PresetBank > smdswdpair_t;
-    //    typedef uint16_t bankid_t;
-
-    ////-----------------------------
-    //// Construction
-    ////-----------------------------
-    //    /*
-    //        mbank     : Path to Master SWD Bank to load.
-    //        singleSF2 : If set to true, the batch loader will do its best to allocate all presets into a single SF2!
-    //    */
-    //    BatchAudioLoader(bool singleSF2 = true, bool lfofxenabled = true);
-
-    ////-----------------------------
-    //// Loading Methods
-    ////-----------------------------
-    //    /*
-    //    * load bank
-    //    */
-    //    void LoadSWDL(const std::string& path);
-    //    void LoadSWDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend);
-
-    //    /*
-    //    */
-    //    void LoadSMDL(const std::string& path);
-    //    void LoadSMDL(std::vector<uint8_t>::const_iterator itbeg, std::vector<uint8_t>::const_iterator itend);
-
-    //    /*
-    //        LoadBgmContainer
-    //            Load a single bgm container file.
-    //            Bgm containers are SWDL and SMDL pairs packed into a single file using a SIR0 container.
-    //    */
-    //    void LoadBgmContainer( const std::string & file );
-
-    //    /*
-    //        LoadBgmContainers
-    //            Load all pairs in the folder. 
-    //            Bgm containers are SWDL and SMDL pairs packed into a single file using a SIR0 container.
-
-    //            - bgmdir : The directory where the bgm containers are located at.
-    //            - ext    : The file extension the bgm container files have.
-    //    */
-    //    void LoadBgmContainers( const std::string & bgmdir, const std::string & ext );
-
-    //    /*
-    //        LoadSingleSMDLs
-    //            Loads only SMDL in the folder.
-    //    */
-    //    void LoadSingleSMDLs( const std::string & smdldir );
-
-    //    void LoadSMDL( const std::string & smdl );
-
-    //    /*Load single SWDLs*/
-    //    void LoadSingleSWDLs(const std::string& swdldir);
-
-    //    void LoadSWDL(const std::string& swdl);
-
-    //    /*Load single SEDLs*/
-    //    void LoadSingleSEDLs(const std::string& sedldir);
-
-    //    void LoadSEDL(const std::string& sedl);
-
-    ////-----------------------------
-    //    /*
-    //        Load from either a directory or single file blob files
-    //    */
-    //    void LoadSMDLSWDLSPairsFromBlob( const std::string & blob, bool matchbyname );
-
-    //    /*
-    //    */
-    //    void LoadSMDLSWDLPairsAndBankFromBlob( const std::string & blob, const std::string & bankname );
-
-    //    /*
-    //        Loads from a single blob file, no directory
-    //    */
-    //    void LoadFromBlobFile(const std::string & blob, bool matchbyname);
-
-    ////-----------------------------
-    //// Exporting Methods
-    ////-----------------------------
-    //    /*
-    //        Builds a single soundfont from the master bank's samples, and from the
-    //        individual swds from each smd+swd pairs.
-    //        Any duplicate presets are ignored if they're identical, or they're placed into
-    //        other banks for the same preset ID.
-    //    */
-    //    std::vector<DSE::SMDLPresetConversionInfo> ExportSoundfont(const std::string& destf);
-
-    //    /*
-    //        ExportSoundfontBakedSamples
-    //            Same as above, except that the samples have baked envelopes
-    //    */
-    //    std::vector<SMDLPresetConversionInfo> ExportSoundfontBakedSamples( const std::string & destf );
-
-    //    /*
-    //        ExportXMLPrograms
-    //            Export all the presets for each loaded swdl pairs! And if the sample data is present,
-    //            it will also export it!
-    //    */
-    //    void ExportXMLPrograms( const std::string & destf );
-
-    //    /*
-    //        ExportSoundfontAndMIDIs
-    //            Does the same as the "ExportSoundfont" method, but additionnaly also
-    //            exports all loaded smd as MIDIs, with the appropriate bank events to use
-    //            the correct instrument presets.
-    //    */
-    //    void ExportSoundfontAndMIDIs( const std::string & destdir, int nbloops = 0, bool bbakesamples = true, bool bmultiplesf2 = false );
-
-    //    /*
-    //        ExportSoundfontAsGM
-    //            Attempts to export as a sounfont, following the General MIDI standard instrument patch list.
-
-    //            dsetogm : A map consisting of a list of filenames associated to a vector where each indexes correspond to a
-    //                      dse preset entry ID (AKA instrument ID), and where the integer at that index correspond to the 
-    //                      GM patch number to attribute it during conversion.
-    //    */
-    //    void ExportSoundfontAsGM( const std::string & destf, const std::map< std::string, std::vector<int> > & dsetogm )const;
-
-    //    /*
-    //        ExportXMLAndMIDIs
-    //            Export all music sequences to midis and export all preset data to xml + pcm16 samples!
-    //    */
-    //    void ExportXMLAndMIDIs( const std::string & destdir, int nbloops = 0 );
-
-    //    /*
-    //        ExportMIDIs
-    //            Export only the sequences that were loaded to MIDI!
-    //    */
-    //    void ExportMIDIs( const std::string & destdir, const std::string & cvinfopath = "", int nbloops = 0 );
-
-
-    //    /*
-    //        Writes a CVInfo files from the preset data currently loaded!
-    //    */
-    //    //void WriteBlankCvInfoFile( const std::string & destf );
-
-    ////-----------------------------
-    //// State Methods
-    ////-----------------------------
-    //    bool IsMasterBankLoaded()const;
-
-    //private:
-
-
-    //    /*
-    //        GetSizeLargestPrgiChunk
-    //            Search the entire list of loaded swdl files, and pick the largest prgi chunk.
-    //            This will avoid crashing when a song has more presets than the master bank !
-    //    */
-    //    uint16_t GetSizeLargestPrgiChunk()const;
-
-    //    /*
-    //        BuildPresetConversionDB
-    //            Set to replace the above method.
-    //            Builds a table for every files, containing data on what DSE preset IDs are converted to in the soundfont.
-
-    //    */
-    //    std::vector<DSE::SMDLPresetConversionInfo> BuildPresetConversionDB()const;
-
-    //    /*
-    //        BuildMasterFromPairs
-    //            If no main bank is loaded, and the loaded pairs contain their own samples, 
-    //            build a main bank from those!
-    //    */
-    //    void BuildMasterFromPairs();
-
-    //    /*
-    //    */
-    //    void AllocPresetSingleSF2( std::vector<DSE::SMDLPresetConversionInfo> & toalloc )const;
-    //    void AllocPresetMultiSF2( std::vector<DSE::SMDLPresetConversionInfo> & toalloc )const;
-
-    //    /*
-    //    */
-    //    void HandleBakedPrg( const ProcessedPresets               & entry, 
-    //                        sf2::SoundFont                        * destsf2, 
-    //                        const std::string                     & curtrkname, 
-    //                        int                                     cntpair, 
-    //                        std::vector<SMDLPresetConversionInfo> & presetcvinf,
-    //                        int                                   & instidcnt,
-    //                        int                                   & presetidcnt,
-    //                        const DSE::KeyGroupList      & keygroups );
-
-    //    void HandleBakedPrgInst( const ProcessedPresets::PresetEntry   & entry, 
-    //                        sf2::SoundFont                        * destsf2, 
-    //                        const std::string                     & presname, 
-    //                        int                                     cntpair, 
-    //                        SMDLPresetConversionInfo::PresetConvData  & presetcvinf,
-    //                        int                                   & instidcnt,
-    //                        int                                   & presetidcnt,
-    //                        const DSE::KeyGroupList      & keygroups );
-
-    //    void HandlePrgSplitBaked( sf2::SoundFont                     * destsf2, 
-    //                              const DSE::SplitEntry              & split,
-    //                              size_t                               sf2sampleid,
-    //                              const DSE::WavInfo                 & smplinf,
-    //                              const DSE::KeyGroup                & keygroup,
-    //                              SMDLPresetConversionInfo::PresetConvData  & presetcvinf,
-    //                              sf2::Instrument                    * destinstsf2 );
-
-    //private:
-    //    std::string               m_mbankpath;
-    //    bool                      m_bSingleSF2;
-    //    bool                      m_lfoeffects; //Whether lfo effects should be processed
-
-    //    DSE::PresetBank           m_master;
-    //    std::vector<smdswdpair_t> m_pairs;
-
-    //    std::unique_ptr<DSE::audiostats> m_stats;      //Used for research mainly. Stores statistics during processing of the DSE files
-
-    //    BatchAudioLoader( const BatchAudioLoader & )           = delete;
-    //    BatchAudioLoader & operator=(const BatchAudioLoader& ) = delete;
-
-    //    //TODO:
-    //    std::vector<DSE::MusicSequence>     m_sequences;
-    //    std::map<bankid_t, DSE::PresetBank> m_banks; //Associative list of sample banks numbers and their bank. The bank number is a combination of coarse and fine bank number into a single 16 bits integer
-    //    std::vector<SoundEffectSequences>   m_sedls;
-    //};
-
-
-
 
 //====================================================================================================
 // Functions
@@ -439,9 +208,6 @@ namespace DSE
     //-------------------
     //  Sample Handling
     //-------------------
-
-
-
 
     /*
         ConvertDSESample
@@ -537,9 +303,34 @@ namespace DSE
 //=================================================================================================
 //  XML
 //=================================================================================================
+
+    /// <summary>
+    /// Returns whether the directory contains what's needed for assembling a SEDL.
+    /// </summary>
+    /// <param name="destdir"></param>
+    /// <returns>Returns true if the directory has all it needs to be imported as a SEDL, and false if something is missing, or the directory is definitely not containing the data files needed for a SEDL.</returns>
     bool IsSESequenceXmlDir(const std::string& destdir);
+
+    /// <summary>
+    /// Returns whether the xml file contains data for a swdl bank.
+    /// </summary>
+    /// <param name="xmlfilepath">The path to the xml file to be anazlysed.</param>
+    /// <returns>Returns true if the xml file contains data for a SWDL bank, false if it doesn't.</returns>
     bool IsXMLPresetBank   (const std::string& xmlfilepath);
+
+    /// <summary>
+    /// Returns whether the xml file is a full blown xml music sequence with track nodes, or not.
+    /// </summary>
+    /// <param name="xmlfilepath">The path to the xml file to be anazlysed.</param>
+    /// <returns>Returns true if the xml contains a single music sequence with track nodes, and false if it doesn't contain tracks, or a sequence node.</returns>
     bool IsXMLMusicSequence(const std::string& xmlfilepath);
+
+    /// <summary>
+    /// Returns whether the xml file contains only sequence meta-data and no track event data.
+    /// </summary>
+    /// <param name="filepath">The path to the xml file to be analyzed.</param>
+    /// <returns>True if the xml file contains only sequence metadata. false if it contains any track nodes, or is missing the metadata nodes.</returns>
+    bool IsXMLMusicSequenceInfoOnly(const std::string& xmlfilepath);
 
     void PresetBankToXML          (const DSE::PresetBank&           srcbnk,   const std::string& bnkxmlfile);
     void SoundEffectSequencesToXML(const DSE::SoundEffectSequences& srcseq,   const std::string& destdir);

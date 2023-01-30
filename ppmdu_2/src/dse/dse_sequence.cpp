@@ -3,13 +3,14 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <set>
 
 using namespace std;
 
 namespace DSE
 {
 
-    static const TrkEventInfo InvalidEventInfo {eTrkEventCodes::Invalid,eTrkEventCodes::Invalid, 0, "INVALID" };
+    const TrkEventInfo InvalidEventInfo {eTrkEventCodes::Invalid,eTrkEventCodes::Invalid, 0, "INVALID" };
 
     const std::map<eTrkEventCodes, std::string> EvCodeToEvNames
     { {
@@ -19,20 +20,27 @@ namespace DSE
         { eTrkEventCodes::Pause16Bits,          "Pause16Bits"           },
         { eTrkEventCodes::Pause24Bits,          "Pause24Bits"           },
         { eTrkEventCodes::PauseUntilRel,        "PauseUntilRelease"     },
+
         { eTrkEventCodes::EndOfTrack,           "EndOfTrack"            },
         { eTrkEventCodes::LoopPointSet,         "LoopPoint"             },
+
         { eTrkEventCodes::RepeatFrom,           "RepeatFrom"            },
         { eTrkEventCodes::RepeatSegment,        "RepeatSegment"         },
         { eTrkEventCodes::AfterRepeat,          "AfterRepeat"           },
+
         { eTrkEventCodes::SetOctave,            "SetOctave"             },
         { eTrkEventCodes::AddOctave,            "AddOctave"             },
+
         { eTrkEventCodes::SetTempo,             "SetTempo"              },
         { eTrkEventCodes::SetTempo2,            "SetTempo2"             },
+
         { eTrkEventCodes::SetBank,              "SetBank"               },
         { eTrkEventCodes::SetBankHighByte,      "SetBankHighByte"       },
         { eTrkEventCodes::SetBankLowByte,       "SetBankLowByte"        },
+
         { eTrkEventCodes::SkipNextByte,         "SkipNextByte"          },
         { eTrkEventCodes::SetProgram,           "SetProgram"            },
+
         { eTrkEventCodes::FadeSongVolume,       "FadeSongVolume"        },
         { eTrkEventCodes::DisableEnvelope,      "DisableEnvelope"       },
         { eTrkEventCodes::SetEnvAtkLvl,         "SetEnvAtkLvl"          },
@@ -41,12 +49,17 @@ namespace DSE
         { eTrkEventCodes::SetEnvDecSus,         "SetEnvDecSus"          },
         { eTrkEventCodes::SetEnvFade,           "SetEnvFade"            },
         { eTrkEventCodes::SetEnvRelease,        "SetEnvRelease"         },
+
         { eTrkEventCodes::SetNoteVol,           "SetNoteVol"            },
+
         { eTrkEventCodes::SetChanPan,           "SetChanPan"            },
         { eTrkEventCodes::Unk_0xBF,             "Unk_0xBF"              },
         { eTrkEventCodes::Unk_0xC0,             "Unk_0xC0"              },
+
         { eTrkEventCodes::SetChanVol,           "SetChanVol"            },
+
         { eTrkEventCodes::SkipNext2Bytes1,      "SkipNext2Bytes"        },
+
         { eTrkEventCodes::SetFTune,             "SetFTune"              },
         { eTrkEventCodes::AddFTune,             "AddFTune"              },
         { eTrkEventCodes::SetCTune,             "SetCTune"              },
@@ -56,9 +69,11 @@ namespace DSE
         { eTrkEventCodes::SetDetuneRng,         "SetDetuneRng"          },
         { eTrkEventCodes::SetPitchBend,         "SetPitchBend"          },
         { eTrkEventCodes::Unk_0xD8,             "Unk_0xD8"              },
+
         { eTrkEventCodes::SetPitchBendRng,      "SetPitchBendRng"       },
         { eTrkEventCodes::SetLFO1,              "SetLFO1"               },
         { eTrkEventCodes::SetLFO1DelayFade,     "SetLFO1DelayFade"      },
+
         { eTrkEventCodes::RouteLFO1ToPitch,     "RouteLFO1ToPitch"      },
         { eTrkEventCodes::SetTrkVol,            "SetVolume"             },
         { eTrkEventCodes::AddTrkVol,            "AddTrkVol"             },
@@ -66,18 +81,23 @@ namespace DSE
         { eTrkEventCodes::SetExpress,           "SetExpression"         },
         { eTrkEventCodes::SetLFO2,              "SetLFO2"               },
         { eTrkEventCodes::SetLFO2DelFade,       "SetLFO2DelFade"        },
+
         { eTrkEventCodes::RouteLFO2ToVol,       "RouteLFO2ToVol"        },
         { eTrkEventCodes::SetTrkPan,            "SetPan"                },
         { eTrkEventCodes::AddTrkPan,            "AddTrkPan"             },
         { eTrkEventCodes::SweepTrkPan,          "SweepTrkPan"           },
+
         { eTrkEventCodes::SetLFO3,              "SetLFO3"               },
         { eTrkEventCodes::SetLFO3DelFade,       "SetLFO3DelFade"        },
+
         { eTrkEventCodes::RouteLFO3ToPan,       "RouteLFO3ToPan"        },
         { eTrkEventCodes::SetLFO,               "SetLFO"                },
         { eTrkEventCodes::SetLFODelFade,        "SetLFODelFade"         },
         { eTrkEventCodes::SetLFOParam,          "SetLFOParam"           },
         { eTrkEventCodes::SetLFORoute,          "SetLFORoute"           },
+
         { eTrkEventCodes::Unk_0xF6,             "Unk_0xF6"              },
+
         { eTrkEventCodes::SkipNext2Bytes2,      "SkipNext2Bytes2"       },
      } };
 

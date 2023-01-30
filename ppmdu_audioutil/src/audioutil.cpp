@@ -1194,39 +1194,19 @@ namespace audioutil
         //Process all paths
         for (const string& path : m_targetPaths.paths)
         {
-            Poco::File curfile(path);
+            const Poco::File curfile(path);
             if (curfile.isFile())
-            {
-                const std::string fext = Poco::Path(path).getExtension();
-                //Handle single file operations
-                if (fext == "xml")
-                {
-                    //A single xml file is usually a bank
-                    if (IsXMLPresetBank(path))
-                        m_loader.ImportBank(path);
-                    else if (IsXMLMusicSequence(path))
-                        m_loader.ImportMusicSeq(path);
-                    else
-                        throw std::runtime_error("Unknown XML file format:\""s + path + "\""s);
-                }
-                else if (fext == "mid")
-                {
-                    m_loader.ImportMusicSeq(path);
-                }
-                else
-                    throw std::runtime_error("Unknown file type for path:\""s + path + "\""s);
-            }
+                m_loader.ImportAFile(path);
             else if (curfile.isDirectory())
-            {
-                //Try to batch import everything in there
-                m_loader.ImportDirectory(path);
-            }
+                m_loader.ImportDirectory(path); //Try to batch import everything in there
         }
 
-        //Next convert into dse files what we loaded
+        //Try to build the proper paths to the game files, or fallback to outputing to a single dir
         const std::string outputswdl = m_targetPaths.swdlDirPath.empty() ? m_targetPaths.outpath : m_targetPaths.swdlDirPath;
         const std::string outputsmdl = m_targetPaths.smdlDirPath.empty() ? m_targetPaths.outpath : m_targetPaths.smdlDirPath;
         const std::string outputsedl = m_targetPaths.sedlDirPath.empty() ? m_targetPaths.outpath : m_targetPaths.sedlDirPath;
+
+        //Next convert into dse files what we loaded
         m_loader.ImportChangesToGame(outputswdl, outputsmdl, outputsedl);
         return 0;
     }
