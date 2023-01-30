@@ -3,7 +3,12 @@
 #include <utils/gbyteutils.hpp>
 using namespace std;
 
-static const uint32_t MIDI_MagicNum = 0x4D546864;
+namespace audio
+{
+    const std::string MIDI_FILE_EXT = "mid";
+};
+
+const uint32_t MIDI_MagicNum = 0x4D546864;
 
 #ifdef USE_PPMDU_CONTENT_TYPE_ANALYSER
     #include <types/content_type_analyser.hpp>
