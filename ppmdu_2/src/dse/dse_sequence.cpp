@@ -12,6 +12,74 @@ namespace DSE
 
     const TrkEventInfo InvalidEventInfo {eTrkEventCodes::Invalid,eTrkEventCodes::Invalid, 0, "INVALID" };
 
+    const std::set<eTrkEventCodes> BadEvents
+    {
+        eTrkEventCodes::_BAD_0x96,
+        eTrkEventCodes::_BAD_0x97,
+
+        eTrkEventCodes::_BAD_0x9A,
+        eTrkEventCodes::_BAD_0x9B,
+
+        eTrkEventCodes::_BAD_0x9F,
+
+        eTrkEventCodes::_BAD_0xA2,
+        eTrkEventCodes::_BAD_0xA3,
+
+        eTrkEventCodes::_BAD_0xA6,
+        eTrkEventCodes::_BAD_0xA7,
+
+        eTrkEventCodes::_BAD_0xAD,
+        eTrkEventCodes::_BAD_0xAE,
+
+        eTrkEventCodes::_BAD_0xB7,
+        eTrkEventCodes::_BAD_0xB8,
+        eTrkEventCodes::_BAD_0xB9,
+        eTrkEventCodes::_BAD_0xBA,
+        eTrkEventCodes::_BAD_0xBB,
+
+        eTrkEventCodes::_BAD_0xBD,
+
+        eTrkEventCodes::_BAD_0xC1,
+        eTrkEventCodes::_BAD_0xC2,
+
+        eTrkEventCodes::_BAD_0xC4,
+        eTrkEventCodes::_BAD_0xC5,
+        eTrkEventCodes::_BAD_0xC6,
+        eTrkEventCodes::_BAD_0xC7,
+        eTrkEventCodes::_BAD_0xC8,
+        eTrkEventCodes::_BAD_0xC9,
+        eTrkEventCodes::_BAD_0xCA,
+
+        eTrkEventCodes::_BAD_0xCC,
+        eTrkEventCodes::_BAD_0xCD,
+        eTrkEventCodes::_BAD_0xCE,
+        eTrkEventCodes::_BAD_0xCF,
+
+        eTrkEventCodes::_BAD_0xD9,
+        eTrkEventCodes::_BAD_0xDA,
+
+        eTrkEventCodes::_BAD_0xDE,
+
+        eTrkEventCodes::_BAD_0xE6,
+
+        eTrkEventCodes::_BAD_0xEB,
+
+        eTrkEventCodes::_BAD_0xEE,
+
+        eTrkEventCodes::_BAD_0xF4,
+        eTrkEventCodes::_BAD_0xF5,
+
+        eTrkEventCodes::_BAD_0xF7,
+
+        eTrkEventCodes::_BAD_0xF9,
+        eTrkEventCodes::_BAD_0xFA,
+        eTrkEventCodes::_BAD_0xFB,
+        eTrkEventCodes::_BAD_0xFC,
+        eTrkEventCodes::_BAD_0xFD,
+        eTrkEventCodes::_BAD_0xFE,
+        eTrkEventCodes::_BAD_0xFF,
+    };
+
     const std::map<eTrkEventCodes, std::string> EvCodeToEvNames
     { {
         { eTrkEventCodes::RepeatLastPause,      "RepeatLastPause"       },
@@ -144,11 +212,15 @@ namespace DSE
         //0x95 - PauseUntilNoteOff
         { eTrkEventCodes::PauseUntilRel,    eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::PauseUntilRel) },
 
+        //0x96 - 0x97 Bad events
+
         //0x98 - EndOfTrack
         { eTrkEventCodes::EndOfTrack,       eTrkEventCodes::Invalid, 0, EvCodeToEvNames.at(eTrkEventCodes::EndOfTrack) },
 
         //0x99 - LoopPointSet
         { eTrkEventCodes::LoopPointSet,     eTrkEventCodes::Invalid, 0, EvCodeToEvNames.at(eTrkEventCodes::LoopPointSet) },
+
+        //0x9A - 0x9B Base events
 
         //0x9C - RepeatFrom
         { eTrkEventCodes::RepeatFrom,       eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::RepeatFrom) },
@@ -159,17 +231,23 @@ namespace DSE
         //0x9E - AfterRepeat
         { eTrkEventCodes::AfterRepeat,      eTrkEventCodes::Invalid, 0, EvCodeToEvNames.at(eTrkEventCodes::AfterRepeat) },
 
+        //0x9F Bad event
+
         //0xA0 - SetOctave
         { eTrkEventCodes::SetOctave,        eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetOctave) },
 
         //0xA1 - AddOctave
         { eTrkEventCodes::AddOctave,        eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::AddOctave) },
 
+        //0xA2 -0xA3 Bad events
+
         //0xA4 - SetTempo
         { eTrkEventCodes::SetTempo,         eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetTempo) },
 
         //0xA5 - SetTempo2
         { eTrkEventCodes::SetTempo2,        eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetTempo2) },
+
+        //0xA6 - 0xA7 Bad events
 
         //0xA8 - SetBank
         { eTrkEventCodes::SetBank,          eTrkEventCodes::Invalid, 2, EvCodeToEvNames.at(eTrkEventCodes::SetBank) },
@@ -184,7 +262,9 @@ namespace DSE
         { eTrkEventCodes::SkipNextByte,     eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SkipNextByte) },
 
         //0xAC - SetProgram
-        { eTrkEventCodes::SetProgram,        eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetProgram) },
+        { eTrkEventCodes::SetProgram,       eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetProgram) },
+
+        //0xAD-AE bad events
 
         //0xAF - FadeSongVolume 
         { eTrkEventCodes::FadeSongVolume,   eTrkEventCodes::Invalid, 3, EvCodeToEvNames.at(eTrkEventCodes::FadeSongVolume) },
@@ -210,8 +290,12 @@ namespace DSE
         //0xB6 - SetEnvRelease
         { eTrkEventCodes::SetEnvRelease,    eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetEnvRelease) },
 
+        //0xB7 - 0xBB Bad events
+
         //0xBC - SetNoteVol
         { eTrkEventCodes::SetNoteVol,       eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetNoteVol) },
+
+        //0xBD Bad event
 
         //0xBE - SetChanPan
         { eTrkEventCodes::SetChanPan,       eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetChanPan) },
@@ -222,8 +306,12 @@ namespace DSE
         //Unk_0xC0
         { eTrkEventCodes::Unk_0xC0,         eTrkEventCodes::Invalid, 0, EvCodeToEvNames.at(eTrkEventCodes::Unk_0xC0) },
 
+        //0xC1 - 0xC2 Bad events
+
         //0xC3 - SetChanVol
         { eTrkEventCodes::SetChanVol,       eTrkEventCodes::Invalid, 1, EvCodeToEvNames.at(eTrkEventCodes::SetChanVol) },
+
+        //0xC4 - 0xCA Bad events
 
         //0xCB - SkipNext2Bytes1
         { eTrkEventCodes::SkipNext2Bytes1,  eTrkEventCodes::Invalid, 2, EvCodeToEvNames.at(eTrkEventCodes::SkipNext2Bytes1) },

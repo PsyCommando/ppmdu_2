@@ -97,24 +97,41 @@ namespace DSE
         Pause24Bits     = 0x94, //Pause the track for specified duration (uses a uint24)
         PauseUntilRel   = 0x95, //Pause until the noteOff event for the last playing note is received. Will always wait at least as long as its check interval parameter.
 
+        _BAD_0x96       = 0x96,
+        _BAD_0x97       = 0x97,
+
         EndOfTrack      = 0x98, //Marks the end of the track. Also serve as padding.
         LoopPointSet    = 0x99, //Marks the location where the track should loop from.
+
+        _BAD_0x9A       = 0x9A,
+        _BAD_0x9B       = 0x9B,
 
         RepeatFrom      = 0x9C, //Marks the location any subsequent "RepeatSegment" events should repeat from, and indicates the amount of times to repeat.
         RepeatSegment   = 0x9D, //Repeat the segment starting at the last "RepeatFrom" event. 
         AfterRepeat     = 0x9E, //After the last "RepeatSegment" event has finished its repeats, playback will jump here.
 
+        _BAD_0x9F       = 0x9F,
+
         SetOctave       = 0xA0, //Sets the octave notes are currently played at.
         AddOctave       = 0xA1, //Adds the given value to the current octave.
 
+        _BAD_0xA2       = 0xA2,
+        _BAD_0xA3       = 0xA3,
+
         SetTempo        = 0xA4, //Sets the tempo of the track in BPM.
         SetTempo2       = 0xA5, //Also sets the tempo of the track in BPM.
+
+        _BAD_0xA6       = 0xA6,
+        _BAD_0xA7       = 0xA7,
 
         SetBank         = 0xA8, //Set both bytes of the bank id.
         SetBankHighByte = 0xA9, //Sets bank id's high byte.
         SetBankLowByte  = 0xAA, //Set bank id's low byte.
         SkipNextByte    = 0xAB, //Skip processing the next byte!
         SetProgram      = 0xAC, //Sets the instrument preset to use
+
+        _BAD_0xAD       = 0xAD,
+        _BAD_0xAE       = 0xAE,
 
         FadeSongVolume  = 0xAF, //Sweep the song's volume. First arg is the rate, second is the target volume.
         DisableEnvelope = 0xB0, //Disable envelope
@@ -125,15 +142,39 @@ namespace DSE
         SetEnvFade      = 0xB5, //Set envelope fade parameter on current program
         SetEnvRelease   = 0xB6, //Set envelope release parameter on current program
 
+        _BAD_0xB7       = 0xB7,
+        _BAD_0xB8       = 0xB8,
+        _BAD_0xB9       = 0xB9,
+        _BAD_0xBA       = 0xBA,
+        _BAD_0xBB       = 0xBB,
+
         SetNoteVol      = 0xBC, //SetNoteVolume (?) 
+
+        _BAD_0xBD       = 0xBD,
         
         SetChanPan      = 0xBE, //Sets current channel panning
         Unk_0xBF        = 0xBF, //Unknown //#TODO
-
         Unk_0xC0        = 0xC0, //Unknown //#TODO
+
+        _BAD_0xC1       = 0xC1,
+        _BAD_0xC2       = 0xC2,
+
         SetChanVol      = 0xC3, //Sets current channel volume
 
-        SkipNext2Bytes1 = 0xCB, 
+        _BAD_0xC4       = 0xC4,
+        _BAD_0xC5       = 0xC5,
+        _BAD_0xC6       = 0xC6,
+        _BAD_0xC7       = 0xC7,
+        _BAD_0xC8       = 0xC8,
+        _BAD_0xC9       = 0xC9,
+        _BAD_0xCA       = 0xCA,
+
+        SkipNext2Bytes1 = 0xCB,
+
+        _BAD_0xCC       = 0xCC,
+        _BAD_0xCD       = 0xCD,
+        _BAD_0xCE       = 0xCE,
+        _BAD_0xCF       = 0xCF,
 
         SetFTune        = 0xD0, //Sets fine tune
         AddFTune        = 0xD1, //Adds value to current fine tune
@@ -145,11 +186,16 @@ namespace DSE
         SetPitchBend    = 0xD7, //Sets the pitch bend
         Unk_0xD8        = 0xD8, //Unknown, possibly changes unused paramter? //#TODO
 
+        _BAD_0xD9       = 0xD9,
+        _BAD_0xDA       = 0xDA,
+
         SetPitchBendRng = 0xDB, //Set the bend range for pitch bending
 
         //LFO control
         SetLFO1         = 0xDC, //Sets LFO rate, depth, and waveform
         SetLFO1DelayFade= 0xDD, //Sets the LFO effect delay, and fade out
+
+        _BAD_0xDE       = 0xDE,
 
         RouteLFO1ToPitch= 0xDF, //Route the LFO1 output to note pitch if set to > 0
 
@@ -160,13 +206,19 @@ namespace DSE
         SetLFO2         = 0xE4, //Sets LFO rate, depth, and waveform
         SetLFO2DelFade  = 0xE5, //Sets the LFO effect delay, and fade out
 
+        _BAD_0xE6       = 0xE6,
+
         RouteLFO2ToVol  = 0xE7, //Route the LFO2 output to volume if set to > 0
         SetTrkPan       = 0xE8, //Sets the panning of the track.
         AddTrkPan       = 0xE9, //Adds value to track panning.
         SweepTrkPan     = 0xEA, //Interpolate the track's panning value to the specified value at the specified rate
 
+        _BAD_0xEB       = 0xEB,
+
         SetLFO3         = 0xEC, //Sets LFO rate, depth, and waveform.
         SetLFO3DelFade  = 0xED, //Sets the LFO effect delay, and fade out
+
+        _BAD_0xEE       = 0xEE,
 
         RouteLFO3ToPan  = 0xEF, //Routes the LFO3 output to the track panning value if > 0
 
@@ -175,9 +227,22 @@ namespace DSE
         SetLFOParam     = 0xF2, //Sets the LFO's parameter and its value
         SetLFORoute     = 0xF3, //Set what LFO is routed to what, and whether its enabled
 
-        Unk_0xF6        = 0xF6, //Unknown //#TODO
+        _BAD_0xF4       = 0xF4,
+        _BAD_0xF5       = 0xF5,
+
+        Unk_0xF6        = 0xF6, //Unknown //#TODO // Probably used to sync music to the script engine
+
+        _BAD_0xF7       = 0xF7,
 
         SkipNext2Bytes2 = 0xF8, //Skip processing the next 2 bytes
+
+        _BAD_0xF9       = 0xF9,
+        _BAD_0xFA       = 0xFA,
+        _BAD_0xFB       = 0xFB,
+        _BAD_0xFC       = 0xFC,
+        _BAD_0xFD       = 0xFD,
+        _BAD_0xFE       = 0xFE,
+        _BAD_0xFF       = 0xFF,
     };
 
     /// <summary>
@@ -233,6 +298,11 @@ namespace DSE
     /// Contains details specifics on how to parse all event codes.
     /// </summary>
     extern const std::vector<TrkEventInfo> TrkEventsTable;
+
+    /// <summary>
+    /// List of bad DSE event codes that stop the tracker.
+    /// </summary>
+    extern const std::set<eTrkEventCodes> BadEvents;
 
 //====================================================================================================
 // Structs
