@@ -635,13 +635,13 @@ namespace DSE
     void ParsePlayNoteParam1( uint8_t noteparam1, int8_t& out_octdiff, uint8_t& out_param2len, uint8_t& out_key )
     {
         //1. Get param2's len
-        out_param2len = ( ( noteparam1 & NoteEvParam1NbParamsMask ) >> 6 ) & 0x3; //(0011) just to be sure no sign bits slip through somehow
+        out_param2len = ( ( noteparam1 & NoteEvParam1NbParamsMask ) >> 6ui8 ) & 0x3ui8; //(0011) just to be sure no sign bits slip through somehow
 
         //2. Get and apply the octave modifiere
-        out_octdiff = ( ( (noteparam1 & NoteEvParam1PitchMask) >> 4 ) & 0x3 ) - NoteEvOctaveShiftRange;
+        out_octdiff = ( ( (noteparam1 & NoteEvParam1PitchMask) >> 4ui8 ) & 0x3ui8 ) - NoteEvOctaveShiftRange;
 
         //3. Get the key parameter 0x0 to 0xB, sometimes 0xF for special purpose notes!
-        out_key = (noteparam1 & 0xF);
+        out_key = (noteparam1 & NoteEvParam1NoteMask);
     }
 
     ev_play_note ParsePlayNote(const TrkEvent& ev, uint8_t curoctave)
