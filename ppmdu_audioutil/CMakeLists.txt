@@ -178,15 +178,17 @@ find_package(Poco REQUIRED JSON)
 find_package(Poco REQUIRED Util)
 
 target_link_libraries(audioutil 
-    whereami 
-    jdksmidi 
-    pugixml 
-    Poco::Foundation 
+    whereami
+    jdksmidi
+    pugixml
+    Poco::Foundation
     Poco::Util
     Poco::JSON
 )
 
-
+###########################################################
+# Put all the neccessary resources with the exe
+###########################################################
 file(
     COPY 
         "../ppmdu_2/resources/pmd2_to_gm.xml"
