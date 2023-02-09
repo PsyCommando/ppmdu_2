@@ -432,7 +432,7 @@ namespace audioutil
             const string outNewDir = Poco::Path(outputDir).append(infilename).toString();
 
             MusicSequence smd = move(DSE::ParseSMDL(curpath.toString()));
-            ExportASequenceToMidi(smd, infilename, Poco::Path(outputDir).append(infilename).setExtension("mid").makeFile(), m_convinfopath, m_nbloops, m_bGM);
+            ExportASequenceToMidi(smd, infilename, Poco::Path(outputDir).append(infilename).setExtension(audio::MIDI_FILE_EXT).makeFile(), m_convinfopath, m_nbloops, m_bGM);
         };
 
         ProcessAllFilesWithExtInDir(m_smdlpath, SMDL_FileExtension, "Exporting", lambdaExport);
@@ -452,7 +452,7 @@ namespace audioutil
         //        cout <<right <<setw(60) <<setfill(' ')  << "\rExporting " << infilename << "..";
 
         //        MusicSequence smd = move( DSE::ParseSMDL( curpath.toString() ) );
-        //        ExportASequenceToMidi( smd, infilename, Poco::Path(outputDir).append(infilename).setExtension("mid").makeFile(), m_convinfopath, m_nbloops, m_bGM );
+        //        ExportASequenceToMidi( smd, infilename, Poco::Path(outputDir).append(infilename).setExtension(audio::MIDI_FILE_EXT).makeFile(), m_convinfopath, m_nbloops, m_bGM );
         //    }
         //}
         cout << "\n\n<*>- Done !\n";

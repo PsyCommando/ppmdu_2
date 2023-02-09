@@ -850,7 +850,7 @@ namespace audioutil
             const std::string extension = inpath.getExtension();
             if (extension == DSE::SWDL_FileExtension || extension == DSE::SMDL_FileExtension || extension == DSE::SEDL_FileExtension)
                 m_operationMode = eOpMode::Export;
-            else if (extension == "mid" || extension == "xml" || inpath.isDirectory())
+            else if (extension == audio::MIDI_FILE_EXT || extension == "xml" || inpath.isDirectory())
                 m_operationMode = eOpMode::Import;
         }
 

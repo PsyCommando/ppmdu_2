@@ -361,7 +361,7 @@ namespace DSE
             {
                 const MusicSequence& seq = entry.second;
                 Poco::Path fpath(destdirpath);
-                fpath.append(std::to_string(seq.metadata().origloadorder) + "_" + seq.metadata().fname).makeFile().setExtension("mid");
+                fpath.append(std::to_string(seq.metadata().origloadorder) + "_" + seq.metadata().fname).makeFile().setExtension(audio::MIDI_FILE_EXT);
                 const std::string curpath  = fpath.toString();
                 const std::string curfname = fpath.getBaseName();
 
