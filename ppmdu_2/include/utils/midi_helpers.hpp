@@ -3,7 +3,7 @@
 #include <utils/common_suffixes.hpp>
 #include <vector>
 
-namespace jdksmidi {class MIDITrack;}
+namespace jdksmidi { class MIDITrack; };
 
 namespace utils
 {
@@ -96,11 +96,11 @@ namespace utils
 //
 // 
 // 
-    void PutRPNValue(unsigned long time, uint8_t chanid, jdksmidi::MIDITrack& trkout, uint16_t rpn_id, uint16_t rpn_value);
+    void PutRPNValue(unsigned long time, uint8_t chanid, jdksmidi::MIDITrack* trkout, uint16_t rpn_id, uint16_t rpn_value);
 
 
     //Put a sysex with manufacturer id 0x7D which is the educational/non-commercial id slot.
-    void PutGenericSysExData(unsigned long time, uint8_t chanid, jdksmidi::MIDITrack& trkout, const std::vector<uint8_t>& msgdata);
+    void PutGenericSysExData(unsigned long time, uint8_t chanid, jdksmidi::MIDITrack* trkout, const std::vector<uint8_t>& msgdata);
 
 //==============================================================================
 // Convertion Functions

@@ -45,7 +45,7 @@ namespace DSE
                                      closest matches in the DSE system.
         */
         MIDIToDSE(const string& srcmidi, bool bNoDeltaTimeRounding = true)
-            :m_srcpath(srcmidi), m_bIsAccurateTime(bNoDeltaTimeRounding), m_Tempo(120)
+            :m_isMultiTrks(true), m_srcpath(srcmidi), m_bIsAccurateTime(bNoDeltaTimeRounding), m_Tempo(120)
         {}
 
         /****************************************************************************************
@@ -219,7 +219,7 @@ namespace DSE
 
         /****************************************************************************************
         ****************************************************************************************/
-        MIDIClockTime HandleNoteOn(const jdksmidi::MIDITimedBigMessage& mev, int trknum, int channum, int cntev)
+        jdksmidi::MIDIClockTime HandleNoteOn(const jdksmidi::MIDITimedBigMessage& mev, int trknum, int channum, int cntev)
         {
             TrkState&        state    = m_dsetrkstates[trknum];
             MusicTrack&      trk      = m_dsetracks[trknum];
@@ -435,7 +435,7 @@ namespace DSE
             };
         }
 
-        MIDIClockTime HandleControlChanges(const jdksmidi::MIDITimedBigMessage& mev, int trknum, int channum)
+        jdksmidi::MIDIClockTime HandleControlChanges(const jdksmidi::MIDITimedBigMessage& mev, int trknum, int channum)
         {
             using namespace jdksmidi;
             TrkState&     state = m_dsetrkstates[trknum];
@@ -528,12 +528,12 @@ namespace DSE
             return 0;
         }
 
-        MIDIClockTime HandlePitchBend(const jdksmidi::MIDITimedBigMessage& mev, int trknum, int channum)
+        jdksmidi::MIDIClockTime HandlePitchBend(const jdksmidi::MIDITimedBigMessage& mev, int trknum, int channum)
         {
             return InsertSetPitchBend(trknum, (mev.GetTime() - m_dsetrkstates[trknum].ticks_), mev.GetBenderValue());
         }
 
-        MIDIClockTime HandleProgramChange(const jdksmidi::MIDITimedBigMessage& mev, int trknum, int channum)
+        jdksmidi::MIDIClockTime HandleProgramChange(const jdksmidi::MIDITimedBigMessage& mev, int trknum, int channum)
         {
             return InsertSetProgram(trknum, (mev.GetTime() - m_dsetrkstates[trknum].ticks_), mev.GetPGValue());
         }
@@ -541,13 +541,13 @@ namespace DSE
     private:
 
 
-        inline MIDIClockTime InsertAddTrkPan(int trackid, MIDIClockTime delta_time, uint8_t addpan)
+        inline jdksmidi::MIDIClockTime InsertAddTrkPan(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t addpan)
         {
             m_dsetrkstates[trackid].trkpan_ += addpan;
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::AddTrkPan, { addpan });
         }
 
-        inline MIDIClockTime InsertSetTrkPan(int trackid, MIDIClockTime delta_time, uint8_t newpan)
+        inline jdksmidi::MIDIClockTime InsertSetTrkPan(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t newpan)
         {
             if (m_dsetrkstates[trackid].trkpan_ == newpan)
                 return 0;
@@ -555,7 +555,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetTrkPan, { newpan });
         }
 
-        inline MIDIClockTime InsertSetChanPan(int trackid, MIDIClockTime delta_time, uint8_t newpan)
+        inline jdksmidi::MIDIClockTime InsertSetChanPan(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t newpan)
         {
             if (m_dsetrkstates[trackid].chpan_ == newpan)
                 return 0;
@@ -564,13 +564,13 @@ namespace DSE
         }
 
         // -- Vol --
-        inline MIDIClockTime InsertAddTrkVol(int trackid, MIDIClockTime delta_time, uint8_t addvol)
+        inline jdksmidi::MIDIClockTime InsertAddTrkVol(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t addvol)
         {
             m_dsetrkstates[trackid].trkvol_ += addvol;
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::AddTrkVol, { addvol });
         }
 
-        inline MIDIClockTime InsertSetTrkVol(int trackid, MIDIClockTime delta_time, uint8_t newvol)
+        inline jdksmidi::MIDIClockTime InsertSetTrkVol(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t newvol)
         {
             if (m_dsetrkstates[trackid].trkvol_ == newvol)
                 return 0;
@@ -578,7 +578,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetTrkVol, { newvol });
         }
 
-        inline MIDIClockTime InsertSetChanVol(int trackid, MIDIClockTime delta_time, uint8_t newvol)
+        inline jdksmidi::MIDIClockTime InsertSetChanVol(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t newvol)
         {
             if (m_dsetrkstates[trackid].chvol_ == newvol)
                 return 0;
@@ -586,7 +586,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetChanVol, { newvol });
         }
 
-        inline MIDIClockTime InsertSetExpression(int trackid, MIDIClockTime delta_time, uint8_t newvol)
+        inline jdksmidi::MIDIClockTime InsertSetExpression(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t newvol)
         {
             if (m_dsetrkstates[trackid].expr_ == newvol)
                 return 0;
@@ -595,7 +595,7 @@ namespace DSE
         }
 
         // -- Prgm --
-        inline MIDIClockTime InsertSetProgram(int trackid, MIDIClockTime delta_time, uint8_t prgm)
+        inline jdksmidi::MIDIClockTime InsertSetProgram(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t prgm)
         {
             if (m_dsetrkstates[trackid].curprgm_ == prgm)
                 return 0;
@@ -603,7 +603,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetProgram, { prgm });
         }
 
-        inline MIDIClockTime InsertSetBank(int trackid, MIDIClockTime delta_time, uint16_t bank)
+        inline jdksmidi::MIDIClockTime InsertSetBank(int trackid, jdksmidi::MIDIClockTime delta_time, uint16_t bank)
         {
             if (m_dsetrkstates[trackid].curbank_ == bank)
                 return 0;
@@ -611,7 +611,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetBank, { (uint8_t)bank, (uint8_t)(bank >> 8) });
         }
 
-        inline MIDIClockTime InsertSetBankLow(int trackid, MIDIClockTime delta_time, uint8_t banklow)
+        inline jdksmidi::MIDIClockTime InsertSetBankLow(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t banklow)
         {
             if ((m_dsetrkstates[trackid].curbank_ & 0x00FF) == banklow)
                 return 0;
@@ -619,7 +619,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetBankLowByte, { banklow });
         }
         
-        inline MIDIClockTime InsertSetBankHigh(int trackid, MIDIClockTime delta_time, uint8_t bankhigh)
+        inline jdksmidi::MIDIClockTime InsertSetBankHigh(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t bankhigh)
         {
             if (((m_dsetrkstates[trackid].curbank_ & 0xFF00) >> 8) == bankhigh)
                 return 0;
@@ -635,7 +635,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetOctave, { newoctave });
         }
 
-        inline MIDIClockTime InsertSetTempo(int trkid, MIDIClockTime absolute_time, uint8_t tempo)
+        inline jdksmidi::MIDIClockTime InsertSetTempo(int trkid, jdksmidi::MIDIClockTime absolute_time, uint8_t tempo)
         {
             TrkState&     state = m_dsetrkstates[trkid];
             MIDIClockTime mt    = absolute_time - state.ticks_;
@@ -648,7 +648,7 @@ namespace DSE
             return state .ticks_ += InsertDSEEvent(trkid, mt, DSE::eTrkEventCodes::SetTempo, {tempo});
         }
 
-        inline MIDIClockTime InsertSetPitchBend(int trackid, MIDIClockTime delta_time, int16_t bend)
+        inline jdksmidi::MIDIClockTime InsertSetPitchBend(int trackid, jdksmidi::MIDIClockTime delta_time, int16_t bend)
         {
             if (m_dsetrkstates[trackid].pitchbend_ == bend)
                 return 0;
@@ -656,7 +656,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetPitchBend, { (uint8_t)bend, (uint8_t)(bend >> 8) });
         }
 
-        inline MIDIClockTime InsertSetPitchBendRange(int trackid, MIDIClockTime delta_time, uint8_t bendrng)
+        inline jdksmidi::MIDIClockTime InsertSetPitchBendRange(int trackid, jdksmidi::MIDIClockTime delta_time, uint8_t bendrng)
         {
             if (m_dsetrkstates[trackid].bendrng_ == bendrng)
                 return 0;
@@ -664,7 +664,7 @@ namespace DSE
             return InsertDSEEvent(trackid, delta_time, DSE::eTrkEventCodes::SetPitchBendRng, { bendrng });
         }
 
-        inline void InsertLoopPoint(MIDIClockTime absolute_time, int trackid = -1)
+        inline void InsertLoopPoint(jdksmidi::MIDIClockTime absolute_time, int trackid = -1)
         {
             if (trackid != -1)
             {
@@ -689,7 +689,7 @@ namespace DSE
             }
         }
 
-        inline void InsertEndOfTrack(MIDIClockTime absolute_time, int trackid = -1)
+        inline void InsertEndOfTrack(jdksmidi::MIDIClockTime absolute_time, int trackid = -1)
         {
             if (trackid != -1)
             {
@@ -721,7 +721,7 @@ namespace DSE
         }
 
         //Insert a play note event. Automatically handle octave and pauses
-        MIDIClockTime InsertNoteEvent(int trackid, MIDIClockTime delta_time, midinote_t note, int8_t velocity = 127, uint32_t hold_time = 0)
+        jdksmidi::MIDIClockTime InsertNoteEvent(int trackid, jdksmidi::MIDIClockTime delta_time, midinote_t note, int8_t velocity = 127, uint32_t hold_time = 0)
         {
             try
             {
@@ -773,7 +773,7 @@ namespace DSE
         }
 
         //Insert a track event at the time position specified and inserts pauses as needed
-        MIDIClockTime InsertDSEEvent(int trackid, MIDIClockTime delta_time, DSE::eTrkEventCodes evcode, std::vector<uint8_t>&& params = {})
+        jdksmidi::MIDIClockTime InsertDSEEvent(int trackid, jdksmidi::MIDIClockTime delta_time, DSE::eTrkEventCodes evcode, std::vector<uint8_t>&& params = {})
         {
             MusicTrack& trk = m_dsetracks[trackid];
             TrkState& state = m_dsetrkstates[trackid];
@@ -789,7 +789,7 @@ namespace DSE
         }
 
         //For a given time interval, insert the appropriate pause event
-        MIDIClockTime InsertPause(int trackid, MIDIClockTime duration)
+        jdksmidi::MIDIClockTime InsertPause(int trackid, jdksmidi::MIDIClockTime duration)
         {
             MusicTrack& trk   = m_dsetracks[trackid];
             TrkState&   state = m_dsetrkstates[trackid];
@@ -843,7 +843,7 @@ namespace DSE
         }
 
         //Tell the ticks an event will increase the tick counter by
-        MIDIClockTime GetEventDuration(uint32_t lastpause, eTrkEventCodes ev, const std::vector<uint8_t>& args)
+        jdksmidi::MIDIClockTime GetEventDuration(uint32_t lastpause, eTrkEventCodes ev, const std::vector<uint8_t>& args)
         {
             if (ev <= eTrkEventCodes::NoteOnEnd || ev > eTrkEventCodes::PauseUntilRel)
                 return 0; //Anything but delay or pause events have a duration of 0

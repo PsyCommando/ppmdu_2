@@ -1,11 +1,14 @@
 #include <utils/midi_helpers.hpp>
 
+#include <jdksmidi/world.h>
 #include <jdksmidi/midi.h>
 #include <jdksmidi/msg.h>
 #include <jdksmidi/track.h>
 
 #include <array>
 #include <cstdint>
+
+using namespace jdksmidi;
 
 namespace utils
 {
@@ -98,7 +101,7 @@ namespace utils
     {
         using namespace jdksmidi;
         MIDITimedBigMessage msg;
-        msg.SetTime(time);
+        msg.SetTime((MIDIClockTime)time);
 
         //Set active function to what we picked
         msg.SetControlChange(chanid, jdksmidi::C_RPN_LSB, (uint8_t)((rpn_id & MIDICCHighByteMask) >> 8));
@@ -132,7 +135,7 @@ namespace utils
         sysex.PutEOX();
 
         MIDITimedBigMessage msg;
-        msg.SetTime(time);
+        msg.SetTime((MIDIClockTime)time);
         msg.CopySysEx(&sysex);
         trkout.PutEvent(msg);
     }
