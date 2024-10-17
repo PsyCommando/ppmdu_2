@@ -1,5 +1,5 @@
 #ifndef PMD2_ASM_DATA_HPP
-#define PMD2_ADM_DATA_HPP
+#define PMD2_ASM_DATA_HPP
 /*
 pmd2_asm_data.hpp
 2016/05/09

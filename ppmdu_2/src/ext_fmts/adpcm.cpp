@@ -213,7 +213,7 @@ namespace audio
             {
                 //Read two 4 bits samples
                 uint8_t          curbuff = ReadIntFromBytes<int8_t>(m_itread,m_data.end()); //iterator is incremented 
-                array<int8_t, 2> smpls   = {static_cast<int8_t>(curbuff & 0x0Fui8), static_cast<int8_t>((curbuff >> 4) & 0x0Fui8) };
+                array<int8_t, 2> smpls   = {static_cast<int8_t>(curbuff & 0x0F_ui8), static_cast<int8_t>((curbuff >> 4) & 0x0F_ui8) };
 
                 //Decode them
                 for(auto & smpl : smpls)

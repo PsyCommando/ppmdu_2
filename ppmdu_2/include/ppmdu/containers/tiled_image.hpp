@@ -629,7 +629,7 @@ namespace gimg
         // --> Inverting pixel order on pixels that overflow over several bytes isn't supported right now !! <--
         if( invertpixelorder && (_TILED_IMG_T::pixel_t::GetBitsPerPixel() > 8) && (8u % _TILED_IMG_T::pixel_t::GetBitsPerPixel()) != 0 )
         {
-            throw std::exception( "WriteTiledImg(): Inverting pixel order on pixels that overflow over one or several bytes isn't supported right now !!" ); //#TODO: Specialize the temtplate when needed!
+            throw std::runtime_error( "WriteTiledImg(): Inverting pixel order on pixels that overflow over one or several bytes isn't supported right now !!" ); //#TODO: Specialize the template when needed!
         }
 
         typedef _TILED_IMG_T                  image_t;

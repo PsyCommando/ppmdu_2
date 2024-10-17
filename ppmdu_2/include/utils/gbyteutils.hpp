@@ -11,6 +11,7 @@ A bunch of simple tools for doing common tasks when manipulating bytes.
 
 //!#TODO: this needs a serious cleanup!!
 #include <vector>
+#include <string>
 #include <cstdint>
 #include <limits>
 #include <type_traits>
