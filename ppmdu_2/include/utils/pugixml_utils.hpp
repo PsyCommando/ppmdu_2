@@ -11,7 +11,6 @@ Description:
 #include <string>
 #include <pugixml.hpp>
 #include <codecvt>
-#include <cstdint>
 #include <locale>
 #include <sstream>
 

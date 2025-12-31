@@ -9,13 +9,11 @@
 #include <ppmdu/pmd2/pmd2_scripts_opcodes.hpp>
 #include <ppmdu/pmd2/pmd2_xml_sniffer.hpp>
 #include <utils/pugixml_utils.hpp>
-#include <string.h>
 #include <utils/library_wide.hpp>
 //#include <utils/multiple_task_handler.hpp>
 #include <utils/parallel_tasks.hpp>
 #include <ppmdu/fmts/ssb.hpp>
 #include <atomic>
-#include <functional>
 #include <thread>
 #include <unordered_set>
 #include <Poco/DirectoryIterator.h>
