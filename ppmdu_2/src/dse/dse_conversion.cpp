@@ -1110,19 +1110,24 @@ namespace DSE
         //myzone.SetRootKey( split.rootkey + (/*split.ktps +*/ split.ctune) + ctuneadd );
         //cout << "\trootkey :" << static_cast<short>(split.rootkey + (split.ktps + split.ctune) + ctuneadd) <<"\n"; 
 
-        //Pitch Correction
-        //if( split.ftune != 0 )
-        //    myzone.SetFineTune( ftunes );
+        //Pitch Correction (short-loop PCM16 samples only)
+        //Note: nothing in the sample info pointed to whether or not a sample was to be treated differently especially for
+        //synths, in this case the best guess I have is most likely just hardware related error
+        if( smplinf.smplfmt  == DSE::eDSESmplFmt::pcm16 &&
+            smplinf.smplloop != 0                       &&
+            smplinf.looplen  <= 100 )
+        {
+            // Coarse tune: split.ctune relative to DSE neutral (-7); apply only when non-zero
+            const int16_t coarseTune = static_cast<int16_t>(split.ctune) - static_cast<int16_t>(DSE::DSEDefaultCoarseTune);
+            if( coarseTune != 0 )
+                myzone.SetCoarseTune( coarseTune );
 
-        //if( split.ctune != DSE::DSEDefaultCoarseTune )
-        //    myzone.SetCoarseTune( split.ctune );
-
-        //Pitch Correction
-        //if( split.ftune != 0 )
-        //    myzone.SetFineTune( ftunes/*split.ftune*/ );
-
-        //if( split.ctune != DSE::DSEDefaultCoarseTune )
-        //    myzone.SetCoarseTune( /*( split.ctune + 7 ) +*/ split.ctune + ctuneadd );
+            // Fine tune: smplinf.ftune encodes cents as (value - 240) / 4
+            // Derived from measured tuning discrepancy between Trk#35_prg#0x63 and Trk#75_prg#0x61
+            const int16_t fineTune = (static_cast<int16_t>(smplinf.ftune) - 240) / 4;
+            if( fineTune != 0 )
+                myzone.SetFineTune( fineTune );
+        }
 
         //Volume
         if( split.smplvol != DSE_LimitsVol.def_ )
